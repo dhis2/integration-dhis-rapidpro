@@ -147,7 +147,7 @@ public final class Environment
             "dhis2/core:2.37.6-tomcat-8.5.34-jre8-alpine" )
             .withClasspathResourceMapping( "dhis.conf", "/DHIS2_home/dhis.conf", BindMode.READ_WRITE )
             .withNetwork( DHIS2_NETWORK ).withExposedPorts( 8080 )
-            .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofSeconds( 120 ) ) )
+            .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
             .withEnv( "WAIT_FOR_DB_CONTAINER", "db" + ":" + 5432 + " -t 0" );
     }
 
