@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
+    <groupId>org.hisp.dhis.integration</groupId>
     <artifactId>rapidpro-connector</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
@@ -13,7 +13,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <camel.version>3.15.0</camel.version>
+        <camel.version>3.16.0</camel.version>
         <surefire.plugin.version>3.0.0-M4</surefire.plugin.version>
         <spring.boot-version>2.6.5</spring.boot-version>
     </properties>
@@ -41,6 +41,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>4.9.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-library</artifactId>
+                <version>2.13.3</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -55,13 +65,72 @@
                     <failIfNoTests>true</failIfNoTests>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring.boot-version}</version>
+            </plugin>
+            <plugin>
+                <groupId>io.committed</groupId>
+                <artifactId>speedy-spotless-maven-plugin</artifactId>
+                <version>0.1.3</version>
+                <executions>
+                    <execution>
+                        <id>install-formatter-hook</id>
+                        <goals>
+                            <goal>install-hooks</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <java>
+                        <eclipse>
+                            <file>DHISFormatter.xml</file>
+                            <version>4.9.0</version>
+                        </eclipse>
+                        <trimTrailingWhitespace/>
+                        <removeUnusedImports/>
+                        <importOrder>
+                            <order>
+                                java,javax,org,com
+                            </order>
+                        </importOrder>
+                        <licenseHeader>
+                            <file>license-header</file>
+                        </licenseHeader>
+                    </java>
+                    <lineEndings>UNIX</lineEndings>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.camel</groupId>
+            <artifactId>camel-endpointdsl</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-http-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-jsonpath-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-datasonnet-starter</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
             <artifactId>camel-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-timer-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
@@ -70,7 +139,7 @@
         <dependency>
             <groupId>org.hisp.dhis.integration.camel</groupId>
             <artifactId>camel-dhis2</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
@@ -103,5 +172,24 @@
             <artifactId>camel-test-spring-junit5</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.github.javafaker</groupId>
+            <artifactId>javafaker</artifactId>
+            <version>1.0.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>oss.sonatype.org</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 </project>

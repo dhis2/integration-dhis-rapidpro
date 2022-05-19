@@ -1,0 +1,9 @@
+{
+    name: body.firstName + ' ' + body.surname,
+    urns: ['tel:%s' % body.phoneNumber],
+    groups: [cml.exchangeProperty('groupUuid')],
+    fields: {
+        dhis2_organisation_unit_id: body.organisationUnits[0].id,
+        dhis2_user_id: body.id
+    }
+}
