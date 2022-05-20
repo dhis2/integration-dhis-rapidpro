@@ -74,23 +74,25 @@ public class Dhis2RapidProRouteBuilder extends RouteBuilder
     private void setUpSyncRoute()
     {
         from( "direct://sync" ).routeId( "synchroniseDhis2UsersRoute" ).to( "direct:prepareRapidPro" ).to(
-            "dhis2://get/collection?path=users&fields=id,firstName,surname,phoneNumber,organisationUnits&filter=organisationUnits.id:!null:&itemType=org.hisp.dhis.api.v2_37_4.model.User&paging=false&client=#dhis2Client" )
+            "dhis2://get/collection?path=users&fields=id,firstName,surname,phoneNumber,organisationUnits&filter=organisationUnits.id:!null:&itemType=org.hisp.dhis.api.v2_37_6.model.User&paging=false&client=#dhis2Client" )
             .setProperty( "dhis2Users", bodyIterableToListExpression )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .setHeader( "CamelHttpMethod", constant( GET ) )
             .toD( "{{rapidpro.api.url}}/contacts.json?group=${exchangeProperty.groupUuid}" ).unmarshal().json()
-            .setProperty( "rapidProContacts", simple( "${body}" ) ).process( newContactsProcessor ).split().body()
-            .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object",
+            .setProperty( "rapidProContacts", simple( "${body}" ) ).process( newContactsProcessor )
+            .split().body()
+                .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
-            .marshal().json().convertBodyTo( String.class ).setHeader( "CamelHttpMethod", constant( POST ) )
-            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .toD( "{{rapidpro.api.url}}/contacts.json" ).end().process( modifyContactsProcessor ).split().body()
-            .setHeader( "rapidProUuid", simple( "${body.getKey}" ) ).setBody( simple( "${body.getValue}" ) )
-            .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object",
+                .marshal().json().convertBodyTo( String.class ).setHeader( "CamelHttpMethod", constant( POST ) )
+                .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+                .toD( "{{rapidpro.api.url}}/contacts.json" ).end().process( modifyContactsProcessor )
+            .split().body()
+                .setHeader( "rapidProUuid", simple( "${body.getKey}" ) ).setBody( simple( "${body.getValue}" ) )
+                .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
-            .marshal().json().convertBodyTo( String.class ).setHeader( "CamelHttpMethod", constant( POST ) )
-            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .toD( "{{rapidpro.api.url}}/contacts.json?uuid=${header.rapidProUuid}" )
+                .marshal().json().convertBodyTo( String.class ).setHeader( "CamelHttpMethod", constant( POST ) )
+                .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+                .toD( "{{rapidpro.api.url}}/contacts.json?uuid=${header.rapidProUuid}" )
             .end();
     }
 
