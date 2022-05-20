@@ -34,7 +34,7 @@ import java.util.Optional;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.hisp.dhis.api.v2_37_4.model.User;
+import org.hisp.dhis.api.v2_37_6.model.User;
 import org.springframework.stereotype.Component;
 
 import com.datasonnet.document.DefaultDocument;

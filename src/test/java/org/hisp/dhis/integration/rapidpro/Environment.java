@@ -38,12 +38,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.hisp.dhis.api.v2_37_4.model.OrganisationUnit;
-import org.hisp.dhis.api.v2_37_4.model.OrganisationUnitLevel;
-import org.hisp.dhis.api.v2_37_4.model.User;
-import org.hisp.dhis.api.v2_37_4.model.UserAuthorityGroup;
-import org.hisp.dhis.api.v2_37_4.model.UserCredentials;
-import org.hisp.dhis.api.v2_37_4.model.WebMessage;
+import org.hisp.dhis.api.v2_37_6.model.OrganisationUnit;
+import org.hisp.dhis.api.v2_37_6.model.OrganisationUnitLevel;
+import org.hisp.dhis.api.v2_37_6.model.User;
+import org.hisp.dhis.api.v2_37_6.model.UserAuthorityGroup;
+import org.hisp.dhis.api.v2_37_6.model.UserCredentials;
+import org.hisp.dhis.api.v2_37_6.model.WebMessage;
 import org.hisp.dhis.integration.sdk.Dhis2Client;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.slf4j.Logger;
@@ -286,9 +286,9 @@ public final class Environment
 
     private static String createOrgUnit()
     {
-        return DHIS2_CLIENT.post( "organisationUnits" ).withResource(
+        return (String) ((Map<String, Object>) DHIS2_CLIENT.post( "organisationUnits" ).withResource(
             new OrganisationUnit().withName( "Acme" ).withShortName( "Acme" ).withOpeningDate( new Date() ) ).transfer()
-            .returnAs( WebMessage.class ).getResponse().get().get( "uid" );
+            .returnAs( WebMessage.class ).getResponse().get()).get( "uid" );
     }
 
 }
