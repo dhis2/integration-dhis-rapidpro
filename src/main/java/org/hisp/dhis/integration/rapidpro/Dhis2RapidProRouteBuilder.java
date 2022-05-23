@@ -73,6 +73,10 @@ public class Dhis2RapidProRouteBuilder extends RouteBuilder
 
     private void setUpSyncRoute()
     {
+        from( "jetty:http://localhost:8081/rapidProConnector/syncDhis2Users" )
+            .removeHeaders( "*" )
+            .to( "direct:sync" ).setBody(constant( Map.of("message", "Synchronised DHIS2 users with RapidPro") )).marshal().json();
+
         from( "direct://sync" ).routeId( "synchroniseDhis2UsersRoute" ).to( "direct:prepareRapidPro" ).to(
             "dhis2://get/collection?path=users&fields=id,firstName,surname,phoneNumber,organisationUnits&filter=organisationUnits.id:!null:&itemType=org.hisp.dhis.api.v2_37_6.model.User&paging=false&client=#dhis2Client" )
             .setProperty( "dhis2Users", bodyIterableToListExpression )
@@ -93,7 +97,8 @@ public class Dhis2RapidProRouteBuilder extends RouteBuilder
                 .marshal().json().convertBodyTo( String.class ).setHeader( "CamelHttpMethod", constant( POST ) )
                 .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
                 .toD( "{{rapidpro.api.url}}/contacts.json?uuid=${header.rapidProUuid}" )
-            .end();
+            .end()
+            .log( LoggingLevel.INFO, LOGGER, "Completed synchronisation of DHIS2 users with RapidPro" );
     }
 
     private void setUpPrepareRapidProRoute()
