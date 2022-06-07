@@ -65,7 +65,6 @@ public class Application
         SpringApplication springApplication = new SpringApplication( Application.class );
         springApplication.setBannerMode( Banner.Mode.OFF );
         springApplication.run( args );
-//        Server.createWebServer().start();
     }
 
     @Bean
