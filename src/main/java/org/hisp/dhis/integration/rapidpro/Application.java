@@ -27,13 +27,22 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import org.apache.activemq.artemis.core.config.StoreConfiguration;
+import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
+import org.apache.activemq.artemis.jdbc.store.sql.SQLProvider;
+import org.h2.tools.Server;
 import org.hisp.dhis.integration.sdk.Dhis2Client;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCustomizer;
+import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties;
 import org.springframework.context.annotation.Bean;
+
+import java.sql.SQLException;
 
 @SpringBootApplication
 public class Application
@@ -47,16 +56,36 @@ public class Application
     @Value( "${dhis2.api.password}" )
     private String password;
 
+    @Autowired
+    private ArtemisProperties artemisProperties;
+
     public static void main( String[] args )
+        throws SQLException
     {
         SpringApplication springApplication = new SpringApplication( Application.class );
         springApplication.setBannerMode( Banner.Mode.OFF );
         springApplication.run( args );
+//        Server.createWebServer().start();
     }
 
     @Bean
     public Dhis2Client dhis2Client()
     {
         return Dhis2ClientBuilder.newClient( baseApiUrl, username, password ).build();
+    }
+
+    @Bean
+    public ArtemisConfigurationCustomizer artemisConfigurationCustomizer() {
+        return configuration -> {
+            try {
+                DatabaseStorageConfiguration databaseStorageConfiguration = new DatabaseStorageConfiguration();
+                databaseStorageConfiguration.setJdbcConnectionUrl("jdbc:h2:./dhis2-rapidpro;AUTO_SERVER=TRUE");
+                databaseStorageConfiguration.setJdbcDriverClassName( "org.h2.Driver" );
+                configuration.setStoreConfiguration( databaseStorageConfiguration );
+                configuration.setPersistenceEnabled( true );
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 }
