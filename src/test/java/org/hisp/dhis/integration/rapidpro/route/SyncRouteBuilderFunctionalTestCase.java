@@ -25,96 +25,28 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro;
+package org.hisp.dhis.integration.rapidpro.route;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
-import org.apache.camel.test.spring.junit5.UseAdviceWith;
-import org.hisp.dhis.api.v2_37_6.model.DataValueSet;
-import org.hisp.dhis.api.v2_37_6.model.DataValue__1;
 import org.hisp.dhis.api.v2_37_6.model.DescriptiveWebMessage;
 import org.hisp.dhis.api.v2_37_6.model.ImportReportWebMessageResponse;
 import org.hisp.dhis.api.v2_37_6.model.User;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
+import org.hisp.dhis.integration.rapidpro.Environment;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.util.StreamUtils;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.github.javafaker.Faker;
-import io.restassured.specification.RequestSpecification;
 
-@SpringBootTest
-@CamelSpringBootTest
-@Testcontainers
-@UseAdviceWith
-public class FunctionalTestCase
+public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
-    @Autowired
-    private CamelContext camelContext;
-
-    @Autowired
-    private ProducerTemplate producerTemplate;
-
-    private static RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
-
-    @BeforeAll
-    public static void beforeAll()
-    {
-        RAPIDPRO_API_REQUEST_SPEC = Environment.RAPIDPRO_API_REQUEST_SPEC;
-    }
-
-    @BeforeEach
-    public void beforeEach()
-    {
-        if ( !camelContext.isStarted() )
-        {
-            camelContext.start();
-        }
-
-        for ( Map<String, Object> contact : fetchRapidProContacts() )
-        {
-            given( RAPIDPRO_API_REQUEST_SPEC ).delete( "/contacts.json?uuid={uuid}",
-                    contact.get( "uuid" ) )
-                .then()
-                .statusCode( 204 );
-        }
-    }
-
-    @Test
-    public void testReport()
-        throws IOException
-    {
-        String webhookMessage = StreamUtils.copyToString(
-            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
-            Charset.defaultCharset() );
-        producerTemplate.sendBody( "jms:queue:reports",
-            ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) );
-
-        DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
-                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
-            .withParameter( "period", "2021W19" ).withParameter( "dataSet", "qNtxTrp56wV" ).transfer()
-            .returnAs(
-                DataValueSet.class );
-        DataValue__1 externalValueDataValue = dataValueSet.getDataValues().get().get( 0 );
-        assertEquals( "2", externalValueDataValue.getValue().get() );
-    }
-
     @Test
     public void testFirstSynchronisationCreatesContacts()
         throws InterruptedException
@@ -128,7 +60,6 @@ public class FunctionalTestCase
 
     @Test
     public void testNextSynchronisationUpdatesRapidProContactGivenUpdatedDhis2User()
-        throws InterruptedException
     {
         assertPreCondition();
 
@@ -143,7 +74,7 @@ public class FunctionalTestCase
         User user = users.get( ThreadLocalRandom.current().nextInt( 0, users.size() ) );
         user.setFirstName( new Faker().name().firstName() );
         ImportReportWebMessageResponse importReportWebMessageResponse = Environment.DHIS2_CLIENT.put( "users/{id}",
-                user.getId().get() )
+            user.getId().get() )
             .withResource( user ).transfer()
             .returnAs(
                 ImportReportWebMessageResponse.class );
@@ -176,14 +107,5 @@ public class FunctionalTestCase
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "fields.json" ).then()
             .body( "results.size()", equalTo( 2 ) )
             .body( "results[1].key", equalTo( "dhis2_organisation_unit_id" ) );
-    }
-
-    private List<Map<String, Object>> fetchRapidProContacts()
-    {
-        Map<String, Object> contacts = given( RAPIDPRO_API_REQUEST_SPEC ).get( "/contacts.json" ).then()
-            .statusCode( 200 ).extract()
-            .body().as(
-                Map.class );
-        return (List<Map<String, Object>>) contacts.get( "results" );
     }
 }
