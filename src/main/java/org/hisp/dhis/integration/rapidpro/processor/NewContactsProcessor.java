@@ -25,12 +25,13 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro;
+package org.hisp.dhis.integration.rapidpro.processor;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -44,7 +45,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 @Component
-public class ModifyContactsProcessor implements Processor
+public class NewContactsProcessor implements Processor
 {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule( new Jdk8Module() );
 
@@ -52,7 +53,7 @@ public class ModifyContactsProcessor implements Processor
     public void process( Exchange exchange )
         throws Exception
     {
-        Map<String, Document<Map<String, Object>>> updatedDhis2Users = new HashMap<>();
+        Set<Document<Map<String, Object>>> newDhis2Users = new HashSet<>();
         List<User> dhis2Users = exchange.getProperty( "dhis2Users", List.class );
         Map<String, Object> rapidProContacts = exchange.getProperty( "rapidProContacts", Map.class );
         List<Map<String, Object>> results = (List<Map<String, Object>>) rapidProContacts.get( "results" );
@@ -64,10 +65,13 @@ public class ModifyContactsProcessor implements Processor
                     .equals( dhis2User.getId().get() ) )
                 .findFirst();
 
-            rapidProContact.ifPresent( stringObjectMap -> updatedDhis2Users.put( (String) stringObjectMap.get( "uuid" ),
-                new DefaultDocument<>( OBJECT_MAPPER.convertValue( dhis2User, Map.class ),
-                    new MediaType( "application", "x-java-object" ) ) ) );
+            if ( rapidProContact.isEmpty() )
+            {
+                newDhis2Users.add( new DefaultDocument<>( OBJECT_MAPPER.convertValue( dhis2User, Map.class ),
+                    new MediaType( "application", "x-java-object" ) ) );
+            }
         }
-        exchange.getMessage().setBody( updatedDhis2Users );
+
+        exchange.getMessage().setBody( newDhis2Users );
     }
 }

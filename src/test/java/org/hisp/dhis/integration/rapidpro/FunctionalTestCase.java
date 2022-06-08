@@ -31,15 +31,20 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.camel.CamelContext;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.camel.test.spring.junit5.UseAdviceWith;
+import org.hisp.dhis.api.v2_37_6.model.DataValueSet;
+import org.hisp.dhis.api.v2_37_6.model.DataValue__1;
 import org.hisp.dhis.api.v2_37_6.model.DescriptiveWebMessage;
 import org.hisp.dhis.api.v2_37_6.model.ImportReportWebMessageResponse;
 import org.hisp.dhis.api.v2_37_6.model.User;
@@ -48,6 +53,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.util.StreamUtils;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.github.javafaker.Faker;
@@ -84,10 +90,29 @@ public class FunctionalTestCase
         for ( Map<String, Object> contact : fetchRapidProContacts() )
         {
             given( RAPIDPRO_API_REQUEST_SPEC ).delete( "/contacts.json?uuid={uuid}",
-                contact.get( "uuid" ) )
+                    contact.get( "uuid" ) )
                 .then()
                 .statusCode( 204 );
         }
+    }
+
+    @Test
+    public void testReport()
+        throws IOException
+    {
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+        producerTemplate.sendBody( "jms:queue:reports",
+            ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) );
+
+        DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
+                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+            .withParameter( "period", "2021W19" ).withParameter( "dataSet", "qNtxTrp56wV" ).transfer()
+            .returnAs(
+                DataValueSet.class );
+        DataValue__1 externalValueDataValue = dataValueSet.getDataValues().get().get( 0 );
+        assertEquals( "2", externalValueDataValue.getValue().get() );
     }
 
     @Test
@@ -110,14 +135,15 @@ public class FunctionalTestCase
         producerTemplate.sendBody( "direct:sync", null );
 
         List<User> users = new ArrayList<>();
-        Iterable<User> usersIterable = Environment.DHIS2_CLIENT.get( "users" ).withFields( "*" ).withoutPaging()
+        Iterable<User> usersIterable = Environment.DHIS2_CLIENT.get( "users" ).withFilter( "phoneNumber:!null" )
+            .withFields( "*" ).withoutPaging()
             .transfer()
             .returnAs( User.class, "users" );
         usersIterable.forEach( users::add );
         User user = users.get( ThreadLocalRandom.current().nextInt( 0, users.size() ) );
         user.setFirstName( new Faker().name().firstName() );
         ImportReportWebMessageResponse importReportWebMessageResponse = Environment.DHIS2_CLIENT.put( "users/{id}",
-            user.getId().get() )
+                user.getId().get() )
             .withResource( user ).transfer()
             .returnAs(
                 ImportReportWebMessageResponse.class );

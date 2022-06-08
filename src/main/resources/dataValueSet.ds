@@ -1,0 +1,18 @@
+local dataValueFn(result) = [
+    {
+      dataElement: ds.filter(cml.header('indicator-mappings'), function(v, i) v.slug == result.key)[0].data_element,
+      value: result.value.value
+    }
+];
+
+local getIndicatorMappingFn(indicatorMappings, results) = ds.filter(indicatorMappings, function(v, i) v.slug == ds.entriesOf(results)[0].key);
+
+{
+    completedDate: ds.datetime.now(),
+    orgUnit: body.contact.dhis2_organisation_unit_id,
+    dataSet: ds.filter(cml.header('indicator-mappings'), function(v, i) v.slug == ds.entriesOf(payload.results)[0].key)[0].dataset,
+    period: '2021W19',
+    [if std.objectHas(getIndicatorMappingFn(cml.header('indicator-mappings'), payload.results)[0], 'attribute_option_combo') then 'attributeOptionCombo']: getIndicatorMappingFn(cml.header('indicator-mappings'), payload.results)[0].attribute_option_combo,
+    dataValues: std.flatMap(dataValueFn, ds.entriesOf(payload.results))
+}
+
