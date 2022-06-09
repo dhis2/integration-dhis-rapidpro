@@ -59,10 +59,10 @@ public class ExpressionTestCase
         dsExpression.setBodyMediaType( "application/x-java-object" );
         dsExpression.setOutputMediaType( "application/x-java-object" );
 
+        List<String> dataElementCodes = List.of( "GEN_EXT_FUND", "MAL_POP_TOTAL", "MAL_LLIN_DISTR_PW", "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL_PEOPLE_PROT_BY_IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT", "GEN_FUND_NEED" );
+
         Exchange exchange = new DefaultExchange( new DefaultCamelContext() );
-        exchange.getMessage().setHeader( "data-set-mappings", OBJECT_MAPPER.readValue( StreamUtils.copyToString(
-            Thread.currentThread().getContextClassLoader().getResourceAsStream( "data-set-mappings.json" ),
-            Charset.defaultCharset() ), List.class ) );
+        exchange.getMessage().setHeader( "dataElementCodes", dataElementCodes );
         exchange.getMessage().setBody( OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() ), Map.class ) );
@@ -75,13 +75,13 @@ public class ExpressionTestCase
         assertEquals( "2021W19", dataValueSet.get( "period" ) );
 
         List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );
-        assertEquals( "tpz77FcntKx", dataValues.get( 0 ).get( "dataElement" ) );
+        assertEquals( "GEN_EXT_FUND", dataValues.get( 0 ).get( "dataElement" ) );
         assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
-        assertEquals( "dFaBg0HpoIL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertEquals( "MAL_POP_TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
-        assertEquals( "UH47dKFqTRK", dataValues.get( 2 ).get( "dataElement" ) );
+        assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
         assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
-        assertEquals( "EpyvZBsqMmM", dataValues.get( 3 ).get( "dataElement" ) );
+        assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
         assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
     }
 }

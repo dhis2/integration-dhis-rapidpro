@@ -154,7 +154,6 @@ public final class Environment
             importMetaData( Objects.requireNonNull( orgUnitLevelId ) );
             addOrgUnitToAdminUser( ORG_UNIT_ID );
             createDhis2Users( ORG_UNIT_ID );
-            createIndicatorMappings();
         }
         catch ( Exception e )
         {
@@ -248,16 +247,6 @@ public final class Environment
                 .withNetworkAliases( "db" )
                 .withUsername( username )
                 .withPassword( password ).withNetwork( network );
-    }
-
-    private static void createIndicatorMappings()
-        throws IOException
-    {
-        DHIS2_CLIENT.post( "dataStore/rapidpro-connector/data-set-mappings" )
-            .withResource( StreamUtils.copyToString(
-                Thread.currentThread().getContextClassLoader().getResourceAsStream( "data-set-mappings.json" ),
-                Charset.defaultCharset() ) )
-            .transfer();
     }
 
     private static void addOrgUnitToAdminUser( String orgUnitId )

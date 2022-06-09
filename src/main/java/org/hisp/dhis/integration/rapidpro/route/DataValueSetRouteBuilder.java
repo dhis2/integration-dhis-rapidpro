@@ -27,46 +27,30 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class DataValueSetRouteBuilder extends AbstractRouteBuilder
 {
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @Override
     protected void doConfigure()
-        throws Exception
     {
         from( "jetty:{{http.endpoint.uri:http://localhost:8081/rapidProConnector}}/dhis2queue?httpMethodRestrict=POST" )
             .removeHeaders( "*" )
             .to( "jms:queue:reports?exchangePattern=InOnly" );
 
         from( "jms:queue:reports" ).unmarshal().json( Map.class )
-            .enrich( "dhis2://get/resource?path=dataStore/rapidpro-connector/data-set-mappings&client=#dhis2Client",
-                ( oldExchange, newExchange ) -> {
-                    try
-                    {
-                        oldExchange.getMessage().setHeader( "data-set-mappings", objectMapper.readValue(
-                            (InputStream) newExchange.getMessage().getBody(), List.class ) );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
-                    return oldExchange;
-                } )
+            .enrich( ).simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${body['flow']['data_set_id']}&fields=code&client=#dhis2Client" )
+            .aggregationStrategy( ( oldExchange, newExchange ) -> {
+                oldExchange.getMessage().setHeader( "dataElementCodes", jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ));
+                return oldExchange;
+            } )
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
+            .process( exchange -> exchange.getMessage().setHeader( "CamelDhis2.queryParams", Map.of("dataElementIdScheme", List.of("CODE" ))) )
             .to( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
     }
 }

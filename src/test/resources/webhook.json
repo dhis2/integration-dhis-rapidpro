@@ -7,19 +7,20 @@
   },
   "flow": {
     "name": "APT",
-    "uuid": "cb0360e3-d82a-4521-aad3-15afd704ec26"
+    "uuid": "cb0360e3-d82a-4521-aad3-15afd704ec26",
+    "data_set_id": "qNtxTrp56wV"
   },
   "results": {
-    "external_funding": {
+    "gen_ext_fund": {
       "value": "2"
     },
-    "population": {
+    "mal_pop_total": {
       "value": "10"
     },
-    "no_of_llins_distributed_to_pregnant_women": {
+    "mal_llin_distr_pw": {
       "value": "3"
     },
-    "domestic_funding": {
+    "gen_domestic_fund": {
       "value": "5"
     }
   }

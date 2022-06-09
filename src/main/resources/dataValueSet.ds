@@ -1,18 +1,14 @@
 local dataValueFn(result) = [
     {
-      dataElement: ds.filter(cml.header('data-set-mappings'), function(v, i) v.slug == result.key)[0].data_element,
+      dataElement: ds.filter(cml.header('dataElementCodes'), function(v, i) ds.replace(ds.lower(v), ' ', '_') == result.key)[0],
       value: result.value.value
     }
 ];
 
-local getIndicatorMappingFn(indicatorMappings, results) = ds.filter(indicatorMappings, function(v, i) v.slug == ds.entriesOf(results)[0].key);
-
 {
     completedDate: ds.datetime.now(),
-    orgUnit: body.contact.dhis2_organisation_unit_id,
-    dataSet: ds.filter(cml.header('data-set-mappings'), function(v, i) v.slug == ds.entriesOf(payload.results)[0].key)[0].dataset,
+    orgUnit: payload.contact.dhis2_organisation_unit_id,
+    dataSet: payload.flow.data_set_id,
     period: '2021W19',
-    [if std.objectHas(getIndicatorMappingFn(cml.header('data-set-mappings'), payload.results)[0], 'attribute_option_combo') then 'attributeOptionCombo']: getIndicatorMappingFn(cml.header('indicator-mappings'), payload.results)[0].attribute_option_combo,
     dataValues: std.flatMap(dataValueFn, ds.entriesOf(payload.results))
 }
-
