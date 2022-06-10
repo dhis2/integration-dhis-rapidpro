@@ -8,8 +8,8 @@
 
 ## Setup
 
-1. Ensure each relevant data set data element has a code associated with it in DHIS2
-2. Save each data value in the RapidPro flow to a result named like the corresponding data element code
+1. Ensure each relevant data set data element has a code associated with it in DHIS2.
+2. Save each incoming data value in the RapidPro flow to a result. The result's name must be the code of the data value's corresponding data element in DHIS2.
 3. Create a webhook call node in the RapidPro flow that dispatches the results to the DHIS2 connector:
    - HTTP method is a POST
    - URL points to the address the connector is listening on as configured in `http.endpoint.uri` parameter
