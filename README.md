@@ -6,7 +6,32 @@
 
 * Java 11
 
-## Getting Started
+## Setup
+
+1. Ensure each relevant data set data element has a code associated with it in DHIS2.
+2. Save each incoming data value in the RapidPro flow to a result. The result's name must be the code of the data value's corresponding data element in DHIS2.
+3. Create a webhook call node in the RapidPro flow that dispatches the results to the DHIS2 connector:
+   - HTTP method is a POST
+   - URL points to the address the connector is listening on as configured in `http.endpoint.uri` parameter
+   - HTTP body must have the `dhis2_organisation_unit_id` property in the `contact` object and the `data_set_id` property in the `flow object`. For example:
+    ```
+    @(json(object(
+       "contact", object(
+         "uuid", contact.uuid, 
+         "name", contact.name, 
+         "urn", contact.urn,
+         "dhis2_organisation_unit_id", contact.dhis2_organisation_unit_id
+       ),
+       "flow", object(
+         "uuid", run.flow.uuid, 
+         "name", run.flow.name,
+         "data_set_id", "qNtxTrp56wV"
+       ),
+       "results", foreach_value(results, extract_object, "value", "category")
+    )))
+    ```
+
+## Configuration
 
 ### *nix Usage Example
 
