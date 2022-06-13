@@ -31,7 +31,7 @@
     )))
     ```
 
-## Configuration
+## Getting Started
 
 ### *nix Usage Example
 
@@ -44,3 +44,16 @@
 ```shell
 java -jar dhis2-to-rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.37.2/api --dhis2.api.username=admin --dhis2.api.password=district --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
 ```
+
+## Config
+
+By order of precedence, a config property can be specified:
+
+1. as a command-line argument (e.g., `--dhis2.api.username=admin`)
+2. as an OS environment variable (e.g., `export DHIS2_API_USERNAME=admin`)
+3. in a key/value property file called `application.properties` or a YAML file named `application.yml`
+
+| Config Name                | Description                                                                                                                                           | Default Value | Example Value  |
+|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|----------------|
+| `sync.schedule.expression` | Cron expression for triggering the copying of DHIS2 users to RapidPro as contact contacts. By default, execution is kicked off at midnight every day. | `0 0 0 * * ?` | `0 0 12 * * ?` |
+| `sync.dhis2.users`         | Whether to copy DHIS2 users as contacts to RapidPro.                                                                                                  | `true`        | `false`        |
