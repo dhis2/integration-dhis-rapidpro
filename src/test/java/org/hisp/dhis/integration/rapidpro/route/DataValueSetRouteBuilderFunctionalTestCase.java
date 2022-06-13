@@ -38,14 +38,18 @@ import org.hisp.dhis.api.v2_37_6.model.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.StreamUtils;
 
 public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Test
+    @DirtiesContext
     public void testDataValueSetIsCreated()
         throws IOException
     {
+        camelContext.start();
+
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );

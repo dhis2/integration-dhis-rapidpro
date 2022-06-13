@@ -30,27 +30,44 @@ package org.hisp.dhis.integration.rapidpro.route;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.apache.camel.CamelExecutionException;
+import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
 import org.hisp.dhis.api.v2_37_6.model.DescriptiveWebMessage;
 import org.hisp.dhis.api.v2_37_6.model.ImportReportWebMessageResponse;
 import org.hisp.dhis.api.v2_37_6.model.User;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.annotation.DirtiesContext;
 
 import com.github.javafaker.Faker;
 
 public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Test
+    @DirtiesContext
+    public void testSynchronisationFailsGivenThatSyncDhis2UsersPropertyIsFalse()
+    {
+        System.setProperty( "sync.dhis2.users", "false" );
+        camelContext.start();
+        CamelExecutionException e = assertThrows(
+            CamelExecutionException.class, () -> producerTemplate.sendBody( "direct:sync", null ) );
+        assertEquals( DirectConsumerNotAvailableException.class, e.getCause().getClass() );
+    }
+
+    @Test
+    @DirtiesContext
     public void testFirstSynchronisationCreatesContacts()
         throws InterruptedException
     {
+        camelContext.start();
         assertPreCondition();
         producerTemplate.sendBody( "direct:sync", null );
         assertPostCondition();
@@ -59,8 +76,10 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     }
 
     @Test
+    @DirtiesContext
     public void testNextSynchronisationUpdatesRapidProContactGivenUpdatedDhis2User()
     {
+        camelContext.start();
         assertPreCondition();
 
         producerTemplate.sendBody( "direct:sync", null );
@@ -102,7 +121,6 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     }
 
     private void assertPostCondition()
-        throws InterruptedException
     {
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "fields.json" ).then()
             .body( "results.size()", equalTo( 2 ) )

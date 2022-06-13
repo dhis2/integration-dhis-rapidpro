@@ -67,11 +67,6 @@ public class AbstractFunctionalTestCase
     @BeforeEach
     public void beforeEach()
     {
-        if ( !camelContext.isStarted() )
-        {
-            camelContext.start();
-        }
-
         for ( Map<String, Object> contact : fetchRapidProContacts() )
         {
             given( RAPIDPRO_API_REQUEST_SPEC ).delete( "/contacts.json?uuid={uuid}",
