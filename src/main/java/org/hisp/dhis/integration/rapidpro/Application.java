@@ -27,12 +27,9 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import org.apache.activemq.artemis.core.config.StoreConfiguration;
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
-import org.apache.activemq.artemis.jdbc.store.sql.SQLProvider;
-import org.h2.tools.Server;
-import org.hisp.dhis.integration.sdk.Dhis2Client;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
+import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;

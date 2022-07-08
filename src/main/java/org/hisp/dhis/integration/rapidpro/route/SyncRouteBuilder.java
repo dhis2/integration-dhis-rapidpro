@@ -68,7 +68,7 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
 
         from( "direct://sync" ).precondition( "{{sync.dhis2.users:true}}" ).routeId( "synchroniseDhis2UsersRoute" )
             .to( "direct:prepareRapidPro" ).to(
-                "dhis2://get/collection?path=users&fields=id,firstName,surname,phoneNumber,organisationUnits&filter=phoneNumber:!null:&itemType=org.hisp.dhis.api.v2_37_6.model.User&paging=false&client=#dhis2Client" )
+                "dhis2://get/collection?path=users&fields=id,firstName,surname,phoneNumber,organisationUnits&filter=phoneNumber:!null:&itemType=org.hisp.dhis.api.model.v2_37_7.User&paging=false&client=#dhis2Client" )
             .setProperty( "dhis2Users", bodyIterableToListExpression )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .setHeader( "CamelHttpMethod", constant( GET ) )

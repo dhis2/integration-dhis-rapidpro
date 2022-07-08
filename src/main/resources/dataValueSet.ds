@@ -1,3 +1,5 @@
+local normaliseFn(dataElementCodes) = ds.map(dataElementCodes, function(v, i) ds.replace(ds.lower(v), ' ', '_'));
+
 local dataValueFn(result) = [
     {
       dataElement: ds.filter(cml.header('dataElementCodes'), function(v, i) ds.replace(ds.lower(v), ' ', '_') == result.key)[0],
@@ -10,5 +12,5 @@ local dataValueFn(result) = [
     orgUnit: payload.contact.dhis2_organisation_unit_id,
     dataSet: payload.flow.data_set_id,
     period: '2021W19',
-    dataValues: std.flatMap(dataValueFn, ds.entriesOf(payload.results))
+    dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) ds.contains(normaliseFn(cml.header('dataElementCodes')), v.key)))
 }
