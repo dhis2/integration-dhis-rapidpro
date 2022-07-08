@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -51,6 +52,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
             .process( exchange -> exchange.getMessage().setHeader( "CamelDhis2.queryParams", Map.of("dataElementIdScheme", List.of("CODE" ))) )
+            .log( LoggingLevel.INFO, LOGGER,"Saving data value set => ${body}" )
             .to( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
     }
 }

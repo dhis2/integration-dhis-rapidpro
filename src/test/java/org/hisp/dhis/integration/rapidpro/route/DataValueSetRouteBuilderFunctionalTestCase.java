@@ -33,8 +33,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 import org.apache.camel.ExchangePattern;
-import org.hisp.dhis.api.v2_37_6.model.DataValueSet;
-import org.hisp.dhis.api.v2_37_6.model.DataValue__1;
+import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
+import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.junit.jupiter.api.Test;

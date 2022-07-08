@@ -39,9 +39,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
-import org.hisp.dhis.api.v2_37_6.model.DescriptiveWebMessage;
-import org.hisp.dhis.api.v2_37_6.model.ImportReportWebMessageResponse;
-import org.hisp.dhis.api.v2_37_6.model.User;
+import org.hisp.dhis.api.model.v2_37_7.DescriptiveWebMessage;
+import org.hisp.dhis.api.model.v2_37_7.ImportReportWebMessageResponse;
+import org.hisp.dhis.api.model.v2_37_7.User;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.junit.jupiter.api.Test;
