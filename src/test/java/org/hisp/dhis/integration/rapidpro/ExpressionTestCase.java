@@ -59,7 +59,7 @@ public class ExpressionTestCase
         dsExpression.setBodyMediaType( "application/x-java-object" );
         dsExpression.setOutputMediaType( "application/x-java-object" );
 
-        List<String> dataElementCodes = List.of( "GEN_EXT_FUND", "MAL_POP_TOTAL", "MAL_LLIN_DISTR_PW", "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL_PEOPLE_PROT_BY_IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT", "GEN_FUND_NEED" );
+        List<String> dataElementCodes = List.of( "GEN_EXT_FUND", "MAL-POP-TOTAL", "MAL_LLIN_DISTR_PW", "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL_PEOPLE_PROT_BY_IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT", "GEN_FUND_NEED" );
 
         Exchange exchange = new DefaultExchange( new DefaultCamelContext() );
         exchange.getMessage().setHeader( "dataElementCodes", dataElementCodes );
@@ -77,7 +77,7 @@ public class ExpressionTestCase
         List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );
         assertEquals( "GEN_EXT_FUND", dataValues.get( 0 ).get( "dataElement" ) );
         assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
-        assertEquals( "MAL_POP_TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
         assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
         assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
