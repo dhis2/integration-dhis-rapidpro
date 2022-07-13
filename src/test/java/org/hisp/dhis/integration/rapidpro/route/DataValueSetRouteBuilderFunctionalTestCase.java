@@ -31,12 +31,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Date;
 
 import org.apache.camel.ExchangePattern;
 import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
 import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
+import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.StreamUtils;
@@ -46,7 +48,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
     @Test
     @DirtiesContext
     public void testDataValueSetIsCreated()
-        throws IOException
+        throws IOException,
+        InterruptedException
     {
         camelContext.start();
 
@@ -58,9 +61,11 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
             "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
-            .withParameter( "period", "2021W19" ).withParameter( "dataSet", "qNtxTrp56wV" ).transfer()
+            .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
+            .transfer()
             .returnAs(
                 DataValueSet.class );
+
         DataValue__1 externalValueDataValue = dataValueSet.getDataValues().get().get( 0 );
         assertEquals( "2", externalValueDataValue.getValue().get() );
     }

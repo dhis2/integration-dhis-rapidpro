@@ -1,4 +1,4 @@
-# DHIS2-to-RapidPro
+ # DHIS2-to-RapidPro
 
 ![Build Status](https://github.com/dhis2/integration-dhis2-rapidpro/workflows/CI/badge.svg)
 
@@ -36,13 +36,13 @@
 ### *nix Usage Example
 
 ```shell
-./dhis2-to-rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.37.2/api --dhis2.api.username=admin --dhis2.api.password=district --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+./dhis2-to-rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.37.2/api --dhis2.api.username=admin --dhis2.api.password=district --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 --report.period.type=weekly
 ```
 
 ### Windows Usage Example
 
 ```shell
-java -jar dhis2-to-rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.37.2/api --dhis2.api.username=admin --dhis2.api.password=district --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+java -jar dhis2-to-rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.37.2/api --dhis2.api.username=admin --dhis2.api.password=district --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 --report.period.type=weekly
 ```
 
 ## Config
@@ -53,7 +53,10 @@ By order of precedence, a config property can be specified:
 2. as an OS environment variable (e.g., `export DHIS2_API_USERNAME=admin`)
 3. in a key/value property file called `application.properties` or a YAML file named `application.yml`
 
-| Config Name                | Description                                                                                                                                           | Default Value | Example Value  |
-|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|----------------|
-| `sync.schedule.expression` | Cron expression for triggering the copying of DHIS2 users to RapidPro as contact contacts. By default, execution is kicked off at midnight every day. | `0 0 0 * * ?` | `0 0 12 * * ?` |
-| `sync.dhis2.users`         | Whether to copy DHIS2 users as contacts to RapidPro.                                                                                                  | `true`        | `false`        |
+| Config Name                | Description                                                                                                                                                                   | Default Value                             | Example Value                |
+|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------|------------------------------|
+| `http.endpoint.uri`        | The address the application will bind to for accepting HTTP requests .                                                                                                        | `http://localhost:8081/rapidProConnector` | `http://localhost:8080/acme` |
+| `sync.schedule.expression` | Cron expression for triggering the copying of DHIS2 users to RapidPro as contact contacts. By default, execution is kicked off at midnight every day.                         | `0 0 0 * * ?`                             | `0 0 12 * * ?`               |
+| `sync.dhis2.users`         | Whether to copy DHIS2 users as contacts to RapidPro.                                                                                                                          | `true`                                    | `false`                      |
+| `report.period.type`       | Period type to use for the data value set sent to DHIS2. Must be set to one of the following: `daily`, `weekly`, `monthly`, `bi_monthly`, `six_monthly`, `financial_year_nov` |                                           | `weekly`                     |
+| `report.period.offset`     | Relative period to add or subtract from the current reporting period sent to DHIS2.                                                                                           | `0`                                       | `-1`                         |

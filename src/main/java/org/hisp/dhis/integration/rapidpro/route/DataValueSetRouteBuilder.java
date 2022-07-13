@@ -27,15 +27,20 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
-import org.apache.camel.LoggingLevel;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
+
+import org.apache.camel.LoggingLevel;
+import org.hisp.dhis.integration.rapidpro.expression.PeriodExpression;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class DataValueSetRouteBuilder extends AbstractRouteBuilder
 {
+    @Autowired
+    private PeriodExpression periodExpression;
+
     @Override
     protected void doConfigure()
     {
@@ -44,15 +49,19 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             .to( "jms:queue:reports?exchangePattern=InOnly" );
 
         from( "jms:queue:reports" ).unmarshal().json( Map.class )
-            .enrich( ).simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${body['flow']['data_set_id']}&fields=code&client=#dhis2Client" )
+            .enrich().simple(
+                "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${body['flow']['data_set_id']}&fields=code&client=#dhis2Client" )
             .aggregationStrategy( ( oldExchange, newExchange ) -> {
-                oldExchange.getMessage().setHeader( "dataElementCodes", jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ));
+                oldExchange.getMessage().setHeader( "dataElementCodes",
+                    jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
                 return oldExchange;
             } )
+            .setHeader( "period", periodExpression )
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
-            .process( exchange -> exchange.getMessage().setHeader( "CamelDhis2.queryParams", Map.of("dataElementIdScheme", List.of("CODE" ))) )
-            .log( LoggingLevel.INFO, LOGGER,"Saving data value set => ${body}" )
+            .process( exchange -> exchange.getMessage()
+                .setHeader( "CamelDhis2.queryParams", Map.of( "dataElementIdScheme", List.of( "CODE" ) ) ) )
+            .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
             .to( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
     }
 }

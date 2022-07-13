@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +42,7 @@ import org.apache.camel.builder.ValueBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.language.DatasonnetExpression;
 import org.apache.camel.support.DefaultExchange;
+import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StreamUtils;
 
@@ -59,10 +61,13 @@ public class ExpressionTestCase
         dsExpression.setBodyMediaType( "application/x-java-object" );
         dsExpression.setOutputMediaType( "application/x-java-object" );
 
-        List<String> dataElementCodes = List.of( "GEN_EXT_FUND", "MAL-POP-TOTAL", "MAL_LLIN_DISTR_PW", "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL_PEOPLE_PROT_BY_IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT", "GEN_FUND_NEED" );
+        List<String> dataElementCodes = List.of( "GEN_EXT_FUND", "MAL-POP-TOTAL", "MAL_LLIN_DISTR_PW",
+            "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL_PEOPLE_PROT_BY_IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT",
+            "GEN_FUND_NEED" );
 
         Exchange exchange = new DefaultExchange( new DefaultCamelContext() );
         exchange.getMessage().setHeader( "dataElementCodes", dataElementCodes );
+        exchange.getMessage().setHeader( "period", PeriodBuilder.weekOf( new Date( 1657626227255L ) ) );
         exchange.getMessage().setBody( OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() ), Map.class ) );
@@ -72,7 +77,7 @@ public class ExpressionTestCase
         assertNull( dataValueSet.get( "attributeOptionCombo" ) );
         assertEquals( "%s", dataValueSet.get( "orgUnit" ) );
         assertEquals( "qNtxTrp56wV", dataValueSet.get( "dataSet" ) );
-        assertEquals( "2021W19", dataValueSet.get( "period" ) );
+        assertEquals( "2022W28", dataValueSet.get( "period" ) );
 
         List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );
         assertEquals( "GEN_EXT_FUND", dataValues.get( 0 ).get( "dataElement" ) );
