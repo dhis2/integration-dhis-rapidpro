@@ -58,7 +58,11 @@ public class PeriodExpression implements Expression
     @Override
     public <T> T evaluate( Exchange exchange, Class<T> type )
     {
-        if ( periodType.equals( PeriodType.WEEKLY ) )
+        if ( periodType.equals( PeriodType.DAILY ) )
+        {
+            return (T) PeriodBuilder.dayOf( new Date(), periodOffset );
+        }
+        else if ( periodType.equals( PeriodType.WEEKLY ) )
         {
             return (T) PeriodBuilder.weekOf( new Date(), periodOffset );
         }
