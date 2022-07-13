@@ -1,4 +1,4 @@
- # DHIS2-to-RapidPro
+# DHIS2-to-RapidPro
 
 ![Build Status](https://github.com/dhis2/integration-dhis2-rapidpro/workflows/CI/badge.svg)
 
