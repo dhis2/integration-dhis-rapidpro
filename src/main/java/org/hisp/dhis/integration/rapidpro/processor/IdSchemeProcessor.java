@@ -27,12 +27,12 @@
  */
 package org.hisp.dhis.integration.rapidpro.processor;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Component
 public class IdSchemeProcessor implements Processor
@@ -43,7 +43,7 @@ public class IdSchemeProcessor implements Processor
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put( "dataElementIdScheme", "CODE" );
         String orgUnitIdScheme = exchange.getContext().resolvePropertyPlaceholders( "{{org.unit.id.scheme}}" );
-        //FIXME: DHIS2 2.36 returns an HTTP 500 when orgUnitIdScheme is 'ID'
+        // FIXME: DHIS 2.36 returns an HTTP 500 when orgUnitIdScheme is 'ID'
         if ( !orgUnitIdScheme.equalsIgnoreCase( "ID" ) )
         {
             queryParams.put( "orgUnitIdScheme", orgUnitIdScheme );
