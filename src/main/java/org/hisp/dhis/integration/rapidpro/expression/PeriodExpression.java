@@ -88,7 +88,7 @@ public class PeriodExpression implements Expression
         }
         else
         {
-            throw new RuntimeException();
+            throw new UnsupportedOperationException();
         }
     }
 }
