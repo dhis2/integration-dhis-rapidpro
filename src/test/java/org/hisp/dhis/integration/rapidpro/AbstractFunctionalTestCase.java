@@ -67,6 +67,9 @@ public class AbstractFunctionalTestCase
     @BeforeEach
     public void beforeEach()
     {
+        System.clearProperty( "sync.dhis2.users" );
+        System.clearProperty( "org.unit.id.scheme" );
+
         for ( Map<String, Object> contact : fetchRapidProContacts() )
         {
             given( RAPIDPRO_API_REQUEST_SPEC ).delete( "/contacts.json?uuid={uuid}",

@@ -48,8 +48,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
     @Test
     @DirtiesContext
     public void testDataValueSetIsCreated()
-        throws IOException,
-        InterruptedException
+        throws IOException
     {
         camelContext.start();
 
@@ -61,6 +60,31 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
             "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+            .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
+            .transfer()
+            .returnAs(
+                DataValueSet.class );
+
+        DataValue__1 externalValueDataValue = dataValueSet.getDataValues().get().get( 0 );
+        assertEquals( "2", externalValueDataValue.getValue().get() );
+    }
+
+    @Test
+    @DirtiesContext
+    public void testDataValueSetIsCreatedGivenOrgUnitIdSchemeIsCode()
+        throws IOException
+    {
+        System.setProperty( "org.unit.id.scheme", "CODE" );
+        camelContext.start();
+
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+        producerTemplate.sendBody( "jms:queue:reports",
+            ExchangePattern.InOut, String.format( webhookMessage, "ACME" ) );
+
+        DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
+                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
             .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
             .transfer()
             .returnAs(

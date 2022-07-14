@@ -178,7 +178,7 @@ public final class Environment
         DHIS2_DB_CONTAINER = newPostgreSQLContainer( "dhis2", "dhis", "dhis", DHIS2_NETWORK );
 
         DHIS2_CONTAINER = new GenericContainer<>(
-            "dhis2/core:2.36.10-tomcat-8.5.34-jre8-alpine" )
+            "dhis2/core:2.36.11.1-tomcat-8.5.34-jre8-alpine" )
                 .withClasspathResourceMapping( "dhis.conf", "/DHIS2_home/dhis.conf", BindMode.READ_WRITE )
                 .withNetwork( DHIS2_NETWORK ).withExposedPorts( 8080 )
                 .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
@@ -325,7 +325,7 @@ public final class Environment
     private static String createOrgUnit()
     {
         return (String) ((Map<String, Object>) DHIS2_CLIENT.post( "organisationUnits" ).withResource(
-            new OrganisationUnit().withName( "Acme" ).withShortName( "Acme" ).withOpeningDate( new Date() ) ).transfer()
+            new OrganisationUnit().withName( "Acme" ).withCode( "ACME" ).withShortName( "Acme" ).withOpeningDate( new Date() ) ).transfer()
             .returnAs( WebMessage.class ).getResponse().get()).get( "uid" );
     }
 

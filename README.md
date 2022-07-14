@@ -8,7 +8,7 @@
 
 ## Setup
 
-1. Ensure each relevant data set data element has a code associated with it in DHIS2.
+1. Ensure each relevant data set data element has a code associated with it in DHIS2 and that the codes do not start with a number.
 2. Save each incoming data value in the RapidPro flow to a result. The result's name must be the code of the data value's corresponding data element in DHIS2.
 3. Create a webhook call node in the RapidPro flow that dispatches the results to the DHIS2 connector:
    - HTTP method is a POST
@@ -60,3 +60,4 @@ By order of precedence, a config property can be specified:
 | `sync.dhis2.users`         | Whether to copy DHIS2 users as contacts to RapidPro.                                                                                                                          | `true`                                    | `false`                      |
 | `report.period.type`       | Period type to use for the data value set sent to DHIS2. Must be set to one of the following: `daily`, `weekly`, `monthly`, `bi_monthly`, `six_monthly`, `financial_year_nov` |                                           | `weekly`                     |
 | `report.period.offset`     | Relative period to add or subtract from the current reporting period sent to DHIS2.                                                                                           | `0`                                       | `-1`                         |
+| `org.unit.id.scheme`       | By which field organisation units are identified.                                                                                                                             | `ID`                                      | `CODE`                       |
