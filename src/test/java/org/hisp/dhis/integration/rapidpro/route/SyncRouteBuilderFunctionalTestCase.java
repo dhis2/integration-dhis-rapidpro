@@ -65,7 +65,6 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     @Test
     @DirtiesContext
     public void testFirstSynchronisationCreatesContacts()
-        throws InterruptedException
     {
         camelContext.start();
         assertPreCondition();
