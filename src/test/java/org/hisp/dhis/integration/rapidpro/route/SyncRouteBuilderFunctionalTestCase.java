@@ -53,7 +53,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
 {
     @Test
     @DirtiesContext
-    public void testSynchronisationFailsGivenThatSyncDhis2UsersPropertyIsFalse()
+    public void testContactSynchronisationFailsGivenThatSyncDhis2UsersPropertyIsFalse()
     {
         System.setProperty( "sync.dhis2.users", "false" );
         camelContext.start();
@@ -71,7 +71,23 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
         producerTemplate.sendBody( "direct:sync", null );
         assertPostCondition();
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
-            .body( "results.size()", equalTo( 10 ) );
+            .body( "results.size()", equalTo( 10 ) )
+            .body( "results[0].fields.dhis2_organisation_unit_id", equalTo( Environment.ORG_UNIT_ID ) );
+    }
+
+    @Test
+    @DirtiesContext
+    public void testContactSynchronisationGivenOrgUnitIdSchemeIsCode()
+    {
+        System.setProperty( "org.unit.id.scheme", "CODE" );
+        camelContext.start();
+
+        assertPreCondition();
+        producerTemplate.sendBody( "direct:sync", null );
+        assertPostCondition();
+        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
+            .body( "results.size()", equalTo( 10 ) )
+            .body( "results[0].fields.dhis2_organisation_unit_id", equalTo( "ACME" ) );
     }
 
     @Test
@@ -83,20 +99,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
 
         producerTemplate.sendBody( "direct:sync", null );
 
-        List<User> users = new ArrayList<>();
-        Iterable<User> usersIterable = Environment.DHIS2_CLIENT.get( "users" ).withFilter( "phoneNumber:!null" )
-            .withFields( "*" ).withoutPaging()
-            .transfer()
-            .returnAs( User.class, "users" );
-        usersIterable.forEach( users::add );
-        User user = users.get( ThreadLocalRandom.current().nextInt( 0, users.size() ) );
-        user.setFirstName( new Faker().name().firstName() );
-        ImportReportWebMessageResponse importReportWebMessageResponse = Environment.DHIS2_CLIENT.put( "users/{id}",
-            user.getId().get() )
-            .withResource( user ).transfer()
-            .returnAs(
-                ImportReportWebMessageResponse.class );
-        assertEquals( DescriptiveWebMessage.Status.OK, importReportWebMessageResponse.getStatus().get() );
+        User user = updateDhis2User();
 
         producerTemplate.sendBody( "direct:sync", null );
 
@@ -124,5 +127,24 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "fields.json" ).then()
             .body( "results.size()", equalTo( 2 ) )
             .body( "results[1].key", equalTo( "dhis2_organisation_unit_id" ) );
+    }
+
+    private User updateDhis2User() {
+        List<User> users = new ArrayList<>();
+        Iterable<User> usersIterable = Environment.DHIS2_CLIENT.get( "users" ).withFilter( "phoneNumber:!null" )
+            .withFields( "*" ).withoutPaging()
+            .transfer()
+            .returnAs( User.class, "users" );
+        usersIterable.forEach( users::add );
+        User user = users.get( ThreadLocalRandom.current().nextInt( 0, users.size() ) );
+        user.setFirstName( new Faker().name().firstName() );
+        ImportReportWebMessageResponse importReportWebMessageResponse = Environment.DHIS2_CLIENT.put( "users/{id}",
+                user.getId().get() )
+            .withResource( user ).transfer()
+            .returnAs(
+                ImportReportWebMessageResponse.class );
+        assertEquals( DescriptiveWebMessage.Status.OK, importReportWebMessageResponse.getStatus().get() );
+
+        return user;
     }
 }
