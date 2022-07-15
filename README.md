@@ -2,6 +2,11 @@
 
 ![Build Status](https://github.com/dhis2/integration-dhis2-rapidpro/workflows/CI/badge.svg)
 
+DHIS2-to-RapidPro is a stand-alone Java solution that integrates DHIS2 with RapidPro. It provides:
+
+* Routine synchronisation of RapidPro contact to DHIS2 users
+* Saving of reports from RapidPro to DHIS2
+
 ## Requirements
 
 * Java 11
@@ -55,7 +60,7 @@ By order of precedence, a config property can be specified:
 
 | Config Name                | Description                                                                                                                                                                   | Default Value                             | Example Value                |
 |----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------|------------------------------|
-| `http.endpoint.uri`        | The address the application will bind to for accepting HTTP requests .                                                                                                        | `http://localhost:8081/rapidProConnector` | `http://localhost:8080/acme` |
+| `http.endpoint.uri`        | The address the application will bind to for accepting HTTP requests.                                                                                                         | `http://localhost:8081/rapidProConnector` | `http://localhost:8080/acme` |
 | `sync.schedule.expression` | Cron expression for triggering the copying of DHIS2 users to RapidPro as contact. By default, execution is kicked off at midnight every day.                                  | `0 0 0 * * ?`                             | `0 0 12 * * ?`               |
 | `sync.dhis2.users`         | Whether to copy DHIS2 users as contacts to RapidPro.                                                                                                                          | `true`                                    | `false`                      |
 | `report.period.type`       | Period type to use for the data value set sent to DHIS2. Must be set to one of the following: `daily`, `weekly`, `monthly`, `bi_monthly`, `six_monthly`, `financial_year_nov` |                                           | `weekly`                     |

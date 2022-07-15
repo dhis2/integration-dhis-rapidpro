@@ -28,6 +28,7 @@
 package org.hisp.dhis.integration.rapidpro.route;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -59,14 +60,15 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
-            "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
             .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
             .transfer()
             .returnAs(
                 DataValueSet.class );
 
-        DataValue__1 externalValueDataValue = dataValueSet.getDataValues().get().get( 0 );
-        assertEquals( "2", externalValueDataValue.getValue().get() );
+        DataValue__1 dataValue = dataValueSet.getDataValues().get().get( 0 );
+        assertEquals( "2", dataValue.getValue().get() );
+        assertTrue( dataValue.getComment().isPresent() );
     }
 
     @Test
@@ -90,7 +92,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             .returnAs(
                 DataValueSet.class );
 
-        DataValue__1 externalValueDataValue = dataValueSet.getDataValues().get().get( 0 );
-        assertEquals( "2", externalValueDataValue.getValue().get() );
+        DataValue__1 dataValue = dataValueSet.getDataValues().get().get( 0 );
+        assertEquals( "2", dataValue.getValue().get() );
     }
 }

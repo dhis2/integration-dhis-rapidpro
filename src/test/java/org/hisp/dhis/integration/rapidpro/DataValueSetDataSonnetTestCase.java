@@ -43,17 +43,20 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.language.DatasonnetExpression;
 import org.apache.camel.support.DefaultExchange;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StreamUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class ExpressionTestCase
+public class DataValueSetDataSonnetTestCase
 {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    @Test
-    public void testDataValueSetDataSonnetExpression()
+    private Map dataValueSet;
+
+    @BeforeEach
+    public void beforeEach()
         throws IOException
     {
         DatasonnetExpression dsExpression = new DatasonnetExpression( "resource:classpath:dataValueSet.ds" );
@@ -72,7 +75,12 @@ public class ExpressionTestCase
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() ), Map.class ) );
 
-        Map<String, Object> dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
+        dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
+    }
+
+    @Test
+    public void testMapping()
+    {
         assertNotNull( dataValueSet.get( "completedDate" ) );
         assertNull( dataValueSet.get( "attributeOptionCombo" ) );
         assertEquals( "%s", dataValueSet.get( "orgUnit" ) );
@@ -88,5 +96,9 @@ public class ExpressionTestCase
         assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
         assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
         assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
+
+        assertEquals(
+            "RapidPro Contact Details: \"{\\n \\\"name\\\": \\\"John Doe\\\",\\n \\\"urn\\\": \\\"tel:+12065551212\\\",\\n \\\"uuid\\\": \\\"fb3787ab-2eda-48a0-a2bc-e2ddadec1286\\\",\\n \\\"dhis2_organisation_unit_id\\\": \\\"%s\\\"\\n}\"",
+            dataValues.get( 0 ).get( "comment" ) );
     }
 }
