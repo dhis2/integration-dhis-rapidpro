@@ -94,6 +94,9 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         List<Map<String, Object>> dlq = jdbcTemplate.queryForList( "SELECT * FROM DLQ" );
         assertEquals( 1, dlq.size() );
         assertEquals( "ERROR", dlq.get( 0 ).get( "STATUS" ) );
+        assertEquals( String.format(
+                "Response{protocol=http/1.1, code=500, message=, url=http://localhost:%s/api/dataValueSets?dataElementIdScheme=CODE&orgUnitIdScheme=bar}", Environment.DHIS2_CONTAINER.getFirstMappedPort() ),
+            dlq.get( 0 ).get( "ERROR_MESSAGE" ) );
         Map<String, Object> payload = new ObjectMapper().readValue( (String) dlq.get( 0 ).get( "PAYLOAD" ), Map.class );
         assertEquals( "John Doe", ((Map<String, Object>) payload.get( "contact" )).get( "name" ) );
     }

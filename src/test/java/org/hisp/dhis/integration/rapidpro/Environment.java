@@ -76,6 +76,8 @@ public final class Environment
 
     public static final Dhis2Client DHIS2_CLIENT;
 
+    public static GenericContainer<?> DHIS2_CONTAINER;
+
     private static final Logger LOGGER = LoggerFactory.getLogger( Environment.class );
 
     private static final Network RAPIDPRO_NETWORK = Network.builder().id( "rapidProNetwork" ).build();
@@ -89,8 +91,6 @@ public final class Environment
     private static GenericContainer<?> RAPIDPRO_CONTAINER;
 
     private static GenericContainer<?> MAILROOM_CONTAINER;
-
-    private static GenericContainer<?> DHIS2_CONTAINER;
 
     public static final RequestSpecification RAPIDPRO_REQUEST_SPEC;
 

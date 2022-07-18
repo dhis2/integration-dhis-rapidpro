@@ -29,6 +29,7 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.LoggingLevel;
 import org.hisp.dhis.integration.rapidpro.expression.PeriodExpression;
+import org.hisp.dhis.integration.rapidpro.expression.RootExceptionMessageExpression;
 import org.hisp.dhis.integration.rapidpro.processor.IdSchemeProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,9 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
     private PeriodExpression periodExpression;
+
+    @Autowired
+    private RootExceptionMessageExpression rootExceptionMessageExpression;
 
     @Autowired
     private IdSchemeProcessor idSchemeProcessor;
@@ -66,9 +70,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
         from( "jms:queue:dhis2" ).id( "dhis2Route" )
             .setHeader( "originalPayload", simple( "${body}" ) )
             .onException( Exception.class )
-                .setHeader( "payload", header( "originalPayload" ) )
-                .setBody( simple( "INSERT INTO DLQ (payload, status) VALUES (:?payload, 'ERROR')" ) )
-                .to( "jdbc:dataSource?useHeadersAsParameters=true" )
+                .to( "direct:dlq" )
             .end()
             .unmarshal()
             .json( Map.class )
@@ -83,5 +85,10 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             .process( idSchemeProcessor )
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
             .to( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
+
+        from( "direct:dlq" ).setHeader( "errorMessage", rootExceptionMessageExpression )
+            .setHeader( "payload", header( "originalPayload" ) )
+            .setBody( simple( "INSERT INTO DLQ (payload, status, error_message) VALUES (:?payload, 'ERROR', :?errorMessage)" ) )
+            .to( "jdbc:dataSource?useHeadersAsParameters=true" );
     }
 }
