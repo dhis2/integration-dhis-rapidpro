@@ -40,6 +40,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import io.restassured.specification.RequestSpecification;
@@ -48,15 +50,19 @@ import io.restassured.specification.RequestSpecification;
 @CamelSpringBootTest
 @UseAdviceWith
 @ActiveProfiles( "test" )
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class AbstractFunctionalTestCase
 {
+    protected static RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
+
     @Autowired
     protected CamelContext camelContext;
 
     @Autowired
     protected ProducerTemplate producerTemplate;
 
-    protected static RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
 
     @BeforeAll
     public static void beforeAll()
@@ -69,6 +75,8 @@ public class AbstractFunctionalTestCase
     {
         System.clearProperty( "sync.dhis2.users" );
         System.clearProperty( "org.unit.id.scheme" );
+
+        jdbcTemplate.execute( "DELETE FROM DLQ" );
 
         for ( Map<String, Object> contact : fetchRapidProContacts() )
         {

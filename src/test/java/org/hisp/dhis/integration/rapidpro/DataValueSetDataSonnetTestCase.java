@@ -98,7 +98,7 @@ public class DataValueSetDataSonnetTestCase
         assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
 
         assertEquals(
-            "RapidPro Contact Details: \"{\\n \\\"name\\\": \\\"John Doe\\\",\\n \\\"urn\\\": \\\"tel:+12065551212\\\",\\n \\\"uuid\\\": \\\"fb3787ab-2eda-48a0-a2bc-e2ddadec1286\\\",\\n \\\"dhis2_organisation_unit_id\\\": \\\"%s\\\"\\n}\"",
+            "RapidPro contact details: \"{\\n \\\"name\\\": \\\"John Doe\\\",\\n \\\"urn\\\": \\\"tel:+12065551212\\\",\\n \\\"uuid\\\": \\\"fb3787ab-2eda-48a0-a2bc-e2ddadec1286\\\",\\n \\\"dhis2_organisation_unit_id\\\": \\\"%s\\\"\\n}\"",
             dataValues.get( 0 ).get( "comment" ) );
     }
 }

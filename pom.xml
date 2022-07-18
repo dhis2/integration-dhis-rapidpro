@@ -183,6 +183,10 @@
             <artifactId>camel-spring-boot-starter</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-spring-jdbc-starter</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.hisp.dhis.integration.camel</groupId>
             <artifactId>camel-dhis2</artifactId>
             <version>1.0.1-SNAPSHOT</version>

@@ -6,7 +6,7 @@ local dataValueFn(result) = [
     {
       dataElement: ds.filter(cml.header('dataElementCodes'), function(v, i) normaliseDeCodeFn(v) == result.key)[0],
       value: result.value.value,
-      comment: 'RapidPro Contact Details: %s' % std.escapeStringJson(std.manifestJsonEx(payload.contact, ' '))
+      comment: 'RapidPro contact details: %s' % std.escapeStringJson(std.manifestJsonEx(payload.contact, ' '))
     }
 ];
 

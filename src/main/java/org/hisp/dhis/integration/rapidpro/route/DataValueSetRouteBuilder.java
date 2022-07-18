@@ -28,7 +28,6 @@
 package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.Processor;
 import org.hisp.dhis.integration.rapidpro.expression.PeriodExpression;
 import org.hisp.dhis.integration.rapidpro.processor.IdSchemeProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,9 +50,26 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
     {
         from( "jetty:{{http.endpoint.uri:http://localhost:8081/rapidProConnector}}/dhis2queue?httpMethodRestrict=POST" )
             .removeHeaders( "*" )
-            .to( "jms:queue:reports?exchangePattern=InOnly" );
+            .to( "jms:queue:dhis2?exchangePattern=InOnly" );
 
-        from( "jms:queue:reports" )
+        from( "timer://retry?fixedRate=true&period=5000" )
+            .setBody( constant( "SELECT id, payload FROM DLQ WHERE status = 'RETRY' LIMIT 100" ) )
+            .to( "jdbc:dataSource" )
+            .split().body()
+                .setHeader( "id", simple( "${body['ID']}" ) )
+                .setBody( simple( "${body['PAYLOAD']}" ) )
+                .to( "jms:queue:dhis2?exchangePattern=InOnly" )
+                .setBody( constant( "UPDATE DLQ SET status = 'PROCESSED' WHERE id = :?id" ) )
+                .to( "jdbc:dataSource?useHeadersAsParameters=true" )
+            .end();
+
+        from( "jms:queue:dhis2" ).id( "dhis2Route" )
+            .setHeader( "originalPayload", simple( "${body}" ) )
+            .onException( Exception.class )
+                .setHeader( "payload", header( "originalPayload" ) )
+                .setBody( simple( "INSERT INTO DLQ (payload, status) VALUES (:?payload, 'ERROR')" ) )
+                .to( "jdbc:dataSource?useHeadersAsParameters=true" )
+            .end()
             .unmarshal()
             .json( Map.class )
             .enrich().simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${body['flow']['data_set_id']}&fields=code&client=#dhis2Client" )
