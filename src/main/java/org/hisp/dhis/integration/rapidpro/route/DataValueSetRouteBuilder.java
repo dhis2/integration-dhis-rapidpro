@@ -27,15 +27,15 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import java.util.List;
+import java.util.Map;
+
 import org.apache.camel.LoggingLevel;
 import org.hisp.dhis.integration.rapidpro.expression.PeriodExpression;
 import org.hisp.dhis.integration.rapidpro.expression.RootExceptionMessageExpression;
 import org.hisp.dhis.integration.rapidpro.processor.IdSchemeProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 @Component
 public class DataValueSetRouteBuilder extends AbstractRouteBuilder
@@ -52,43 +52,49 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
     @Override
     protected void doConfigure()
     {
-        from( "jetty:{{http.endpoint.uri:http://localhost:8081/rapidProConnector}}/dhis2queue?httpMethodRestrict=POST" )
+        from( "jetty:{{http.endpoint.uri:http://0.0.0.0:8081/rapidProConnector}}/webhook?httpMethodRestrict=POST" )
             .removeHeaders( "*" )
             .to( "jms:queue:dhis2?exchangePattern=InOnly" );
 
         from( "timer://retry?fixedRate=true&period=5000" )
-            .setBody( constant( "SELECT id, payload FROM DLQ WHERE status = 'RETRY' LIMIT 100" ) )
+            .setBody( constant( "SELECT id, payload FROM DEAD_LETTER_CHANNEL WHERE status = 'RETRY' LIMIT 100" ) )
             .to( "jdbc:dataSource" )
             .split().body()
-                .setHeader( "id", simple( "${body['ID']}" ) )
-                .setBody( simple( "${body['PAYLOAD']}" ) )
-                .to( "jms:queue:dhis2?exchangePattern=InOnly" )
-                .setBody( constant( "UPDATE DLQ SET status = 'PROCESSED' WHERE id = :?id" ) )
-                .to( "jdbc:dataSource?useHeadersAsParameters=true" )
+            .setHeader( "id", simple( "${body['ID']}" ) )
+            .log( LoggingLevel.INFO, LOGGER, "Retrying row with ID ${header.id}" )
+            .setBody( simple( "${body['PAYLOAD']}" ) )
+            .to( "jms:queue:dhis2?exchangePattern=InOnly" )
+            .setBody( constant(
+                "UPDATE DEAD_LETTER_CHANNEL SET status = 'PROCESSED', last_processed_at = CURRENT_TIMESTAMP WHERE id = :?id" ) )
+            .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .end();
 
         from( "jms:queue:dhis2" ).id( "dhis2Route" )
             .setHeader( "originalPayload", simple( "${body}" ) )
             .onException( Exception.class )
-                .to( "direct:dlq" )
+            .to( "direct:dlq" )
             .end()
             .unmarshal()
             .json( Map.class )
-            .enrich().simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${body['flow']['data_set_id']}&fields=code&client=#dhis2Client" )
+            .enrich()
+            .simple(
+                "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${body['flow']['data_set_id']}&fields=code&client=#dhis2Client" )
             .aggregationStrategy( ( oldExchange, newExchange ) -> {
                 oldExchange.getMessage().setHeader( "dataElementCodes",
                     jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
                 return oldExchange;
             } )
             .setHeader( "period", periodExpression )
-            .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object", "application/x-java-object" ) )
+            .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
+                "application/x-java-object" ) )
             .process( idSchemeProcessor )
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
             .to( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
 
         from( "direct:dlq" ).setHeader( "errorMessage", rootExceptionMessageExpression )
             .setHeader( "payload", header( "originalPayload" ) )
-            .setBody( simple( "INSERT INTO DLQ (payload, status, error_message) VALUES (:?payload, 'ERROR', :?errorMessage)" ) )
+            .setBody( simple(
+                "INSERT INTO DEAD_LETTER_CHANNEL (payload, status, error_message) VALUES (:?payload, 'ERROR', :?errorMessage)" ) )
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
     }
 }
