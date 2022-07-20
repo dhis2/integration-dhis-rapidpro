@@ -27,36 +27,42 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.Date;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.camel.CamelExecutionException;
 import org.apache.camel.ExchangePattern;
+import org.apache.camel.builder.AdviceWith;
+import org.apache.camel.component.mock.MockEndpoint;
 import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
 import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.StreamUtils;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Test
-    @DirtiesContext
     public void testDataValueSetIsCreated()
-        throws IOException
+        throws IOException, InterruptedException
     {
         camelContext.start();
 
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBody( "jms:queue:reports",
+        producerTemplate.sendBody( "jms:queue:dhis2",
             ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
@@ -72,7 +78,59 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
     }
 
     @Test
-    @DirtiesContext
+    public void testRecordInDlqIsCreatedGivenErrorWhileCreatingDataValueSet()
+        throws IOException
+    {
+        System.setProperty( "org.unit.id.scheme", "bar" );
+        camelContext.start();
+
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+
+        assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBody( "jms:queue:dhis2",
+            ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) ) );
+
+        List<Map<String, Object>> dlq = jdbcTemplate.queryForList( "SELECT * FROM DLQ" );
+        assertEquals( 1, dlq.size() );
+        assertEquals( "ERROR", dlq.get( 0 ).get( "STATUS" ) );
+        assertEquals( String.format(
+                "Response{protocol=http/1.1, code=500, message=, url=http://localhost:%s/api/dataValueSets?dataElementIdScheme=CODE&orgUnitIdScheme=bar}", Environment.DHIS2_CONTAINER.getFirstMappedPort() ),
+            dlq.get( 0 ).get( "ERROR_MESSAGE" ) );
+        Map<String, Object> payload = new ObjectMapper().readValue( (String) dlq.get( 0 ).get( "PAYLOAD" ), Map.class );
+        assertEquals( "John Doe", ((Map<String, Object>) payload.get( "contact" )).get( "name" ) );
+    }
+
+    @Test
+    public void testRetryRecordInDlqIsReProcessed()
+        throws Exception
+    {
+        AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+
+        System.setProperty( "org.unit.id.scheme", "bar" );
+        camelContext.start();
+
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+
+        assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBody( "jms:queue:dhis2",
+            ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) ) );
+        assertEquals( 0, spyEndpoint.getReceivedCounter() );
+
+        System.setProperty( "org.unit.id.scheme", "ID" );
+        jdbcTemplate.execute( "UPDATE DLQ SET STATUS = 'RETRY' WHERE STATUS = 'ERROR'" );
+        spyEndpoint.await( 10, TimeUnit.SECONDS );
+
+        assertEquals( 1, spyEndpoint.getReceivedCounter() );
+        List<Map<String, Object>> dlq = jdbcTemplate.queryForList( "SELECT * FROM DLQ" );
+        assertEquals( 1, dlq.size() );
+        assertEquals( "PROCESSED", dlq.get( 0 ).get( "STATUS" ) );
+    }
+
+    @Test
     public void testDataValueSetIsCreatedGivenOrgUnitIdSchemeIsCode()
         throws IOException
     {
@@ -82,7 +140,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBody( "jms:queue:reports",
+        producerTemplate.sendBody( "jms:queue:dhis2",
             ExchangePattern.InOut, String.format( webhookMessage, "ACME" ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(

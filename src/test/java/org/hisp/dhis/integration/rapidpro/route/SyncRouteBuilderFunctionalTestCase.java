@@ -52,7 +52,6 @@ import com.github.javafaker.Faker;
 public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Test
-    @DirtiesContext
     public void testContactSynchronisationFailsGivenThatSyncDhis2UsersPropertyIsFalse()
     {
         System.setProperty( "sync.dhis2.users", "false" );
@@ -63,7 +62,6 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     }
 
     @Test
-    @DirtiesContext
     public void testFirstSynchronisationCreatesContacts()
     {
         camelContext.start();
@@ -76,7 +74,6 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     }
 
     @Test
-    @DirtiesContext
     public void testContactSynchronisationGivenOrgUnitIdSchemeIsCode()
     {
         System.setProperty( "org.unit.id.scheme", "CODE" );
@@ -91,7 +88,6 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     }
 
     @Test
-    @DirtiesContext
     public void testNextSynchronisationUpdatesRapidProContactGivenUpdatedDhis2User()
     {
         camelContext.start();
