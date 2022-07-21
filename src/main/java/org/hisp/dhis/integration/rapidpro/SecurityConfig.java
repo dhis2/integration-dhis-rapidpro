@@ -1,23 +1,24 @@
 package org.hisp.dhis.integration.rapidpro;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
-@EnableWebSecurity
-public class SecurityConfig extends WebSecurityConfigurerAdapter
+@Configuration
+public class SecurityConfig
 {
-    @Override
-    protected void configure( HttpSecurity http )
+    @Bean
+    protected SecurityFilterChain filterChain( HttpSecurity http )
         throws Exception
     {
-        http.authorizeRequests().anyRequest().authenticated()
+        return http.authorizeRequests().anyRequest().authenticated()
             .and()
             .formLogin()
             .and()
             .httpBasic()
             .and()
-            .csrf().csrfTokenRepository( CookieCsrfTokenRepository.withHttpOnlyFalse() );
+            .csrf().csrfTokenRepository( CookieCsrfTokenRepository.withHttpOnlyFalse() ).and().build();
     }
 }
