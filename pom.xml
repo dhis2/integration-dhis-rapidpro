@@ -13,9 +13,9 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <camel.version>3.16.0</camel.version>
+        <camel.version>3.18.0</camel.version>
         <surefire.plugin.version>3.0.0-M4</surefire.plugin.version>
-        <spring.boot-version>2.6.5</spring.boot-version>
+        <spring.boot-version>2.7.1</spring.boot-version>
     </properties>
 
     <dependencyManagement>
@@ -119,6 +119,10 @@
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>

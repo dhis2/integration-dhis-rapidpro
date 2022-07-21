@@ -13,7 +13,6 @@ public class ConfigureRapidProRouteBuilder extends AbstractRouteBuilder
 {
     @Override
     protected void doConfigure()
-        throws Exception
     {
         from( "direct:prepareRapidPro" ).routeId( "prepareRapidProRoute" ).to( "direct:createFieldsRoute" )
             .to( "direct:createGroupRoute" );

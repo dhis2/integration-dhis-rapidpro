@@ -54,7 +54,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     @Test
     public void testContactSynchronisationFailsGivenThatSyncDhis2UsersPropertyIsFalse()
     {
-        System.setProperty( "sync.dhis2.users", "false" );
+        System.setProperty( "sync.rapidpro.contacts", "false" );
         camelContext.start();
         CamelExecutionException e = assertThrows(
             CamelExecutionException.class, () -> producerTemplate.sendBody( "direct:sync", null ) );

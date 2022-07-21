@@ -47,11 +47,14 @@ public class Application
     @Value( "${dhis2.api.url}" )
     private String baseApiUrl;
 
-    @Value( "${dhis2.api.username}" )
+    @Value( "${dhis2.api.username:#{null}}" )
     private String username;
 
-    @Value( "${dhis2.api.password}" )
+    @Value( "${dhis2.api.password:#{null}}" )
     private String password;
+
+    @Value( "${dhis2.api.pat:#{null}}" )
+    private String pat;
 
     @Autowired
     private ArtemisProperties artemisProperties;
@@ -66,21 +69,43 @@ public class Application
 
     @Bean
     public Dhis2Client dhis2Client()
+        throws Dhis2ToRapidProException
     {
-        return Dhis2ClientBuilder.newClient( baseApiUrl, username, password ).build();
+        if ( pat != null && (username != null || password != null) )
+        {
+            throw new Dhis2ToRapidProException(
+                "Bad DHIS2 configuration: PAT authentication and basic authentication are mutually exclusive" );
+        }
+
+        if ( pat != null )
+        {
+            return Dhis2ClientBuilder.newClient( baseApiUrl, pat ).build();
+        }
+        else if ( username != null && password != null )
+        {
+            return Dhis2ClientBuilder.newClient( baseApiUrl, username, password ).build();
+        }
+        else
+        {
+            throw new Dhis2ToRapidProException( "Bad DHIS2 configuration: missing authentication details" );
+        }
     }
 
     @Bean
-    public ArtemisConfigurationCustomizer artemisConfigurationCustomizer() {
+    public ArtemisConfigurationCustomizer artemisConfigurationCustomizer()
+    {
         return configuration -> {
-            try {
+            try
+            {
                 DatabaseStorageConfiguration databaseStorageConfiguration = new DatabaseStorageConfiguration();
-                databaseStorageConfiguration.setJdbcConnectionUrl("jdbc:h2:./dhis2-rapidpro;AUTO_SERVER=TRUE");
+                databaseStorageConfiguration.setJdbcConnectionUrl( "jdbc:h2:./dhis2-rapidpro;AUTO_SERVER=TRUE" );
                 databaseStorageConfiguration.setJdbcDriverClassName( "org.h2.Driver" );
                 configuration.setStoreConfiguration( databaseStorageConfiguration );
                 configuration.setPersistenceEnabled( true );
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
             }
         };
     }

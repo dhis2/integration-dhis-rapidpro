@@ -27,7 +27,18 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.time.OffsetDateTime;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.AdviceWith;
@@ -40,22 +51,13 @@ import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StreamUtils;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Test
     public void testDataValueSetIsCreated()
-        throws IOException, InterruptedException
+        throws IOException
     {
         camelContext.start();
 
@@ -66,7 +68,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
-                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+            "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
             .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
             .transfer()
             .returnAs(
@@ -78,7 +80,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
     }
 
     @Test
-    public void testRecordInDlqIsCreatedGivenErrorWhileCreatingDataValueSet()
+    public void testRecordInDeadLetterChannelIsCreatedGivenErrorWhileCreatingDataValueSet()
         throws IOException
     {
         System.setProperty( "org.unit.id.scheme", "bar" );
@@ -91,18 +93,22 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBody( "jms:queue:dhis2",
             ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) ) );
 
-        List<Map<String, Object>> dlq = jdbcTemplate.queryForList( "SELECT * FROM DLQ" );
-        assertEquals( 1, dlq.size() );
-        assertEquals( "ERROR", dlq.get( 0 ).get( "STATUS" ) );
+        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
+        assertEquals( 1, deadLetterChannel.size() );
+        assertEquals( "ERROR", deadLetterChannel.get( 0 ).get( "STATUS" ) );
+        assertEquals( deadLetterChannel.get( 0 ).get( "CREATED_AT" ),
+            deadLetterChannel.get( 0 ).get( "LAST_PROCESSED_AT" ) );
         assertEquals( String.format(
-                "Response{protocol=http/1.1, code=500, message=, url=http://localhost:%s/api/dataValueSets?dataElementIdScheme=CODE&orgUnitIdScheme=bar}", Environment.DHIS2_CONTAINER.getFirstMappedPort() ),
-            dlq.get( 0 ).get( "ERROR_MESSAGE" ) );
-        Map<String, Object> payload = new ObjectMapper().readValue( (String) dlq.get( 0 ).get( "PAYLOAD" ), Map.class );
+            "Response{protocol=http/1.1, code=500, message=, url=http://localhost:%s/api/dataValueSets?dataElementIdScheme=CODE&orgUnitIdScheme=bar}",
+            Environment.DHIS2_CONTAINER.getFirstMappedPort() ),
+            deadLetterChannel.get( 0 ).get( "ERROR_MESSAGE" ) );
+        Map<String, Object> payload = new ObjectMapper()
+            .readValue( (String) deadLetterChannel.get( 0 ).get( "PAYLOAD" ), Map.class );
         assertEquals( "John Doe", ((Map<String, Object>) payload.get( "contact" )).get( "name" ) );
     }
 
     @Test
-    public void testRetryRecordInDlqIsReProcessed()
+    public void testRetryRecordInDeadLetterChannelIsReProcessed()
         throws Exception
     {
         AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
@@ -121,13 +127,15 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
 
         System.setProperty( "org.unit.id.scheme", "ID" );
-        jdbcTemplate.execute( "UPDATE DLQ SET STATUS = 'RETRY' WHERE STATUS = 'ERROR'" );
+        jdbcTemplate.execute( "UPDATE DEAD_LETTER_CHANNEL SET STATUS = 'RETRY' WHERE STATUS = 'ERROR'" );
         spyEndpoint.await( 10, TimeUnit.SECONDS );
 
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
-        List<Map<String, Object>> dlq = jdbcTemplate.queryForList( "SELECT * FROM DLQ" );
-        assertEquals( 1, dlq.size() );
-        assertEquals( "PROCESSED", dlq.get( 0 ).get( "STATUS" ) );
+        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
+        assertEquals( 1, deadLetterChannel.size() );
+        assertEquals( "PROCESSED", deadLetterChannel.get( 0 ).get( "STATUS" ) );
+        assertTrue( ((OffsetDateTime) deadLetterChannel.get( 0 ).get( "LAST_PROCESSED_AT" )).isAfter(
+            (OffsetDateTime) deadLetterChannel.get( 0 ).get( "CREATED_AT" ) ) );
     }
 
     @Test
@@ -144,7 +152,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             ExchangePattern.InOut, String.format( webhookMessage, "ACME" ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
-                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+            "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
             .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
             .transfer()
             .returnAs(

@@ -50,7 +50,7 @@ import io.restassured.specification.RequestSpecification;
 @CamelSpringBootTest
 @UseAdviceWith
 @ActiveProfiles( "test" )
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext( classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD )
 public class AbstractFunctionalTestCase
 {
     protected static RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
@@ -73,10 +73,10 @@ public class AbstractFunctionalTestCase
     @BeforeEach
     public void beforeEach()
     {
-        System.clearProperty( "sync.dhis2.users" );
+        System.clearProperty( "sync.rapidpro.contacts" );
         System.clearProperty( "org.unit.id.scheme" );
 
-        jdbcTemplate.execute( "DELETE FROM DLQ" );
+        jdbcTemplate.execute( "DELETE FROM DEAD_LETTER_CHANNEL" );
 
         for ( Map<String, Object> contact : fetchRapidProContacts() )
         {
