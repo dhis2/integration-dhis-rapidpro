@@ -40,13 +40,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import io.restassured.specification.RequestSpecification;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @CamelSpringBootTest
 @UseAdviceWith
 @ActiveProfiles( "test" )
@@ -63,6 +64,11 @@ public class AbstractFunctionalTestCase
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;
+
+    @LocalServerPort
+    protected int serverPort;
+
+    protected String rapidProConnectorHttpEndpointUri;
 
     @BeforeAll
     public static void beforeAll()
@@ -85,6 +91,9 @@ public class AbstractFunctionalTestCase
                 .then()
                 .statusCode( 204 );
         }
+
+        rapidProConnectorHttpEndpointUri = String.format( "https://0.0.0.0:%s/rapidProConnector",
+            serverPort);
     }
 
     protected List<Map<String, Object>> fetchRapidProContacts()

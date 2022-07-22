@@ -96,8 +96,6 @@ public final class Environment
 
     public static final RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
 
-    public static final String RAPIDPRO_CONNECTOR_HTTP_ENDPOINT_URI;
-
     private static PostgreSQLContainer<?> DHIS2_DB_CONTAINER;
 
     static
@@ -135,9 +133,6 @@ public final class Environment
             RAPIDPRO_API_REQUEST_SPEC = new RequestSpecBuilder().setBaseUri( rapidProApiUrl )
                 .addHeader( "Authorization", "Token " + apiToken ).build();
             System.setProperty( "rapidpro.api.token", apiToken );
-            RAPIDPRO_CONNECTOR_HTTP_ENDPOINT_URI = String.format( "http://0.0.0.0:%s/rapidProConnector",
-                SocketUtils.findAvailableTcpPort() );
-            System.setProperty( "http.endpoint.uri", RAPIDPRO_CONNECTOR_HTTP_ENDPOINT_URI );
 
             DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl, "admin", "district" ).build();
 

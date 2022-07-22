@@ -38,9 +38,10 @@ DHIS2-to-RapidPro provides:
    3. Search for the data element
    4. Enter a suitable code in the _Code_ field as shown next:
       ![Data Element](static/images/dhis2-data-element.png)
-      ***IMPORTANT:*** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
+      >***IMPORTANT:*** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
 
-2. Create a [personal access token](https://docs.dhis2.org/en/use/user-guides/dhis-core-version-238/working-with-your-account/personal-access-tokens.html) or a user for DHIS2-to-RapidPro such that the application can authenticate on DHIS2 and is authorised to fetch all the DHIS2 users in addition to uploading data value sets. _Security note_: personal access token authentication is recommended over basic access authentication. 
+2. Create a [personal access token](https://docs.dhis2.org/en/use/user-guides/dhis-core-version-238/working-with-your-account/personal-access-tokens.html) or a user for DHIS2-to-RapidPro such that the application can authenticate on DHIS2 and is authorised to fetch all the DHIS2 users in addition to uploading data value sets. 
+    >_Security note_: personal access token authentication is recommended over basic access authentication. 
 
 ### RapidPro Instructions
 
@@ -52,7 +53,7 @@ The result name must match the code of the corresponding data element in DHIS2. 
    ![Flow Result](static/images/webhook.png)
    The webhook call node must be configured as follows:
    - HTTP method selected is `POST`
-   - URL field points to the address DHIS2-to-RapidPro is listening on as configured in the `http.endpoint.uri` property (see [Configuration](#configuration)): the path in the URL field is required to end with `/webhook`.
+   - URL field points to the DHIS2-to-RapidPro HTTPS address is listening on. The default HTTPS port number is _8443_ (see `server.port` in [Configuration](#configuration)): the path in the URL field is required to end with `/rapidProConnector/webhook`.
    - HTTP body has the `dhis2_organisation_unit_id` property in the `contact` object and the `data_set_id` property in the `flow object`. For example:
      ```
      @(json(object(
@@ -120,7 +121,7 @@ By order of precedence, a config property can be specified:
 | `dhis2.api.password`            | Password of the DHIS2 user to operate as.                                                                                                                                            |
 | `rapidpro.api.url`              | RapidPro server Web API URL. This property should be left empty if `sync.rapidpro.contacts` is `false`.                                                                              |                                             | `https://rapidpro.dhis2.org/api/v2`                |
 | `rapidpro.api.token`            | API token to authenticate with on RapidPro. This property should be left empty if `sync.rapidpro.contacts` is `false`                                                                |                                             | `3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0`         |
-| `http.endpoint.uri`             | The address the application will bind to for accepting HTTP requests.                                                                                                                | `http://0.0.0.0:8081/rapidProConnector`     | `http://0.0.0.0:8080/rapidProConnector`            |
+| `server.port`                   | The TCP port number the application will bind to for accepting HTTP requests.                                                                                                        | `https://0.0.0.0:8081/rapidProConnector`    | `http://0.0.0.0:8080/rapidProConnector`            |
 | `sync.schedule.expression`      | Cron expression for synchronising RapidPro contacts with DHIS2 users. By default, execution is kicked off at midnight every day.                                                     | `0 0 0 * * ?`                               | `0 0 12 * * ?`                                     |
 | `sync.rapidpro.contacts`        | Whether to routinely create and update RapidPro contacts from DHIS2 users. Setting this property to `false` means that `rapidpro.api.url` and `rapidpro.api.token` can be left empty | `true`                                      | `false`                                            |
 | `report.period.type`            | Period type to use for the data value set sent to DHIS2. Must be set to one of the following: `daily`, `weekly`, `monthly`, `bi_monthly`, `six_monthly`, `financial_year_nov`        |                                             | `weekly`                                           |
@@ -141,7 +142,9 @@ From the Hawtio web console, apart from browsing application logs, the system op
 
 ![Hawtio Management Console](static/images/hawtio-management-console.png)
 
-You can log into the Hawtio console locally from [https://localhost:8443/actuator/hawtio](https://localhost:8443/actuator/hawtio) using the username and password `dhis2rapidpro`. You can set the parameter `management.endpoints.web.exposure.include` (i.e., `--management.endpoints.web.exposure.include=`) to an empty value to deny HTTP access to the Hawtio web console. ***IMPORTANT***: immediately change the login credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
+You can log into the Hawtio console locally from [https://localhost:8443/management/hawtio](https://localhost:8443/management/hawtio) using the username and password `dhis2rapidpro`. You can set the parameter `management.endpoints.web.exposure.include` (i.e., `--management.endpoints.web.exposure.include=`) to an empty value to deny HTTP access to the Hawtio web console. 
+
+>***IMPORTANT***: immediately change the login credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
 
 ## Recovering Failed Reports
 
@@ -166,7 +169,9 @@ UPDATE DEAD_LETTER_CHANNEL SET status = 'RETRY' WHERE STATUS = 'ERROR'
 
 ![H2 Web Console](static/images/h2-web-console.png)
 
-The H2 console is pre-configured to be available locally at [https://localhost:8443/h2-console](https://localhost:8443/h2-console). The default username and password are both `dhis2rapidpro`. ***IMPORTANT***: immediately change the credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)). The console's relative URL path can be changed with the config property `spring.h2.console.path`.
+The H2 console is pre-configured to be available locally at [https://localhost:8443/management/h2-console](https://localhost:8443/management/h2-console). The default username and password are both `dhis2rapidpro`. The console's relative URL path can be changed with the config property `spring.h2.console.path`.
+
+>***IMPORTANT***: immediately change the credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
 
 For security reasons, the console only permits local access but this behaviour can be overridden by setting `spring.h2.console.settings.web-allow-others` to `true`. To completely disable access to the web console, set the parameter `spring.h2.console.enabled` to `false` though you still can connect to the data store with an SQL client.
 
@@ -187,7 +192,7 @@ SELECT * FROM DEAD_LETTER_CHANNEL
 WHERE status = 'ERROR' AND created_at > DATEADD('DAY', -1, CURRENT_TIMESTAMP())	
 ```
 
-The above SQL returns the reports that failed to be saved in DHIS2 within the last 24 hours. Zoom in the `ERROR_MESSAGE` column to view the technical error message that was given by the application. In case of transient failures like a network timeout, the rule of thumb is for the system operator to update the `STATUS` column to `RETRY` in order for DHIS2-to-RapidPro to re-processes the failed reports:
+The above SQL returns the reports that failed to be saved in DHIS2 within the last 24 hours. Zoom in the `ERROR_MESSAGE` column to read the technical error message that was given by the application. Should the error message describe a transient failure like a network timeout, the rule of thumb is for the system operator to update the `STATUS` column to `RETRY` in order for DHIS2-to-RapidPro to re-processes the failed reports:
 
 ```sql
 -- SQL is compatible with H2
@@ -196,7 +201,7 @@ SET status = 'RETRY'
 WHERE status = 'ERROR' AND created_at > DATEADD('DAY', -1, CURRENT_TIMESTAMP())	
 ```
 
-After a few seconds, DHIS2-to-RapidPro will fetch `RETRY` rows from the data store and re-process the reports. Processed rows, whether successful or not, are marked as `PROCESSED` and have their `LAST_PROCESSED_AT` column updated to the current time. If a retry fails, DHIS2-to-RapidPro will go on to insert a corresponding new `ERROR` row in the `DEAD_LETTER_CHANNEL` table. 
+After issuing the above SQL, DHIS2-to-RapidPro will poll for the `RETRY` rows from the data store and re-process the reports. Processed rows, whether successful or not, are updated as `PROCESSED` and have their `LAST_PROCESSED_AT` column updated to the current time. If a retry fails, DHIS2-to-RapidPro will go on to insert a corresponding new `ERROR` row in the `DEAD_LETTER_CHANNEL` table. 
 
 Non-transient failures such as validation errors require human intervention which might mean that you have to update the `payload` column value so that it conforms with the expected structure or data type:
 
@@ -206,4 +211,6 @@ SET status = 'RETRY', payload = '{"contact":{"name":"John Doe","urn":"tel:+12065
 WHERE id = '1023'
 ```
 
-Deeper technical problems might not manifest themselves up as failed reports but as exceptions in the application logs. The logs can be analysed from the [Hawtio web console](#monitoring--management) or directly from the log file `dhis-to-rapidpro.log`, situated in DHIS2-to-RapidPro's working directory. Keep an eye out for exceptions while going through the logs. Any exception messages, including their stack traces, should be collected from the logs and further analysed. You may want to reach out to the [DHIS2 Community of Practice](https://community.dhis2.org/) for troubleshooting support. If all else fails, you can try increasing the log verbosity to zone in on the root cause. Setting the config property `logging.level.org.hisp.dhis.integration.rapidpro` to `DEBUG` will lead to the application printing more detail in the logs. As a last resort, though not recommended, you can have the application print even more detail by setting `logging.level.root` to `DEBUG`. ***CAUTION:*** be careful about increasing log verbosity since it may quickly eat up the server's disk space if the application is logging to a file, the default behaviour.
+Deeper technical problems might not manifest themselves up as failed reports but as exceptions in the application logs. The logs can be analysed from the [Hawtio web console](#monitoring--management) or directly from the log file `dhis-to-rapidpro.log`, situated in DHIS2-to-RapidPro's working directory. Keep an eye out for exceptions while combing through the logs. Any exception messages, including their stack traces, should be collected from the logs and further analysed. You may want to reach out to the [DHIS2 Community of Practice](https://community.dhis2.org/) for troubleshooting support. If all else fails, you can try increasing the log verbosity to zone in on the root cause. Setting the config property `logging.level.org.hisp.dhis.integration.rapidpro` to `DEBUG` will lead to the application printing more detail in the logs. As a last resort, though not recommended, you can have the application print even more detail by setting `logging.level.root` to `DEBUG`. 
+
+>***CAUTION:*** be careful about increasing log verbosity since it may quickly eat up the server's disk space if the application is logging to a file, the default behaviour.
