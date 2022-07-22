@@ -28,6 +28,7 @@
 package org.hisp.dhis.integration.rapidpro;
 
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
+import org.bouncycastle.operator.OperatorCreationException;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,12 @@ import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCu
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties;
 import org.springframework.context.annotation.Bean;
 
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.cert.CertificateException;
 import java.sql.SQLException;
 
 @SpringBootApplication
@@ -58,6 +65,17 @@ public class Application
 
     @Autowired
     private ArtemisProperties artemisProperties;
+
+    @Autowired
+    private KeyStoreGenerator keyStoreGenerator;
+
+    @PostConstruct
+    public void postConstruct()
+        throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchProviderException,
+        OperatorCreationException
+    {
+        keyStoreGenerator.generate();
+    }
 
     public static void main( String[] args )
         throws SQLException

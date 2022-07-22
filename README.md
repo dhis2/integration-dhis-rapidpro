@@ -141,7 +141,7 @@ From the Hawtio web console, apart from browsing application logs, the system op
 
 ![Hawtio Management Console](static/images/hawtio-management-console.png)
 
-You can log into the Hawtio console locally from [http://localhost:8080/actuator/hawtio](http://localhost:8080/actuator/hawtio) using the username and password `dhis2rapidpro`. You can set the parameter `management.endpoints.web.exposure.include` (i.e., `--management.endpoints.web.exposure.include=`) to an empty value to deny HTTP access to the Hawtio web console. ***IMPORTANT***: immediately change the login credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
+You can log into the Hawtio console locally from [https://localhost:8443/actuator/hawtio](https://localhost:8443/actuator/hawtio) using the username and password `dhis2rapidpro`. You can set the parameter `management.endpoints.web.exposure.include` (i.e., `--management.endpoints.web.exposure.include=`) to an empty value to deny HTTP access to the Hawtio web console. ***IMPORTANT***: immediately change the login credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
 
 ## Recovering Failed Reports
 
@@ -166,7 +166,7 @@ UPDATE DEAD_LETTER_CHANNEL SET status = 'RETRY' WHERE STATUS = 'ERROR'
 
 ![H2 Web Console](static/images/h2-web-console.png)
 
-The H2 console is pre-configured to be available locally at [http://localhost:8080/h2-console](http://localhost:8080/h2-console). The default username and password are both `dhis2rapidpro`. ***IMPORTANT***: immediately change the credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)). The console's relative URL path can be changed with the config property `spring.h2.console.path`.
+The H2 console is pre-configured to be available locally at [https://localhost:8443/h2-console](https://localhost:8443/h2-console). The default username and password are both `dhis2rapidpro`. ***IMPORTANT***: immediately change the credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)). The console's relative URL path can be changed with the config property `spring.h2.console.path`.
 
 For security reasons, the console only permits local access but this behaviour can be overridden by setting `spring.h2.console.settings.web-allow-others` to `true`. To completely disable access to the web console, set the parameter `spring.h2.console.enabled` to `false` though you still can connect to the data store with an SQL client.
 

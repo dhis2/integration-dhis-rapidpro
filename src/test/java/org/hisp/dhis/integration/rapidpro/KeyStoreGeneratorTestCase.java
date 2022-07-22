@@ -25,19 +25,21 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro.expression;
+package org.hisp.dhis.integration.rapidpro;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Expression;
-import org.springframework.core.NestedExceptionUtils;
-import org.springframework.stereotype.Component;
+import org.junit.jupiter.api.Test;
 
-@Component
-public class RootExceptionMessageExpression implements Expression
+import java.io.File;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class KeyStoreGeneratorTestCase
 {
-    @Override
-    public <T> T evaluate( Exchange exchange, Class<T> type )
+    @Test
+    public void generate()
+        throws Exception
     {
-        return (T) NestedExceptionUtils.getRootCause( (Throwable) exchange.getProperty(Exchange.EXCEPTION_CAUGHT) ).getMessage();
+        new KeyStoreGenerator().generate();
+        assertTrue( new File( "tls.jks" ).exists() );
     }
 }
