@@ -58,11 +58,11 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
     @Override
     public void doConfigure()
     {
-        from( "jetty:{{http.endpoint.uri:http://0.0.0.0:8081/rapidProConnector}}/syncDhis2Users?httpMethodRestrict=POST" )
+        from( "servlet:sync?muteException=true" )
                 .precondition( "{{sync.rapidpro.contacts:true}}" )
                 .removeHeaders( "*" )
                 .to( "direct:sync" )
-                .setBody( constant( Map.of( "message", "Synchronised DHIS2 users with RapidPro" ) ) ).marshal().json();
+                .setBody( constant( Map.of( "message", "Synchronised RapidPro contacts with DHIS2 users" ) ) ).marshal().json();
 
         from( "quartz://sync?cron={{sync.schedule.expression:0 0 0 * * ?}}" )
             .precondition( "{{sync.rapidpro.contacts:true}}" )
@@ -70,7 +70,7 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
 
         from( "direct://sync" )
             .precondition( "{{sync.rapidpro.contacts:true}}" )
-            .routeId( "synchroniseDhis2UsersRoute" )
+            .routeId( "syncRoute" )
             .to( "direct:prepareRapidPro" )
             .setProperty( "orgUnitIdScheme", simple( "{{org.unit.id.scheme}}" ) )
             .toD( "dhis2://get/collection?path=users&fields=id,firstName,surname,phoneNumber,organisationUnits[${exchangeProperty.orgUnitIdScheme.toLowerCase()}~rename(id)]&filter=phoneNumber:!null:&itemType=org.hisp.dhis.api.model.v2_37_7.User&paging=false&client=#dhis2Client" )

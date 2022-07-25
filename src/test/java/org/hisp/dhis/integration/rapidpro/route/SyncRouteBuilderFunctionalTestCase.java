@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -45,14 +46,13 @@ import org.hisp.dhis.api.model.v2_37_7.User;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.annotation.DirtiesContext;
 
 import com.github.javafaker.Faker;
 
 public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Test
-    public void testContactSynchronisationFailsGivenThatSyncDhis2UsersPropertyIsFalse()
+    public void testContactSynchronisationFailsGivenThatSyncPropertyIsFalse()
     {
         System.setProperty( "sync.rapidpro.contacts", "false" );
         camelContext.start();
@@ -71,6 +71,25 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
             .body( "results.size()", equalTo( 10 ) )
             .body( "results[0].fields.dhis2_organisation_unit_id", equalTo( Environment.ORG_UNIT_ID ) );
+    }
+
+    @Test
+    public void testManualContactSynchronisation()
+    {
+        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
+        camelContext.start();
+
+        assertPreCondition();
+        String authorization = producerTemplate.requestBodyAndHeader(
+            rapidProConnectorHttpEndpointUri + "/sync?httpClientConfigurer=#selfSignedHttpClientConfigurer",
+            null,
+            "Authorization",
+            "Basic " + Base64.getEncoder().encodeToString( "dhis2rapidpro:dhis2rapidpro".getBytes() ), String.class );
+        assertEquals( "{\"message\":\"Synchronised RapidPro contacts with DHIS2 users\"}", authorization );
+
+        assertPostCondition();
+        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
+            .body( "results.size()", equalTo( 10 ) );
     }
 
     @Test
@@ -125,7 +144,8 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
             .body( "results[1].key", equalTo( "dhis2_organisation_unit_id" ) );
     }
 
-    private User updateDhis2User() {
+    private User updateDhis2User()
+    {
         List<User> users = new ArrayList<>();
         Iterable<User> usersIterable = Environment.DHIS2_CLIENT.get( "users" ).withFilter( "phoneNumber:!null" )
             .withFields( "*" ).withoutPaging()

@@ -13,12 +13,14 @@ public class SecurityConfig
     protected SecurityFilterChain filterChain( HttpSecurity http )
         throws Exception
     {
-        return http.authorizeRequests().anyRequest().authenticated()
+        return http.authorizeRequests().antMatchers( "/management/**", "/rapidProConnector/sync" ).authenticated()
+            .and().csrf().ignoringAntMatchers( "/management/h2-console/**" )
             .and()
             .formLogin()
             .and()
             .httpBasic()
             .and()
+            .headers().frameOptions().sameOrigin().and()
             .csrf().csrfTokenRepository( CookieCsrfTokenRepository.withHttpOnlyFalse() ).and().build();
     }
 }

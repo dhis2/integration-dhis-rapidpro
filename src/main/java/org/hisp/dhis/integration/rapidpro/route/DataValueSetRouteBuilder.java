@@ -52,7 +52,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
     @Override
     protected void doConfigure()
     {
-        from( "jetty:{{http.endpoint.uri:http://0.0.0.0:8081/rapidProConnector}}/webhook?httpMethodRestrict=POST" )
+        from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
             .removeHeaders( "*" )
             .to( "jms:queue:dhis2?exchangePattern=InOnly" );
 

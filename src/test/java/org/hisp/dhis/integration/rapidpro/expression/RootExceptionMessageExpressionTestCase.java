@@ -28,25 +28,31 @@
 package org.hisp.dhis.integration.rapidpro.expression;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Expression;
-import org.springframework.core.NestedExceptionUtils;
-import org.springframework.stereotype.Component;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.support.DefaultExchange;
+import org.junit.jupiter.api.Test;
 
-@Component
-public class RootExceptionMessageExpression implements Expression
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class RootExceptionMessageExpressionTestCase
 {
-    @Override
-    public <T> T evaluate( Exchange exchange, Class<T> type )
+    @Test
+    public void testEvaluateGivenExceptionWithNoCause()
     {
-        Throwable throwable = (Throwable) exchange.getProperty( Exchange.EXCEPTION_CAUGHT );
-        Throwable rootCause = NestedExceptionUtils.getRootCause( throwable );
-        if ( rootCause != null )
-        {
-            return (T) rootCause.getMessage();
-        }
-        else
-        {
-            return (T) throwable.getMessage();
-        }
+        RootExceptionMessageExpression rootExceptionMessageExpression = new RootExceptionMessageExpression();
+        Exchange exchange = new DefaultExchange( new DefaultCamelContext() );
+        exchange.setProperty( Exchange.EXCEPTION_CAUGHT, new Exception( "foo" ) );
+        String message = rootExceptionMessageExpression.evaluate( exchange, String.class );
+        assertEquals( "foo", message );
+    }
+
+    @Test
+    public void testEvaluateGivenExceptionWithCause()
+    {
+        RootExceptionMessageExpression rootExceptionMessageExpression = new RootExceptionMessageExpression();
+        Exchange exchange = new DefaultExchange( new DefaultCamelContext() );
+        exchange.setProperty( Exchange.EXCEPTION_CAUGHT, new Exception( new Exception( "foo" ) ) );
+        String message = rootExceptionMessageExpression.evaluate( exchange, String.class );
+        assertEquals( "foo", message );
     }
 }
