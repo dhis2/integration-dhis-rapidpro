@@ -12,12 +12,13 @@ public class ManagementDefaultSecurityConfig
 {
     @Bean
     @ConditionalOnProperty( value = "management.auth", havingValue = "basic", matchIfMissing = true )
-    protected SecurityFilterChain managementFilterChain( HttpSecurity http )
+    protected SecurityFilterChain filterChain( HttpSecurity http )
         throws Exception
     {
-        return http.antMatcher( "/management/**" ).antMatcher( "/rapidProConnector/sync" ).authorizeRequests()
+        return http.requestMatchers().antMatchers( "/management/**", "/rapidProConnector/sync", "/login", "/logout" )
+            .and().authorizeRequests()
             .anyRequest().authenticated()
-            .and().csrf().ignoringAntMatchers( "/management/h2-console/**" )
+            .and().csrf().ignoringAntMatchers( "/management/h2-console/**", "/rapidProConnector/sync" )
             .and()
             .formLogin()
             .and()

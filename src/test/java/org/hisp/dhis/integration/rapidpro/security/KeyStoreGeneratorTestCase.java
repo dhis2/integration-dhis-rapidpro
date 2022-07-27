@@ -25,22 +25,45 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro;
+package org.hisp.dhis.integration.rapidpro.security;
 
-import org.hisp.dhis.integration.rapidpro.security.KeyStoreGenerator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class KeyStoreGeneratorTestCase
 {
+    private KeyStoreGenerator keyStoreGenerator;
+
+    @BeforeEach
+    public void beforeEach()
+    {
+        new File( "tls.jks" ).delete();
+        keyStoreGenerator = new KeyStoreGenerator();
+    }
+
     @Test
-    public void generate()
+    public void testGenerate()
         throws Exception
     {
-        new KeyStoreGenerator().generate();
+        keyStoreGenerator.generate();
         assertTrue( new File( "tls.jks" ).exists() );
+    }
+
+    @Test
+    public void testGenerateReUsesKeyStoreGivenExistingKeyStore()
+        throws Exception
+    {
+        keyStoreGenerator.generate();
+        byte[] firstKeyStore = new FileInputStream( "tls.jks" ).readAllBytes();
+        keyStoreGenerator.generate();
+        byte[] secondKeyStore = new FileInputStream( "tls.jks" ).readAllBytes();
+        assertArrayEquals( firstKeyStore, secondKeyStore );
     }
 }

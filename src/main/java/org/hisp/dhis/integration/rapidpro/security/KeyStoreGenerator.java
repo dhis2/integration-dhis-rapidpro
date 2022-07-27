@@ -66,7 +66,7 @@ public class KeyStoreGenerator
         throws NoSuchAlgorithmException, NoSuchProviderException, OperatorCreationException, CertificateException,
         KeyStoreException, IOException
     {
-        if ( !new File( "dhis2rapidpro" ).exists() )
+        if ( !new File( "tls.jks" ).exists() )
         {
             LOGGER.info( "Generating key store..." );
 

@@ -48,7 +48,6 @@ public class SelfSignedHttpClientConfigurer implements HttpClientConfigurer
     @Override
     public void configureHttpClient( HttpClientBuilder clientBuilder )
     {
-
         try
         {
             final SSLContext sslContext = new SSLContextBuilder()
