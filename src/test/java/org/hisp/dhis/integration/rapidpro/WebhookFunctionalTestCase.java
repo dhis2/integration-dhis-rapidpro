@@ -7,6 +7,8 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Test
@@ -20,8 +22,10 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
 
-        producerTemplate.sendBody(
-            rapidProConnectorHttpEndpointUri + "/webhook?httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
-            webhookMessage);
+        String response = producerTemplate.requestBody(
+            rapidProConnectorHttpEndpointUri
+                + "/webhook?httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+            webhookMessage, String.class );
+        assertNull(response);
     }
 }
