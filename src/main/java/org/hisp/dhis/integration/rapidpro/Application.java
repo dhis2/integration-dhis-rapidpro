@@ -29,6 +29,7 @@ package org.hisp.dhis.integration.rapidpro;
 
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
 import org.bouncycastle.operator.OperatorCreationException;
+import org.hisp.dhis.integration.rapidpro.security.KeyStoreGenerator;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.springframework.beans.factory.annotation.Autowired;
