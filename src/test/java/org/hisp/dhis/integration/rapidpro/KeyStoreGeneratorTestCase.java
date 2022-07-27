@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import org.hisp.dhis.integration.rapidpro.security.KeyStoreGenerator;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;

@@ -80,12 +80,12 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
         camelContext.start();
 
         assertPreCondition();
-        String authorization = producerTemplate.requestBodyAndHeader(
+        String response = producerTemplate.requestBodyAndHeader(
             rapidProConnectorHttpEndpointUri + "/sync?httpClientConfigurer=#selfSignedHttpClientConfigurer",
             null,
             "Authorization",
             "Basic " + Base64.getEncoder().encodeToString( "dhis2rapidpro:dhis2rapidpro".getBytes() ), String.class );
-        assertEquals( "{\"message\":\"Synchronised RapidPro contacts with DHIS2 users\"}", authorization );
+        assertEquals( "{\"message\":\"Synchronised RapidPro contacts with DHIS2 users\"}", response );
 
         assertPostCondition();
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
