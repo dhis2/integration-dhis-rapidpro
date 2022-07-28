@@ -54,7 +54,8 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
     {
         from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
             .removeHeaders( "*" )
-            .to( "jms:queue:dhis2?exchangePattern=InOnly" );
+            .to( "jms:queue:dhis2?exchangePattern=InOnly" )
+            .setBody().simple( "${null}" );
 
         from( "timer://retry?fixedRate=true&period=5000" )
             .setBody( constant( "SELECT id, payload FROM DEAD_LETTER_CHANNEL WHERE status = 'RETRY' LIMIT 100" ) )
