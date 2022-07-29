@@ -27,7 +27,6 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import org.hisp.dhis.integration.rapidpro.route.SelfSignedHttpClientConfigurer;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StreamUtils;
 
