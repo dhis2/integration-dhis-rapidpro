@@ -25,34 +25,45 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro;
+package org.hisp.dhis.integration.rapidpro.security;
 
-import org.hisp.dhis.integration.rapidpro.route.SelfSignedHttpClientConfigurer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.util.StreamUtils;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
+import java.io.File;
+import java.io.FileInputStream;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
+public class KeyStoreGeneratorTestCase
 {
-    @Test
-    public void testWebhook()
-        throws IOException
+    private KeyStoreGenerator keyStoreGenerator;
+
+    @BeforeEach
+    public void beforeEach()
     {
-        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
-        camelContext.start();
+        new File( "tls.jks" ).delete();
+        keyStoreGenerator = new KeyStoreGenerator();
+    }
 
-        String webhookMessage = StreamUtils.copyToString(
-            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
-            Charset.defaultCharset() );
+    @Test
+    public void testGenerate()
+        throws Exception
+    {
+        keyStoreGenerator.generate();
+        assertTrue( new File( "tls.jks" ).exists() );
+    }
 
-        String response = producerTemplate.requestBody(
-            rapidProConnectorHttpEndpointUri
-                + "/webhook?httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
-            webhookMessage, String.class );
-        assertNull(response);
+    @Test
+    public void testGenerateReUsesKeyStoreGivenExistingKeyStore()
+        throws Exception
+    {
+        keyStoreGenerator.generate();
+        byte[] firstKeyStore = new FileInputStream( "tls.jks" ).readAllBytes();
+        keyStoreGenerator.generate();
+        byte[] secondKeyStore = new FileInputStream( "tls.jks" ).readAllBytes();
+        assertArrayEquals( firstKeyStore, secondKeyStore );
     }
 }

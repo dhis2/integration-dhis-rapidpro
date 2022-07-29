@@ -27,32 +27,40 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import org.hisp.dhis.integration.rapidpro.route.SelfSignedHttpClientConfigurer;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.specification.RequestSpecification;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.util.StreamUtils;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
+import static io.restassured.RestAssured.given;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
+@SpringBootTest( webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT )
+@ActiveProfiles( "test" )
+@TestPropertySource( properties = { "dhis2.api.url=", "rapidpro.api.token=", "rapidpro.api.url=",
+    "camel.springboot.auto-startup=false" } )
+@DirtiesContext( classMode = DirtiesContext.ClassMode.AFTER_CLASS )
+public class ManagementLogoutPageTestCase
 {
-    @Test
-    public void testWebhook()
-        throws IOException
+    @LocalServerPort
+    private int serverPort;
+
+    private RequestSpecification logoutPageRequestSpec;
+
+    @BeforeEach
+    public void beforeEach()
     {
-        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
-        camelContext.start();
+        logoutPageRequestSpec = new RequestSpecBuilder().setBaseUri(
+            String.format( "https://localhost:%s/logout", serverPort ) ).setRelaxedHTTPSValidation().build();
+    }
 
-        String webhookMessage = StreamUtils.copyToString(
-            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
-            Charset.defaultCharset() );
-
-        String response = producerTemplate.requestBody(
-            rapidProConnectorHttpEndpointUri
-                + "/webhook?httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
-            webhookMessage, String.class );
-        assertNull(response);
+    @Test
+    public void testGetLogOutPage()
+    {
+        given( logoutPageRequestSpec ).get().then().statusCode( 200 );
     }
 }
