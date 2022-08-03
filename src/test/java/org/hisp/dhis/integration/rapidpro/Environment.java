@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
@@ -51,13 +52,13 @@ import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.SocketUtils;
 import org.springframework.util.StreamUtils;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.utility.DockerImageName;
 
 import com.github.javafaker.Faker;
@@ -124,8 +125,8 @@ public final class Environment
             RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
 
             given( RAPIDPRO_REQUEST_SPEC ).contentType( ContentType.URLENC ).formParams(
-                Map.of( "first_name", "Alice", "last_name", "Wonderland", "email", "claude@dhis2.org", "password",
-                    "12345678", "timezone", "Europe/Berlin", "name", "dhis2" ) )
+                    Map.of( "first_name", "Alice", "last_name", "Wonderland", "email", "claude@dhis2.org", "password",
+                        "12345678", "timezone", "Europe/Berlin", "name", "dhis2" ) )
                 .when()
                 .post( "/org/signup/" ).then().statusCode( 302 );
 
@@ -174,10 +175,10 @@ public final class Environment
 
         DHIS2_CONTAINER = new GenericContainer<>(
             "dhis2/core:2.36.11.1-tomcat-8.5.34-jre8-alpine" )
-                .withClasspathResourceMapping( "dhis.conf", "/DHIS2_home/dhis.conf", BindMode.READ_WRITE )
-                .withNetwork( DHIS2_NETWORK ).withExposedPorts( 8080 )
-                .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
-                .withEnv( "WAIT_FOR_DB_CONTAINER", "db" + ":" + 5432 + " -t 0" );
+            .withClasspathResourceMapping( "dhis.conf", "/DHIS2_home/dhis.conf", BindMode.READ_WRITE )
+            .withNetwork( DHIS2_NETWORK ).withExposedPorts( 8080 )
+            .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
+            .withEnv( "WAIT_FOR_DB_CONTAINER", "db" + ":" + 5432 + " -t 0" );
     }
 
     private static void composeRapidProContainers()
@@ -187,50 +188,60 @@ public final class Environment
 
         REDIS_CONTAINER = new GenericContainer<>(
             DockerImageName.parse( "redis:6.2.6-alpine" ) )
-                .withNetworkAliases( "redis" )
-                .withExposedPorts( 6379 )
-                .withNetwork( RAPIDPRO_NETWORK );
+            .withNetworkAliases( "redis" )
+            .withExposedPorts( 6379 )
+            .withNetwork( RAPIDPRO_NETWORK );
 
         ELASTICSEARCH_CONTAINER = new GenericContainer<>(
             DockerImageName.parse( "elasticsearch:6.8.23" ) )
-                .withEnv( "discovery.type", "single-node" )
-                .withNetwork( RAPIDPRO_NETWORK )
-                .withNetworkAliases( "elasticsearch" )
-                .withExposedPorts( 9200 )
-                .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ) );
+            .withEnv( "discovery.type", "single-node" )
+            .withNetwork( RAPIDPRO_NETWORK )
+            .withNetworkAliases( "elasticsearch" )
+            .withExposedPorts( 9200 )
+            .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ) );
 
-        RAPIDPRO_CONTAINER = new GenericContainer<>(
-            DockerImageName.parse( "praekeltfoundation/rapidpro:v7.2.4" ) )
-                .dependsOn( rapidProDbContainer )
-                .withExposedPorts( 8000 )
-                .withNetwork( RAPIDPRO_NETWORK )
-                .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
-                .withEnv( "SECRET_KEY", "super-secret-key" )
-                .withEnv( "DATABASE_URL", "postgresql://temba:temba@db/temba" )
-                .withEnv( "REDIS_URL", "redis://redis:6379/0" )
-                .withEnv( "DJANGO_DEBUG", "on" )
-                .withEnv( "DOMAIN_NAME", "localhost" )
-                .withEnv( "MANAGEPY_COLLECTSTATIC", "on" )
-                .withEnv( "MANAGEPY_INIT_DB", "on" )
-                .withEnv( "MANAGEPY_MIGRATE", "on" )
-                .withEnv( "DJANGO_SUPERUSER_PASSWORD", "12345678" )
-                .withEnv( "MAILROOM_URL", "http://mailroom:8090" )
-                .withEnv( "MAILROOM_AUTH_TOKEN", "Gqcqvi2PGkoZMpQi" )
-                .withEnv( "ELASTICSEARCH_URL", "http://elasticsearch:9200" )
-                .withCommand( "sh", "-c",
-                    "sed -i '/CsrfViewMiddleware/s/^/#/g' temba/settings_common.py && /startup.sh" );
+        ImageFromDockerfile rapidproImage = new ImageFromDockerfile( "rapidpro:7.4.2", false ).withDockerfile(
+                Path.of( "rapidpro-docker/rapidpro/Dockerfile" ) ).withBuildArg( "RAPIDPRO_REPO", "rapidpro/rapidpro" )
+            .withBuildArg( "RAPIDPRO_VERSION", "v7.4.2" );
+
+        RAPIDPRO_CONTAINER = new GenericContainer<>( rapidproImage )
+            .dependsOn( rapidProDbContainer )
+            .withExposedPorts( 8000 )
+            .withNetwork( RAPIDPRO_NETWORK )
+            .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
+            .withEnv( "SECRET_KEY", "super-secret-key" )
+            .withEnv( "DATABASE_URL", "postgresql://temba:temba@db/temba" )
+            .withEnv( "REDIS_URL", "redis://redis:6379/0" )
+            .withEnv( "DJANGO_DEBUG", "on" )
+            .withEnv( "DOMAIN_NAME", "localhost" )
+            .withEnv( "MANAGEPY_COLLECTSTATIC", "on" )
+            .withEnv( "MANAGEPY_INIT_DB", "on" )
+            .withEnv( "MANAGEPY_MIGRATE", "on" )
+            .withEnv( "DJANGO_SUPERUSER_PASSWORD", "12345678" )
+            .withEnv( "MAILROOM_URL", "http://mailroom:8090" )
+            .withEnv( "MAILROOM_AUTH_TOKEN", "Gqcqvi2PGkoZMpQi" )
+            .withEnv( "ELASTICSEARCH_URL", "http://elasticsearch:9200" )
+            .withCommand( "sh", "-c",
+                "sed -i '/CsrfViewMiddleware/s/^/#/g' temba/settings_common.py && /startup.sh" );
+
+        ImageFromDockerfile mailroomImage = new ImageFromDockerfile( "mailroom:7.4.1", false ).withDockerfile(
+                Path.of( "rapidpro-docker/mailroom/Dockerfile" ) ).withBuildArg( "MAILROOM_REPO", "nyaruka/mailroom" )
+            .withBuildArg( "MAILROOM_VERSION", "7.4.1" );
 
         MAILROOM_CONTAINER = new GenericContainer<>(
-            DockerImageName.parse( "praekeltfoundation/mailroom:v7.0.1" ) )
-                .withNetwork( RAPIDPRO_NETWORK )
-                .withNetworkAliases( "mailroom" )
-                .withEnv( "MAILROOM_DOMAIN", "mailroom" )
-                .withEnv( "MAILROOM_ELASTIC", "http://elasticsearch:9200" )
-                .withEnv( "MAILROOM_ATTACHMENT_DOMAIN", "mailroom" )
-                .withEnv( "MAILROOM_AUTH_TOKEN", "Gqcqvi2PGkoZMpQi" )
-                .withEnv( "MAILROOM_DB", "postgres://temba:temba@db/temba?sslmode=disable" )
-                .withEnv( "MAILROOM_REDIS", "redis://redis:6379/0" )
-                .withCommand( "mailroom", "--address", "0.0.0.0" );
+            mailroomImage )
+            .withNetwork( RAPIDPRO_NETWORK )
+            .withExposedPorts( 8090 )
+            .withNetworkAliases( "mailroom" )
+            .withEnv( "MAILROOM_REPO", "nyaruka/mailroom" )
+            .withEnv( "MAILROOM_VERSION", "7.4.1" )
+            .withEnv( "MAILROOM_DOMAIN", "mailroom" )
+            .withEnv( "MAILROOM_ELASTIC", "http://elasticsearch:9200" )
+            .withEnv( "MAILROOM_ATTACHMENT_DOMAIN", "mailroom" )
+            .withEnv( "MAILROOM_AUTH_TOKEN", "Gqcqvi2PGkoZMpQi" )
+            .withEnv( "MAILROOM_DB", "postgres://temba:temba@db/temba?sslmode=disable" )
+            .withEnv( "MAILROOM_REDIS", "redis://redis:6379/0" )
+            .withCommand( "mailroom", "--address", "0.0.0.0" );
     }
 
     private static PostgreSQLContainer<?> newPostgreSQLContainer( String databaseName,
@@ -238,10 +249,10 @@ public final class Environment
     {
         return new PostgreSQLContainer<>(
             DockerImageName.parse( "postgis/postgis:12-3.2-alpine" ).asCompatibleSubstituteFor( "postgres" ) )
-                .withDatabaseName( databaseName )
-                .withNetworkAliases( "db" )
-                .withUsername( username )
-                .withPassword( password ).withNetwork( network );
+            .withDatabaseName( databaseName )
+            .withNetworkAliases( "db" )
+            .withUsername( username )
+            .withPassword( password ).withNetwork( network );
     }
 
     private static void addOrgUnitToAdminUser( String orgUnitId )
@@ -297,8 +308,8 @@ public final class Environment
         throws IOException
     {
         String metaData = StreamUtils.copyToString(
-            Thread.currentThread().getContextClassLoader().getResourceAsStream( "MLAG00_1.2.1_DHIS2.36.json" ),
-            Charset.defaultCharset() ).replaceAll( "<OU_LEVEL_DISTRICT_UID>", orgUnitLevelId )
+                Thread.currentThread().getContextClassLoader().getResourceAsStream( "MLAG00_1.2.1_DHIS2.36.json" ),
+                Charset.defaultCharset() ).replaceAll( "<OU_LEVEL_DISTRICT_UID>", orgUnitLevelId )
             .replaceAll( "<OU_LEVEL_FACILITY_UID>", orgUnitLevelId );
 
         WebMessage webMessage = DHIS2_CLIENT.post( "metadata" )
@@ -320,7 +331,8 @@ public final class Environment
     private static String createOrgUnit()
     {
         return (String) ((Map<String, Object>) DHIS2_CLIENT.post( "organisationUnits" ).withResource(
-            new OrganisationUnit().withName( "Acme" ).withCode( "ACME" ).withShortName( "Acme" ).withOpeningDate( new Date() ) ).transfer()
+                new OrganisationUnit().withName( "Acme" ).withCode( "ACME" ).withShortName( "Acme" )
+                    .withOpeningDate( new Date() ) ).transfer()
             .returnAs( WebMessage.class ).getResponse().get()).get( "uid" );
     }
 
