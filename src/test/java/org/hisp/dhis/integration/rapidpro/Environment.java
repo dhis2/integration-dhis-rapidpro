@@ -233,8 +233,6 @@ public final class Environment
             .withNetwork( RAPIDPRO_NETWORK )
             .withExposedPorts( 8090 )
             .withNetworkAliases( "mailroom" )
-            .withEnv( "MAILROOM_REPO", "nyaruka/mailroom" )
-            .withEnv( "MAILROOM_VERSION", "7.4.1" )
             .withEnv( "MAILROOM_DOMAIN", "mailroom" )
             .withEnv( "MAILROOM_ELASTIC", "http://elasticsearch:9200" )
             .withEnv( "MAILROOM_ATTACHMENT_DOMAIN", "mailroom" )
