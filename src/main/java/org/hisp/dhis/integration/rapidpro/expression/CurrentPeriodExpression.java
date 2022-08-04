@@ -49,7 +49,7 @@ public class CurrentPeriodExpression implements Expression
         FINANCIAL_YEAR_NOV
     }
 
-    @Value( "${report.period.type}" )
+    @Value( "${report.period.type:#{null}}" )
     private PeriodType periodType;
 
     @Value( "${report.period.offset:0}" )
