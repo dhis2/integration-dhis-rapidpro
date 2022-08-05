@@ -45,6 +45,7 @@ import org.hisp.dhis.api.model.v2_37_7.ImportReportWebMessageResponse;
 import org.hisp.dhis.api.model.v2_37_7.User;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
+import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
 import org.junit.jupiter.api.Test;
 
 import com.github.javafaker.Faker;
@@ -85,7 +86,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
             null,
             "Authorization",
             "Basic " + Base64.getEncoder().encodeToString( "dhis2rapidpro:dhis2rapidpro".getBytes() ), String.class );
-        assertEquals( "{\"message\":\"Synchronised RapidPro contacts with DHIS2 users\"}", response );
+        assertEquals( "<html><body>Synchronised RapidPro contacts with DHIS2 users</body></html>", response );
 
         assertPostCondition();
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()

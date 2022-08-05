@@ -41,13 +41,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import org.hisp.dhis.api.model.v2_37_7.DescriptiveWebMessage;
-import org.hisp.dhis.api.model.v2_37_7.OrganisationUnit;
-import org.hisp.dhis.api.model.v2_37_7.OrganisationUnitLevel;
-import org.hisp.dhis.api.model.v2_37_7.User;
-import org.hisp.dhis.api.model.v2_37_7.UserAuthorityGroup;
-import org.hisp.dhis.api.model.v2_37_7.UserCredentials;
-import org.hisp.dhis.api.model.v2_37_7.WebMessage;
+import org.hisp.dhis.api.model.v2_36_11.DescriptiveWebMessage;
+import org.hisp.dhis.api.model.v2_36_11.Notification;
+import org.hisp.dhis.api.model.v2_36_11.OrganisationUnit;
+import org.hisp.dhis.api.model.v2_36_11.OrganisationUnitLevel;
+import org.hisp.dhis.api.model.v2_36_11.User;
+import org.hisp.dhis.api.model.v2_36_11.UserAuthorityGroup;
+import org.hisp.dhis.api.model.v2_36_11.UserCredentials;
+import org.hisp.dhis.api.model.v2_36_11.WebMessage;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.slf4j.Logger;
@@ -81,9 +82,9 @@ public final class Environment
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Environment.class );
 
-    private static final Network RAPIDPRO_NETWORK = Network.builder().id( "rapidProNetwork" ).build();
+    private static final Network RAPIDPRO_NETWORK = Network.builder().build();
 
-    private static final Network DHIS2_NETWORK = Network.builder().id( "dhis2Network" ).build();
+    private static final Network DHIS2_NETWORK = Network.builder().build();
 
     private static GenericContainer<?> REDIS_CONTAINER;
 
@@ -149,7 +150,9 @@ public final class Environment
 
             importMetaData( Objects.requireNonNull( orgUnitLevelId ) );
             addOrgUnitToAdminUser( ORG_UNIT_ID );
+            addOrgUnitToDataSet( ORG_UNIT_ID );
             createDhis2Users( ORG_UNIT_ID );
+            runAnalytics();
         }
         catch ( Exception e )
         {
@@ -253,10 +256,44 @@ public final class Environment
             .withPassword( password ).withNetwork( network );
     }
 
+    public static void runAnalytics()
+        throws InterruptedException, IOException
+    {
+        DHIS2_CLIENT.post( "maintenance" ).withParameter( "cacheClear", "true" )
+            .transfer().close();
+
+        WebMessage webMessage = DHIS2_CLIENT.post( "resourceTables/analytics" ).transfer()
+            .returnAs( WebMessage.class );
+        String taskId = (String) ((Map<String, Object>) webMessage.getResponse().get()).get( "id" );
+        Notification notification = null;
+        while ( notification == null || !(Boolean) notification.getCompleted().get() )
+        {
+            Thread.sleep( 5000 );
+            Iterable<Notification> notifications = DHIS2_CLIENT.get( "system/tasks/ANALYTICS_TABLE/{taskId}",
+                taskId ).withoutPaging().transfer().returnAs( Notification.class );
+            if ( notifications.iterator().hasNext() )
+            {
+                notification = notifications.iterator().next();
+            }
+        }
+    }
+
     private static void addOrgUnitToAdminUser( String orgUnitId )
         throws IOException
     {
         DHIS2_CLIENT.post( "users/M5zQapPyTZI/organisationUnits/{organisationUnitId}", orgUnitId ).transfer().close();
+    }
+
+    private static void addOrgUnitToDataSet( String orgUnitId )
+        throws IOException, InterruptedException
+    {
+        DHIS2_CLIENT.post( "dataSets/qNtxTrp56wV/organisationUnits/{orgUnitId}", orgUnitId )
+            .transfer()
+            .close();
+
+        DHIS2_CLIENT.post( "dataSets/VEM58nY22sO/organisationUnits/{orgUnitId}", orgUnitId )
+            .transfer()
+            .close();
     }
 
     private static void createDhis2Users( String orgUnitId )
@@ -330,7 +367,7 @@ public final class Environment
     {
         return (String) ((Map<String, Object>) DHIS2_CLIENT.post( "organisationUnits" ).withResource(
                 new OrganisationUnit().withName( "Acme" ).withCode( "ACME" ).withShortName( "Acme" )
-                    .withOpeningDate( new Date() ) ).transfer()
+                    .withOpeningDate( new Date( 964866178L ) ) ).transfer()
             .returnAs( WebMessage.class ).getResponse().get()).get( "uid" );
     }
 

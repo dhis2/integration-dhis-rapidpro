@@ -81,6 +81,7 @@ public class AbstractFunctionalTestCase
     {
         System.clearProperty( "sync.rapidpro.contacts" );
         System.clearProperty( "org.unit.id.scheme" );
+        System.clearProperty( "reminder.data.set.ids" );
 
         jdbcTemplate.execute( "DELETE FROM DEAD_LETTER_CHANNEL" );
 

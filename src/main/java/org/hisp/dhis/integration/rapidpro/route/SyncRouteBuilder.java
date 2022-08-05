@@ -62,29 +62,30 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
                 .precondition( "{{sync.rapidpro.contacts:true}}" )
                 .removeHeaders( "*" )
                 .to( "direct:sync" )
-                .setBody( constant( Map.of( "message", "Synchronised RapidPro contacts with DHIS2 users" ) ) ).marshal().json();
+                .setBody( constant( "<html><body>Synchronised RapidPro contacts with DHIS2 users</body></html>" ) );
 
-        from( "quartz://sync?cron={{sync.schedule.expression:0 0 0 * * ?}}" )
+        from( "quartz://sync?cron={{sync.schedule.expression:0 0/30 * * * ?}}" )
             .precondition( "{{sync.rapidpro.contacts:true}}" )
             .to( "direct://sync" );
 
         from( "direct://sync" )
             .precondition( "{{sync.rapidpro.contacts:true}}" )
             .routeId( "syncRoute" )
+            .log( LoggingLevel.INFO, LOGGER, "Synchronising RapidPro contacts..." )
             .to( "direct:prepareRapidPro" )
             .setProperty( "orgUnitIdScheme", simple( "{{org.unit.id.scheme}}" ) )
             .toD( "dhis2://get/collection?path=users&fields=id,firstName,surname,phoneNumber,organisationUnits[${exchangeProperty.orgUnitIdScheme.toLowerCase()}~rename(id)]&filter=phoneNumber:!null:&itemType=org.hisp.dhis.api.model.v2_37_7.User&paging=false&client=#dhis2Client" )
             .setProperty( "dhis2Users", bodyIterableToListExpression )
             .setHeader( "Authorization", constant( "Token {{?rapidpro.api.token}}" ) )
             .setHeader( "CamelHttpMethod", constant( GET ) )
-            .toD( "{{rapidpro.api.url}}/contacts.json?group=${exchangeProperty.groupUuid}" ).unmarshal().json()
+            .toD( "{{?rapidpro.api.url}}/contacts.json?group=${exchangeProperty.groupUuid}" ).unmarshal().json()
             .setProperty( "rapidProContacts", simple( "${body}" ) ).process( newContactsProcessor )
             .split().body()
                 .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object", "application/x-java-object" ) )
                 .marshal().json().convertBodyTo( String.class ).setHeader( "CamelHttpMethod", constant( POST ) )
                 .setHeader( "Authorization", constant( "Token {{?rapidpro.api.token}}" ) )
                 .log( LoggingLevel.DEBUG, LOGGER, "Creating RapidPro contact => ${body}" )
-                .toD( "{{rapidpro.api.url}}/contacts.json" )
+                .toD( "{{?rapidpro.api.url}}/contacts.json" )
             .end()
             .process( modifyContactsProcessor )
             .split().body()
@@ -93,7 +94,7 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
                 .marshal().json().convertBodyTo( String.class ).setHeader( "CamelHttpMethod", constant( POST ) )
                 .setHeader( "Authorization", constant( "Token {{?rapidpro.api.token}}" ) )
                 .log( LoggingLevel.DEBUG, LOGGER, "Updating RapidPro contact => ${body}" )
-                .toD( "{{rapidpro.api.url}}/contacts.json?uuid=${header.rapidProUuid}" )
+                .toD( "{{?rapidpro.api.url}}/contacts.json?uuid=${header.rapidProUuid}" )
             .end()
             .log( LoggingLevel.INFO, LOGGER, "Completed synchronisation of RapidPro contacts with DHIS2 users" );
     }

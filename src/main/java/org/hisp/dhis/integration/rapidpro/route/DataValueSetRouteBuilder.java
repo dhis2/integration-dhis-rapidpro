@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.integration.rapidpro.expression.PeriodExpression;
+import org.hisp.dhis.integration.rapidpro.expression.CurrentPeriodExpression;
 import org.hisp.dhis.integration.rapidpro.expression.RootExceptionMessageExpression;
-import org.hisp.dhis.integration.rapidpro.processor.IdSchemeProcessor;
+import org.hisp.dhis.integration.rapidpro.processor.SetIdSchemeQueryParamProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,13 +41,13 @@ import org.springframework.stereotype.Component;
 public class DataValueSetRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
-    private PeriodExpression periodExpression;
+    private CurrentPeriodExpression currentPeriodExpression;
 
     @Autowired
     private RootExceptionMessageExpression rootExceptionMessageExpression;
 
     @Autowired
-    private IdSchemeProcessor idSchemeProcessor;
+    private SetIdSchemeQueryParamProcessor setIdSchemeQueryParamProcessor;
 
     @Override
     protected void doConfigure()
@@ -73,22 +73,20 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
         from( "jms:queue:dhis2" ).id( "dhis2Route" )
             .setHeader( "originalPayload", simple( "${body}" ) )
             .onException( Exception.class )
-            .to( "direct:dlq" )
+                .to( "direct:dlq" )
             .end()
-            .unmarshal()
-            .json( Map.class )
+            .unmarshal().json( Map.class )
             .enrich()
-            .simple(
-                "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${body['flow']['data_set_id']}&fields=code&client=#dhis2Client" )
-            .aggregationStrategy( ( oldExchange, newExchange ) -> {
-                oldExchange.getMessage().setHeader( "dataElementCodes",
-                    jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
-                return oldExchange;
+                .simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${body['flow']['data_set_id']}&fields=code&client=#dhis2Client" )
+                .aggregationStrategy( ( oldExchange, newExchange ) -> {
+                    oldExchange.getMessage().setHeader( "dataElementCodes",
+                        jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
+                    return oldExchange;
             } )
-            .setHeader( "period", periodExpression )
+            .setHeader( "period", currentPeriodExpression )
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
-            .process( idSchemeProcessor )
+            .process( setIdSchemeQueryParamProcessor )
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
             .to( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
 
