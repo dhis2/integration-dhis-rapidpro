@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
@@ -58,6 +59,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.utility.DockerImageName;
 
 import com.github.javafaker.Faker;
@@ -201,8 +203,11 @@ public final class Environment
             .withExposedPorts( 9200 )
             .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ) );
 
-        RAPIDPRO_CONTAINER = new GenericContainer<>(
-            DockerImageName.parse( "praekeltfoundation/rapidpro:v7.2.4" ) )
+        ImageFromDockerfile rapidproImage = new ImageFromDockerfile( "rapidpro:7.4.2", false ).withDockerfile(
+                Path.of( "rapidpro-docker/rapidpro/Dockerfile" ) ).withBuildArg( "RAPIDPRO_REPO", "rapidpro/rapidpro" )
+            .withBuildArg( "RAPIDPRO_VERSION", "v7.4.2" );
+
+        RAPIDPRO_CONTAINER = new GenericContainer<>( rapidproImage )
             .dependsOn( rapidProDbContainer )
             .withExposedPorts( 8000 )
             .withNetwork( RAPIDPRO_NETWORK )
@@ -222,9 +227,14 @@ public final class Environment
             .withCommand( "sh", "-c",
                 "sed -i '/CsrfViewMiddleware/s/^/#/g' temba/settings_common.py && /startup.sh" );
 
+        ImageFromDockerfile mailroomImage = new ImageFromDockerfile( "mailroom:7.4.1", false ).withDockerfile(
+                Path.of( "rapidpro-docker/mailroom/Dockerfile" ) ).withBuildArg( "MAILROOM_REPO", "nyaruka/mailroom" )
+            .withBuildArg( "MAILROOM_VERSION", "7.4.1" );
+
         MAILROOM_CONTAINER = new GenericContainer<>(
-            DockerImageName.parse( "praekeltfoundation/mailroom:v7.0.1" ) )
+            mailroomImage )
             .withNetwork( RAPIDPRO_NETWORK )
+            .withExposedPorts( 8090 )
             .withNetworkAliases( "mailroom" )
             .withEnv( "MAILROOM_DOMAIN", "mailroom" )
             .withEnv( "MAILROOM_ELASTIC", "http://elasticsearch:9200" )

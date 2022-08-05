@@ -26,7 +26,7 @@ DHIS2-to-RapidPro provides:
 ## Requirements
 
 * Java 11
-* RapidPro v7.2.4
+* RapidPro v7.4
 * DHIS >= v2.36
 
 ## Setup
