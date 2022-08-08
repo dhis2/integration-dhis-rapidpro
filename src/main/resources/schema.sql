@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS DEAD_LETTER_CHANNEL (
     payload                 VARCHAR                             NOT NULL,
     data_set_id             VARCHAR                             NOT NULL,
     report_period_offset    INTEGER                             NOT NULL,
+    organisation_unit_id    VARCHAR,
     error_message           VARCHAR                             NOT NULL,
     status                  ENUM('PROCESSED', 'RETRY', 'ERROR') NOT NULL,
     created_at              TIMESTAMP WITH TIME ZONE            NOT NULL DEFAULT CURRENT_TIMESTAMP,

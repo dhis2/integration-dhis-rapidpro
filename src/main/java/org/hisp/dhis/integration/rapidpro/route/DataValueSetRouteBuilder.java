@@ -67,6 +67,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
                 .log( LoggingLevel.INFO, LOGGER, "Retrying row with ID ${header.id}" )
                 .setHeader( "dataSetId", simple( "${body['DATA_SET_ID']}" ) )
                 .setHeader( "reportPeriodOffset", simple( "${body['REPORT_PERIOD_OFFSET']}" ) )
+                .setHeader( "orgUnitId", simple( "${body['ORGANISATION_UNIT_ID']}" ) )
                 .setBody( simple( "${body['PAYLOAD']}" ) )
                 .to( "jms:queue:dhis2?exchangePattern=InOnly" )
                 .setBody( constant( "UPDATE DEAD_LETTER_CHANNEL SET status = 'PROCESSED', last_processed_at = CURRENT_TIMESTAMP WHERE id = :?id" ) )
@@ -79,7 +80,9 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
                 .to( "direct:dlq" )
             .end()
             .unmarshal().json()
-            .choice().when( header( "reportPeriodOffset" ).isNull() ).setHeader( "reportPeriodOffset", constant( -1 ) ).end()
+            .choice().when( header( "reportPeriodOffset" ).isNull() )
+                .setHeader( "reportPeriodOffset", constant( -1 ) )
+            .end()
             .enrich()
                 .simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${headers['dataSetId']}&fields=code&client=#dhis2Client" )
                 .aggregationStrategy( ( oldExchange, newExchange ) -> {
@@ -87,19 +90,15 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
                         jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
                     return oldExchange;
             } )
-            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .enrich().simple( "{{rapidpro.api.url}}/contacts.json?uuid=${body[contact][uuid]}&httpMethod=GET" )
-            .aggregationStrategy( ( oldExchange, newExchange ) -> {
-                oldExchange.getMessage().setHeader( "orgUnitId",
-                    jsonpath( "$.results[0].fields.dhis2_organisation_unit_id" ).evaluate( newExchange, String.class ) );
-                return oldExchange;
-            } )
-            .enrich().simple( "{{rapidpro.api.url}}/contacts.json?uuid=${body[contact][uuid]}&httpMethod=GET" )
-            .aggregationStrategy( ( oldExchange, newExchange ) -> {
-                oldExchange.getMessage().setHeader( "orgUnitId",
+            .choice().when( header( "orgUnitId" ).isNull() )
+                .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+                .enrich().simple( "{{rapidpro.api.url}}/contacts.json?uuid=${body[contact][uuid]}&httpMethod=GET" )
+                .aggregationStrategy( ( oldExchange, newExchange ) -> {
+                    oldExchange.getMessage().setHeader( "orgUnitId",
                         jsonpath( "$.results[0].fields.dhis2_organisation_unit_id" ).evaluate( newExchange, String.class ) );
-                return oldExchange;
-            } )
+                    return oldExchange;
+                } )
+            .end()
             .enrich( "direct:computePeriod", ( oldExchange, newExchange ) -> {
                 oldExchange.getMessage().setHeader( "period", newExchange.getMessage().getBody() );
                 return oldExchange;
@@ -113,8 +112,11 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
         from( "direct:dlq" )
             .setHeader( "errorMessage", rootExceptionMessageExpression )
             .setHeader( "payload", header( "originalPayload" ) )
+            .choice().when( header( "orgUnitId" ).isNull() )
+                .setHeader( "orgUnitId", constant( null ) )
+            .end()
             .setBody( simple(
-                "INSERT INTO DEAD_LETTER_CHANNEL (payload, data_set_id, report_period_offset, status, error_message) VALUES (:?payload, :?dataSetId, :?reportPeriodOffset, 'ERROR', :?errorMessage)" ) )
+                "INSERT INTO DEAD_LETTER_CHANNEL (payload, data_set_id, report_period_offset, organisation_unit_id, status, error_message) VALUES (:?payload, :?dataSetId, :?reportPeriodOffset, :?orgUnitId, 'ERROR', :?errorMessage)" ) )
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
 
         from( "direct:computePeriod" )
