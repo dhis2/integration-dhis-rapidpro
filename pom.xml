@@ -5,8 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.hisp.dhis.integration</groupId>
-    <artifactId>rapidpro-connector</artifactId>
+    <artifactId>dhis2rapidpro</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -58,6 +59,19 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.3.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>war</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire.plugin.version}</version>
                 <configuration>
@@ -78,7 +92,7 @@
                             <goal>repackage</goal>
                         </goals>
                         <configuration>
-                            <finalName>dhis2-to-rapidpro</finalName>
+                            <finalName>dhis2rapidpro</finalName>
                         </configuration>
                     </execution>
                 </executions>
