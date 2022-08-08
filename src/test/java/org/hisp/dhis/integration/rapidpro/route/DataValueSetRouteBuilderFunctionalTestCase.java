@@ -71,8 +71,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBody( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ) );
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of("dataSetId", "qNtxTrp56wV") );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
                 "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
@@ -96,8 +96,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
 
-        assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBody( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, UUID.randomUUID() ) ) );
+        assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+            ExchangePattern.InOut, String.format( webhookMessage, UUID.randomUUID() ), Map.of("dataSetId", "qNtxTrp56wV") ) );
 
         List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
@@ -127,8 +127,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Charset.defaultCharset() );
 
         String wrongContactUuid = UUID.randomUUID().toString();
-        assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBody( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, wrongContactUuid ) ) );
+        assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+            ExchangePattern.InOut, String.format( webhookMessage, wrongContactUuid ), Map.of("dataSetId", "qNtxTrp56wV") ) );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
 
         String payload = (String) jdbcTemplate.queryForList( "SELECT payload FROM DEAD_LETTER_CHANNEL" ).get( 0 )
@@ -158,8 +158,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBody( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ) );
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of("dataSetId", "qNtxTrp56wV") );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
                 "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )

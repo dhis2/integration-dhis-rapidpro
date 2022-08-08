@@ -50,7 +50,7 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
 
         String response = producerTemplate.requestBody(
             rapidProConnectorHttpEndpointUri
-                + "/webhook?httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+                + "/webhook?dataSetId=qNtxTrp56wV&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
             webhookMessage, String.class );
         assertNull(response);
     }
