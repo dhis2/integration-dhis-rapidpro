@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,6 +38,7 @@ import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.camel.CamelExecutionException;
@@ -49,26 +51,31 @@ import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StreamUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Test
     public void testDataValueSetIsCreated()
         throws IOException
     {
         camelContext.start();
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
 
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBody( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) );
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
-            "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
             .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
             .transfer()
             .returnAs(
@@ -83,7 +90,6 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
     public void testRecordInDeadLetterChannelIsCreatedGivenErrorWhileCreatingDataValueSet()
         throws IOException
     {
-        System.setProperty( "org.unit.id.scheme", "bar" );
         camelContext.start();
 
         String webhookMessage = StreamUtils.copyToString(
@@ -91,18 +97,16 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Charset.defaultCharset() );
 
         assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBody( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) ) );
+            ExchangePattern.InOut, String.format( webhookMessage, UUID.randomUUID() ) ) );
 
         List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
         assertEquals( "ERROR", deadLetterChannel.get( 0 ).get( "STATUS" ) );
         assertEquals( deadLetterChannel.get( 0 ).get( "CREATED_AT" ),
             deadLetterChannel.get( 0 ).get( "LAST_PROCESSED_AT" ) );
-        assertEquals( String.format(
-            "Response{protocol=http/1.1, code=500, message=, url=http://localhost:%s/api/dataValueSets?dataElementIdScheme=CODE&orgUnitIdScheme=bar}",
-            Environment.DHIS2_CONTAINER.getFirstMappedPort() ),
+        assertEquals( "No results for path: $['results'][0]['fields']['dhis2_organisation_unit_id']",
             deadLetterChannel.get( 0 ).get( "ERROR_MESSAGE" ) );
-        Map<String, Object> payload = new ObjectMapper()
+        Map<String, Object> payload = objectMapper
             .readValue( (String) deadLetterChannel.get( 0 ).get( "PAYLOAD" ), Map.class );
         assertEquals( "John Doe", ((Map<String, Object>) payload.get( "contact" )).get( "name" ) );
     }
@@ -115,19 +119,24 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
 
-        System.setProperty( "org.unit.id.scheme", "bar" );
         camelContext.start();
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
 
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
 
+        String wrongContactUuid = UUID.randomUUID().toString();
         assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBody( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, Environment.ORG_UNIT_ID ) ) );
+            ExchangePattern.InOut, String.format( webhookMessage, wrongContactUuid ) ) );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
 
-        System.setProperty( "org.unit.id.scheme", "ID" );
-        jdbcTemplate.execute( "UPDATE DEAD_LETTER_CHANNEL SET STATUS = 'RETRY' WHERE STATUS = 'ERROR'" );
+        String payload = (String) jdbcTemplate.queryForList( "SELECT payload FROM DEAD_LETTER_CHANNEL" ).get( 0 )
+            .get( "PAYLOAD" );
+        jdbcTemplate.execute(
+            String.format( "UPDATE DEAD_LETTER_CHANNEL SET STATUS = 'RETRY', PAYLOAD = '%s' WHERE STATUS = 'ERROR'",
+                payload.replace( wrongContactUuid, contactUuid ) ) );
+
         spyEndpoint.await( 10, TimeUnit.SECONDS );
 
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
@@ -144,15 +153,16 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
     {
         System.setProperty( "org.unit.id.scheme", "CODE" );
         camelContext.start();
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
 
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBody( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, "ACME" ) );
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
-            "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
             .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
             .transfer()
             .returnAs(
@@ -160,5 +170,13 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
         DataValue__1 dataValue = dataValueSet.getDataValues().get().get( 0 );
         assertEquals( "2", dataValue.getValue().get() );
+    }
+
+    private String syncContactsAndFetchFirstContactUuid()
+    {
+        producerTemplate.sendBody( "direct:sync", null );
+
+        return given( RAPIDPRO_API_REQUEST_SPEC ).get( "/contacts.json?group=DHIS2" )
+            .then().extract().path( "results[0].uuid" );
     }
 }

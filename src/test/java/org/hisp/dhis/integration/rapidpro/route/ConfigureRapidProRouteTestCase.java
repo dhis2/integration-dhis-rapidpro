@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @UseAdviceWith
 @ActiveProfiles( "test" )
 @DirtiesContext( classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD )
-@TestPropertySource( properties = { "dhis2.api.url=", "rapidpro.api.url=mock:rapidpro" } )
+@TestPropertySource( properties = { "dhis2.api.url=", "rapidpro.api.url=mock:rapidpro", "rapidpro.api.token=" } )
 public class ConfigureRapidProRouteTestCase
 {
     @Autowired

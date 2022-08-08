@@ -1,6 +1,6 @@
-# DHIS2-to-RapidPro
+# DHIS-to-RapidPro
 
-![Build Status](https://github.com/dhis2/integration-dhis2-rapidpro/workflows/CI/badge.svg)
+![Build Status](https://github.com/dhis2/integration-dhis-rapidpro/workflows/CI/badge.svg)
 
 ## Table of Contents
 
@@ -15,12 +15,12 @@
 
 ## Introduction
 
-DHIS2-to-RapidPro is a stand-alone Java solution that integrates DHIS2 with RapidPro. [DHIS2](https://dhis2.org/about/) is an open-source information system primarily used in the health domain while [RapidPro](https://rapidpro.github.io/rapidpro/) is an open-source workflow engine for running mobile-based services. 
+DHIS-to-RapidPro is a stand-alone Java solution that integrates DHIS2 with RapidPro. [DHIS2](https://dhis2.org/about/) is an open-source information system primarily used in the health domain while [RapidPro](https://rapidpro.github.io/rapidpro/) is an open-source workflow engine for running mobile-based services. 
 
-DHIS2-to-RapidPro provides:
+DHIS-to-RapidPro provides:
 
 * Routine synchronisation of RapidPro contacts with DHIS2 users
-* A webhook consumer to receive aggregate reports from RapidPro and save them to DHIS2 as data value sets
+* A webhook consumer to receive aggregate reports from RapidPro and transfer them to DHIS2 as data value sets
 * Automated reminders to RapidPro contacts for overdue aggregate reports
 
 ## Requirements
@@ -41,7 +41,7 @@ DHIS2-to-RapidPro provides:
       ![Data Element](static/images/dhis2-data-element.png)
       >***IMPORTANT:*** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
 
-2. Create a [personal access token](https://docs.dhis2.org/en/use/user-guides/dhis-core-version-238/working-with-your-account/personal-access-tokens.html) or a user for DHIS2-to-RapidPro such that the application can authenticate on DHIS2 and has permissions to fetch all the DHIS2 users in addition to completing the applicable data sets for the relevant organisation units.
+2. Create a [personal access token](https://docs.dhis2.org/en/use/user-guides/dhis-core-version-238/working-with-your-account/personal-access-tokens.html) or a user for DHIS-to-RapidPro such that the application can authenticate on DHIS2 and has permissions to fetch all the DHIS2 users in addition to completing the applicable data sets for the relevant organisation units.
     >_Security note_: personal access token authentication is recommended over basic access authentication. 
 
 ### RapidPro Instructions
@@ -50,19 +50,18 @@ DHIS2-to-RapidPro provides:
 ![Flow Result](static/images/opd-attendance.png)
 The result name must match the code of the corresponding data element in DHIS2. Upper case letters in the data element code can be entered as lower case letters in the result name field while whitespaces and hyphens can be entered as underscores.
 
-2. Create a webhook call node in the RapidPro flow to dispatch the results to DHIS2-to-RapidPro:
+2. Create a webhook call node in the RapidPro flow to dispatch the results to DHIS-to-RapidPro:
    ![Flow Result](static/images/webhook.png)
    The webhook call node must be configured as follows:
    - HTTP method selected is `POST`
-   - URL field points to the DHIS2-to-RapidPro HTTPS address is listening on. The default HTTPS port number is _8443_ (see `server.port` in [Configuration](#configuration)): the path in the URL field is required to end with `/rapidProConnector/webhook`.
-   - HTTP body has the `dhis2_organisation_unit_id` property in the `contact` object and the `data_set_id` property in the `flow object`. For example:
+   - URL field points to the DHIS-to-RapidPro HTTPS address is listening on. The default HTTPS port number is _8443_ (see `server.port` in [Configuration](#configuration)): the path in the URL field is required to end with `/rapidProConnector/webhook`.
+   - HTTP body has the `data_set_id` property in the `flow object`. For example:
      ```
      @(json(object(
       "contact", object(
         "uuid", contact.uuid, 
         "name", contact.name, 
-        "urn", contact.urn,
-        "dhis2_organisation_unit_id", contact.dhis2_organisation_unit_id
+        "urn", contact.urn
       ),
       "flow", object(
         "uuid", run.flow.uuid, 
@@ -84,26 +83,24 @@ The result name must match the code of the corresponding data element in DHIS2. 
 
 ### *nix Usage Examples
 
-##### RapidPro Contact Synchronisation Enabled
+##### Contact synchronisation, aggregate report transfer, and auto-reminders
 ```shell
-./dhis2-to-rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.37.2/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 --report.period.type=weekly
+./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 --reminder.data.set.ids=V8MHeZHIrcP,PLq9sJluXvc,aLpVgfXiz0f --report.period.type=weekly
 ```
 
-##### RapidPro Contact Synchronisation Disabled
+##### Contact synchronisation and auto-reminders
 ```shell
-./dhis2-to-rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.37.2/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --report.period.type=weekly --sync.rapidpro.contacts=false
+./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 --reminder.data.set.ids=V8MHeZHIrcP,PLq9sJluXvc,aLpVgfXiz0f
 ```
 
-### Windows Usage Examples
-
-##### RapidPro Contact Synchronisation Enabled
+##### Contact synchronisation and aggregate report transfer
 ```shell
-java -jar dhis2-to-rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 --report.period.type=weekly
+./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 --report.period.type=weekly
 ```
 
-##### RapidPro Contact Synchronisation Disabled
+##### Contact synchronisation disabled and aggregate report transfer
 ```shell
-java -jar dhis2-to-rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --report.period.type=weekly --sync.rapidpro.contacts=false
+./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --report.period.type=weekly --sync.rapidpro.contacts=false --report.period.type=weekly
 ```
 
 ## Configuration
@@ -139,7 +136,7 @@ By order of precedence, a config property can be specified:
 
 ##  Monitoring & Management
 
-DHIS2-to-RapidPro exposes its metrics through JMX. A JMX client like [VisualVM](https://visualvm.github.io/) can be used to observe these metrics, however, DHIS2-to-RapidPro comes bundled with [Hawtio](https://hawt.io/) so that the system operator can easily monitor and manage runtime operations of the application without prior setup
+DHIS-to-RapidPro exposes its metrics through JMX. A JMX client like [VisualVM](https://visualvm.github.io/) can be used to observe these metrics, however, DHIS-to-RapidPro comes bundled with [Hawtio](https://hawt.io/) so that the system operator can easily monitor and manage runtime operations of the application without prior setup
 
 From the Hawtio web console, apart from browsing application logs, the system operator can manage queues and endpoints, observe the application health status and queued RapidPro webhook messages, collect CPU and memory diagnostics, as well as view application settings:
 
@@ -178,11 +175,11 @@ The H2 console is pre-configured to be available locally at [https://localhost:8
 
 For security reasons, the console only permits local access but this behaviour can be overridden by setting `spring.h2.console.settings.web-allow-others` to `true`. To completely disable access to the web console, set the parameter `spring.h2.console.enabled` to `false` though you still can connect to the data store with an SQL client.
 
-The H2 DBMS is embedded with DHIS2-to-RapidPro but the DBMS can be easily substituted with a more scalable JDBC-compliant DBMS such as PostgreSQL. You would need to change `spring.datasource.url` to a JDBC URL that references the new data store. Note: for a non-H2 data store, the data store vendor's JDBC driver needs to be added to the DHIS2-to-RapidPro's Java classpath.
+The H2 DBMS is embedded with DHIS-to-RapidPro but the DBMS can be easily substituted with a more scalable JDBC-compliant DBMS such as PostgreSQL. You would need to change `spring.datasource.url` to a JDBC URL that references the new data store. Note: for a non-H2 data store, the data store vendor's JDBC driver needs to be added to the DHIS-to-RapidPro's Java classpath.
 
 ## Troubleshooting Guide
 
-Unexpected behaviour in DHIS2-to-RapidPro typically manifests itself as:
+Unexpected behaviour in DHIS-to-RapidPro typically manifests itself as:
 
 * errors in the applications logs, or 
 * incorrect data (e.g., wrong organisation unit ID in the data value sets). 
@@ -195,7 +192,7 @@ SELECT * FROM DEAD_LETTER_CHANNEL
 WHERE status = 'ERROR' AND created_at > DATEADD('DAY', -1, CURRENT_TIMESTAMP())	
 ```
 
-The above SQL returns the reports that failed to be saved in DHIS2 within the last 24 hours. Zoom in the `ERROR_MESSAGE` column to read the technical error message that was given by the application. Should the error message describe a transient failure like a network timeout, the rule of thumb is for the system operator to update the `STATUS` column to `RETRY` in order for DHIS2-to-RapidPro to re-processes the failed reports:
+The above SQL returns the reports that failed to be saved in DHIS2 within the last 24 hours. Zoom in the `ERROR_MESSAGE` column to read the technical error message that was given by the application. Should the error message describe a transient failure like a network timeout, the rule of thumb is for the system operator to update the `STATUS` column to `RETRY` in order for DHIS-to-RapidPro to re-processes the failed reports:
 
 ```sql
 -- SQL is compatible with H2
@@ -204,7 +201,7 @@ SET status = 'RETRY'
 WHERE status = 'ERROR' AND created_at > DATEADD('DAY', -1, CURRENT_TIMESTAMP())	
 ```
 
-After issuing the above SQL, DHIS2-to-RapidPro will poll for the `RETRY` rows from the data store and re-process the reports. Processed rows, whether successful or not, are updated as `PROCESSED` and have their `LAST_PROCESSED_AT` column updated to the current time. If a retry fails, DHIS2-to-RapidPro will go on to insert a corresponding new `ERROR` row in the `DEAD_LETTER_CHANNEL` table. 
+After issuing the above SQL, DHIS-to-RapidPro will poll for the `RETRY` rows from the data store and re-process the reports. Processed rows, whether successful or not, are updated as `PROCESSED` and have their `LAST_PROCESSED_AT` column updated to the current time. If a retry fails, DHIS-to-RapidPro will go on to insert a corresponding new `ERROR` row in the `DEAD_LETTER_CHANNEL` table. 
 
 Non-transient failures such as validation errors require human intervention which might mean that you have to update the `payload` column value so that it conforms with the expected structure or data type:
 
@@ -214,6 +211,6 @@ SET status = 'RETRY', payload = '{"contact":{"name":"John Doe","urn":"tel:+12065
 WHERE id = '1023'
 ```
 
-Deeper technical problems might not manifest themselves up as failed reports but as exceptions in the application logs. The logs can be analysed from the [Hawtio web console](#monitoring--management) or directly from the log file `dhis-to-rapidpro.log`, situated in DHIS2-to-RapidPro's working directory. Keep an eye out for exceptions while combing through the logs. Any exception messages, including their stack traces, should be collected from the logs and further analysed. You may want to reach out to the [DHIS2 Community of Practice](https://community.dhis2.org/) for troubleshooting support. If all else fails, you can try increasing the log verbosity to zone in on the root cause. Setting the config property `logging.level.org.hisp.dhis.integration.rapidpro` to `DEBUG` will lead to the application printing more detail in the logs. As a last resort, though not recommended, you can have the application print even more detail by setting `logging.level.root` to `DEBUG`. 
+Deeper technical problems might not manifest themselves up as failed reports but as exceptions in the application logs. The logs can be analysed from the [Hawtio web console](#monitoring--management) or directly from the log file `dhis-to-rapidpro.log`, situated in DHIS-to-RapidPro's working directory. Keep an eye out for exceptions while combing through the logs. Any exception messages, including their stack traces, should be collected from the logs and further analysed. You may want to reach out to the [DHIS2 Community of Practice](https://community.dhis2.org/) for troubleshooting support. If all else fails, you can try increasing the log verbosity to zone in on the root cause. Setting the config property `logging.level.org.hisp.dhis.integration.rapidpro` to `DEBUG` will lead to the application printing more detail in the logs. As a last resort, though not recommended, you can have the application print even more detail by setting `logging.level.root` to `DEBUG`. 
 
 >***CAUTION:*** be careful about increasing log verbosity since it may quickly eat up the server's disk space if the application is logging to a file, the default behaviour.
