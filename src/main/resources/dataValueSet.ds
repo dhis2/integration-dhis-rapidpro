@@ -13,7 +13,7 @@ local dataValueFn(result) = [
 {
     completedDate: ds.datetime.now(),
     orgUnit: cml.header('orgUnitId'),
-    dataSet: payload.flow.data_set_id,
+    dataSet: cml.header('dataSetId'),
     period: cml.header('period'),
     dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), v.key)))
 }

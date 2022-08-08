@@ -72,6 +72,8 @@ public class DataValueSetDataSonnetTestCase
         exchange.getMessage().setHeader( "orgUnitId", "fdc6uOvgoji" );
         exchange.getMessage().setHeader( "dataElementCodes", dataElementCodes );
         exchange.getMessage().setHeader( "period", PeriodBuilder.weekOf( new Date( 1657626227255L ) ) );
+        exchange.getMessage().setHeader( "dataSetId", "qNtxTrp56wV" );
+
         exchange.getMessage().setBody( OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() ), Map.class ) );
