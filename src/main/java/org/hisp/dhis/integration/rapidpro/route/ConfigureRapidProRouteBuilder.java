@@ -51,32 +51,34 @@ public class ConfigureRapidProRouteBuilder extends AbstractRouteBuilder
     private void setUpCreateFieldsRoute()
     {
         from( "direct:createFieldsRoute" ).routeId( "createRapidProFieldsRoute" )
-            .setHeader( "Authorization", constant( "Token {{?rapidpro.api.token}}" ) )
-            .toD( "{{?rapidpro.api.url}}/fields.json?key=dhis2_organisation_unit_id&httpMethod=GET" )
+            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+            .toD( "{{rapidpro.api.url}}/fields.json?key=dhis2_organisation_unit_id&httpMethod=GET" )
             .setHeader( "fieldCount", jsonpath( "$.results.length()" ) )
             .choice().when().simple( "${header.fieldCount} == 0" )
                 .log( LoggingLevel.INFO, LOGGER, "Creating DHIS2 Organisation Unit ID fields in RapidPro..." )
                 .setBody( constant( Map.of( "label", "DHIS2 Organisation Unit ID", "value_type", "text" ) ) ).marshal()
-                .json().toD( "{{?rapidpro.api.url}}/fields.json?httpMethod=POST" )
+                .json().toD( "{{rapidpro.api.url}}/fields.json?httpMethod=POST" )
             .end()
-            .toD( "{{?rapidpro.api.url}}/fields.json?key=dhis2_user_id&httpMethod=GET" )
+            .toD( "{{rapidpro.api.url}}/fields.json?key=dhis2_user_id&httpMethod=GET" )
             .setHeader( "fieldCount", jsonpath( "$.results.length()" ) )
             .choice().when().simple( "${header.fieldCount} == 0" )
                 .log( LoggingLevel.INFO, LOGGER, "Creating DHIS2 User ID field in RapidPro..." )
                 .setBody( constant( Map.of( "label", "DHIS2 User ID", "value_type", "text" ) ) ).marshal().json()
-                .toD( "{{?rapidpro.api.url}}/fields.json?httpMethod=POST" )
+                .toD( "{{rapidpro.api.url}}/fields.json?httpMethod=POST" )
             .end();
     }
 
     private void setUpCreateGroupRoute()
     {
         from( "direct:createGroupRoute" ).routeId( "createRapidProGroupRoute" )
-            .setHeader( "Authorization", constant( "Token {{?rapidpro.api.token}}" ) )
-            .setHeader( "CamelHttpMethod", constant( GET ) ).toD( "{{?rapidpro.api.url}}/groups.json?name=DHIS2" )
-            .setHeader( "groupCount", jsonpath( "$.results.length()" ) ).choice().when()
-            .simple( "${header.groupCount} == 0" ).log( LoggingLevel.INFO, LOGGER, "Creating group in RapidPro..." )
-            .setHeader( "CamelHttpMethod", constant( POST ) ).setBody( constant( Map.of( "name", "DHIS2" ) ) ).marshal()
-            .json().toD( "{{?rapidpro.api.url}}/groups.json" ).setProperty( "groupUuid", jsonpath( "$.uuid" ) )
-            .otherwise().setProperty( "groupUuid", jsonpath( "$.results[0].uuid" ) );
+            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+            .toD( "{{rapidpro.api.url}}/groups.json?name=DHIS2&httpMethod=GET" )
+            .setHeader( "groupCount", jsonpath( "$.results.length()" ) )
+            .choice().when()
+                .simple( "${header.groupCount} == 0" ).log( LoggingLevel.INFO, LOGGER, "Creating group in RapidPro..." )
+                .setBody( constant( Map.of( "name", "DHIS2" ) ) ).marshal()
+                .json().toD( "{{rapidpro.api.url}}/groups.json?httpMethod=POST" ).setProperty( "groupUuid", jsonpath( "$.uuid" ) )
+            .otherwise()
+                .setProperty( "groupUuid", jsonpath( "$.results[0].uuid" ) );
     }
 }

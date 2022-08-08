@@ -61,13 +61,12 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             .setBody( constant( "SELECT id, payload FROM DEAD_LETTER_CHANNEL WHERE status = 'RETRY' LIMIT 100" ) )
             .to( "jdbc:dataSource" )
             .split().body()
-            .setHeader( "id", simple( "${body['ID']}" ) )
-            .log( LoggingLevel.INFO, LOGGER, "Retrying row with ID ${header.id}" )
-            .setBody( simple( "${body['PAYLOAD']}" ) )
-            .to( "jms:queue:dhis2?exchangePattern=InOnly" )
-            .setBody( constant(
-                "UPDATE DEAD_LETTER_CHANNEL SET status = 'PROCESSED', last_processed_at = CURRENT_TIMESTAMP WHERE id = :?id" ) )
-            .to( "jdbc:dataSource?useHeadersAsParameters=true" )
+                .setHeader( "id", simple( "${body['ID']}" ) )
+                .log( LoggingLevel.INFO, LOGGER, "Retrying row with ID ${header.id}" )
+                .setBody( simple( "${body['PAYLOAD']}" ) )
+                .to( "jms:queue:dhis2?exchangePattern=InOnly" )
+                .setBody( constant( "UPDATE DEAD_LETTER_CHANNEL SET status = 'PROCESSED', last_processed_at = CURRENT_TIMESTAMP WHERE id = :?id" ) )
+                .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .end();
 
         from( "jms:queue:dhis2" ).id( "dhis2Route" )
@@ -75,13 +74,20 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             .onException( Exception.class )
                 .to( "direct:dlq" )
             .end()
-            .unmarshal().json( Map.class )
+            .unmarshal().json()
             .enrich()
                 .simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${body['flow']['data_set_id']}&fields=code&client=#dhis2Client" )
                 .aggregationStrategy( ( oldExchange, newExchange ) -> {
                     oldExchange.getMessage().setHeader( "dataElementCodes",
                         jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
                     return oldExchange;
+            } )
+            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+            .enrich().simple( "{{rapidpro.api.url}}/contacts.json?uuid=${body[contact][uuid]}&httpMethod=GET" )
+            .aggregationStrategy( ( oldExchange, newExchange ) -> {
+                oldExchange.getMessage().setHeader( "orgUnitId",
+                    jsonpath( "$.results[0].fields.dhis2_organisation_unit_id" ).evaluate( newExchange, String.class ) );
+                return oldExchange;
             } )
             .setHeader( "period", currentPeriodExpression )
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
@@ -90,7 +96,8 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
             .to( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
 
-        from( "direct:dlq" ).setHeader( "errorMessage", rootExceptionMessageExpression )
+        from( "direct:dlq" )
+            .setHeader( "errorMessage", rootExceptionMessageExpression )
             .setHeader( "payload", header( "originalPayload" ) )
             .setBody( simple(
                 "INSERT INTO DEAD_LETTER_CHANNEL (payload, status, error_message) VALUES (:?payload, 'ERROR', :?errorMessage)" ) )

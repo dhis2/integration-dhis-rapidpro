@@ -69,6 +69,7 @@ public class DataValueSetDataSonnetTestCase
             "GEN_FUND_NEED" );
 
         Exchange exchange = new DefaultExchange( new DefaultCamelContext() );
+        exchange.getMessage().setHeader( "orgUnitId", "fdc6uOvgoji" );
         exchange.getMessage().setHeader( "dataElementCodes", dataElementCodes );
         exchange.getMessage().setHeader( "period", PeriodBuilder.weekOf( new Date( 1657626227255L ) ) );
         exchange.getMessage().setBody( OBJECT_MAPPER.readValue( StreamUtils.copyToString(
@@ -83,7 +84,7 @@ public class DataValueSetDataSonnetTestCase
     {
         assertNotNull( dataValueSet.get( "completedDate" ) );
         assertNull( dataValueSet.get( "attributeOptionCombo" ) );
-        assertEquals( "%s", dataValueSet.get( "orgUnit" ) );
+        assertEquals( "fdc6uOvgoji", dataValueSet.get( "orgUnit" ) );
         assertEquals( "qNtxTrp56wV", dataValueSet.get( "dataSet" ) );
         assertEquals( "2022W28", dataValueSet.get( "period" ) );
 
@@ -98,7 +99,7 @@ public class DataValueSetDataSonnetTestCase
         assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
 
         assertEquals(
-            "RapidPro contact details: \"{\\n \\\"name\\\": \\\"John Doe\\\",\\n \\\"urn\\\": \\\"tel:+12065551212\\\",\\n \\\"uuid\\\": \\\"fb3787ab-2eda-48a0-a2bc-e2ddadec1286\\\",\\n \\\"dhis2_organisation_unit_id\\\": \\\"%s\\\"\\n}\"",
+            "RapidPro contact details: \"{\\n \\\"name\\\": \\\"John Doe\\\",\\n \\\"urn\\\": \\\"tel:+12065551212\\\",\\n \\\"uuid\\\": \\\"%s\\\"\\n}\"",
             dataValues.get( 0 ).get( "comment" ) );
     }
 }
