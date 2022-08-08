@@ -64,6 +64,12 @@ public class Application
     @Value( "${dhis2.api.pat:#{null}}" )
     private String pat;
 
+    @Value( "${spring.datasource.url}" )
+    private String dataSourceUrl;
+
+    @Value( "${spring.datasource.driver-class-name}" )
+    private String dataSourceDriverClassName;
+
     @Autowired
     private ArtemisProperties artemisProperties;
 
@@ -117,8 +123,8 @@ public class Application
             try
             {
                 DatabaseStorageConfiguration databaseStorageConfiguration = new DatabaseStorageConfiguration();
-                databaseStorageConfiguration.setJdbcConnectionUrl( "jdbc:h2:./dhis2-rapidpro;AUTO_SERVER=TRUE" );
-                databaseStorageConfiguration.setJdbcDriverClassName( "org.h2.Driver" );
+                databaseStorageConfiguration.setJdbcConnectionUrl( dataSourceUrl );
+                databaseStorageConfiguration.setJdbcDriverClassName( dataSourceDriverClassName );
                 configuration.setStoreConfiguration( databaseStorageConfiguration );
                 configuration.setPersistenceEnabled( true );
             }

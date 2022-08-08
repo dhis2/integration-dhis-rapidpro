@@ -55,7 +55,7 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
         System.setProperty( "reminder.data.set.ids", "qNtxTrp56wV" );
         camelContext.start();
         producerTemplate.sendBody( "direct:reminders", null );
-        given( RAPIDPRO_API_REQUEST_SPEC ).get( "broadcasts.json" ).then().log().all()
+        given( RAPIDPRO_API_REQUEST_SPEC ).get( "broadcasts.json" ).then()
             .body( "results.size()", equalTo( 1 ) )
             .body( "results[0].text.eng", equalTo( "Malaria annual data report is overdue" ) );
     }

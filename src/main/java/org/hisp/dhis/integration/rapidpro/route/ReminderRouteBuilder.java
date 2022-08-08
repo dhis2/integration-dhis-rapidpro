@@ -58,7 +58,7 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
         from( "direct://reminders" )
             .log( LoggingLevel.INFO, LOGGER, "Reminding RapidPro contacts of overdue reports..." )
             .setProperty( "orgUnitIdScheme", simple( "{{org.unit.id.scheme}}" ) )
-            .choice().when( simple( "{{sync.rapidpro.contacts:true}} == true" ) )
+            .choice().when( simple( "{{sync.rapidpro.contacts}} == true" ) )
                 .to( "direct://sync" )
             .end()
             .enrich("direct://fetchContacts").setHeader( "contacts", simple( "${body}" ) )
@@ -80,8 +80,8 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
             .unmarshal().json( DataSet.class );
 
         from( "direct://fetchContacts" )
-            .setHeader( "Authorization", constant( "Token {{?rapidpro.api.token}}" ) )
-            .toD( "{{?rapidpro.api.url}}/contacts.json" ).unmarshal().json();
+            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+            .toD( "{{rapidpro.api.url}}/contacts.json?group=DHIS2&httpMethod=GET" ).unmarshal().json();
 
         from( "direct://fetchReportRate" )
             .process( setReportRateQueryParamProcessor )
@@ -92,9 +92,8 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
             .marshal().json()
             .removeHeaders( "*" )
             .setHeader( "Content-Type", constant( "application/json" ) )
-            .setHeader( "Authorization", constant( "Token {{?rapidpro.api.token}}" ) )
-            .setHeader( "CamelHttpMethod", constant( "POST" ) )
-            .toD( "{{?rapidpro.api.url}}/broadcasts.json" )
+            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+            .toD( "{{rapidpro.api.url}}/broadcasts.json?httpMethod=POST" )
             .log( LoggingLevel.INFO, LOGGER, "Overdue report reminder sent => ${body}" );
     }
 }
