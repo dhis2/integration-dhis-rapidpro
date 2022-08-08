@@ -30,8 +30,11 @@ package org.hisp.dhis.integration.rapidpro.route;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.camel.AggregationStrategy;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.integration.rapidpro.expression.CurrentPeriodExpression;
+import org.hisp.dhis.api.model.v2_36_11.DataSet;
+import org.hisp.dhis.integration.rapidpro.expression.CurrentPeriodProcessor;
 import org.hisp.dhis.integration.rapidpro.expression.RootExceptionMessageExpression;
 import org.hisp.dhis.integration.rapidpro.processor.SetIdSchemeQueryParamProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +44,7 @@ import org.springframework.stereotype.Component;
 public class DataValueSetRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
-    private CurrentPeriodExpression currentPeriodExpression;
+    private CurrentPeriodProcessor currentPeriodProcessor;
 
     @Autowired
     private RootExceptionMessageExpression rootExceptionMessageExpression;
@@ -53,17 +56,17 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
     protected void doConfigure()
     {
         from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
-            .removeHeaders( "*" )
             .to( "jms:queue:dhis2?exchangePattern=InOnly" )
             .setBody().simple( "${null}" );
 
         from( "timer://retry?fixedRate=true&period=5000" )
-            .setBody( constant( "SELECT id, payload, data_set_id FROM DEAD_LETTER_CHANNEL WHERE status = 'RETRY' LIMIT 100" ) )
+            .setBody( constant( "SELECT * FROM DEAD_LETTER_CHANNEL WHERE status = 'RETRY' LIMIT 100" ) )
             .to( "jdbc:dataSource" )
             .split().body()
                 .setHeader( "id", simple( "${body['ID']}" ) )
                 .log( LoggingLevel.INFO, LOGGER, "Retrying row with ID ${header.id}" )
                 .setHeader( "dataSetId", simple( "${body['DATA_SET_ID']}" ) )
+                .setHeader( "reportPeriodOffset", simple( "${body['REPORT_PERIOD_OFFSET']}" ) )
                 .setBody( simple( "${body['PAYLOAD']}" ) )
                 .to( "jms:queue:dhis2?exchangePattern=InOnly" )
                 .setBody( constant( "UPDATE DEAD_LETTER_CHANNEL SET status = 'PROCESSED', last_processed_at = CURRENT_TIMESTAMP WHERE id = :?id" ) )
@@ -76,6 +79,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
                 .to( "direct:dlq" )
             .end()
             .unmarshal().json()
+            .choice().when( header( "reportPeriodOffset" ).isNull() ).setHeader( "reportPeriodOffset", constant( -1 ) ).end()
             .enrich()
                 .simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${headers['dataSetId']}&fields=code&client=#dhis2Client" )
                 .aggregationStrategy( ( oldExchange, newExchange ) -> {
@@ -90,7 +94,16 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
                     jsonpath( "$.results[0].fields.dhis2_organisation_unit_id" ).evaluate( newExchange, String.class ) );
                 return oldExchange;
             } )
-            .setHeader( "period", currentPeriodExpression )
+            .enrich().simple( "{{rapidpro.api.url}}/contacts.json?uuid=${body[contact][uuid]}&httpMethod=GET" )
+            .aggregationStrategy( ( oldExchange, newExchange ) -> {
+                oldExchange.getMessage().setHeader( "orgUnitId",
+                        jsonpath( "$.results[0].fields.dhis2_organisation_unit_id" ).evaluate( newExchange, String.class ) );
+                return oldExchange;
+            } )
+            .enrich( "direct:computePeriod", ( oldExchange, newExchange ) -> {
+                oldExchange.getMessage().setHeader( "period", newExchange.getMessage().getBody() );
+                return oldExchange;
+            } )
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
             .process( setIdSchemeQueryParamProcessor )
@@ -101,7 +114,11 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             .setHeader( "errorMessage", rootExceptionMessageExpression )
             .setHeader( "payload", header( "originalPayload" ) )
             .setBody( simple(
-                "INSERT INTO DEAD_LETTER_CHANNEL (payload, data_set_id, status, error_message) VALUES (:?payload, :?dataSetId, 'ERROR', :?errorMessage)" ) )
+                "INSERT INTO DEAD_LETTER_CHANNEL (payload, data_set_id, report_period_offset, status, error_message) VALUES (:?payload, :?dataSetId, :?reportPeriodOffset, 'ERROR', :?errorMessage)" ) )
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
+
+        from( "direct:computePeriod" )
+            .toD( "dhis2://get/resource?path=dataSets/${headers['dataSetId']}&fields=periodType&client=#dhis2Client" )
+            .unmarshal().json( DataSet.class ).process( currentPeriodProcessor );
     }
 }

@@ -59,16 +59,17 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
     public void doConfigure()
     {
         from( "servlet:sync?muteException=true" )
-                .precondition( "{{sync.rapidpro.contacts}}" )
-                .removeHeaders( "*" )
-                .to( "direct:sync" )
-                .setBody( constant( "<html><body>Synchronised RapidPro contacts with DHIS2 users</body></html>" ) );
+            .precondition( "{{sync.rapidpro.contacts}}" )
+            .removeHeaders( "*" )
+            .to( "direct:sync" )
+            .setHeader( "Content-Type", constant( "text/html" ) )
+            .setBody( constant( "<html><body>Synchronised RapidPro contacts with DHIS2 users</body></html>" ) );
 
         from( "quartz://sync?cron={{sync.schedule.expression:0 0/30 * * * ?}}" )
             .precondition( "{{sync.rapidpro.contacts}}" )
-            .to( "direct://sync" );
+            .to( "direct:sync" );
 
-        from( "direct://sync" )
+        from( "direct:sync" )
             .precondition( "{{sync.rapidpro.contacts}}" )
             .routeId( "syncRoute" )
             .log( LoggingLevel.INFO, LOGGER, "Synchronising RapidPro contacts..." )

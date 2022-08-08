@@ -72,7 +72,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of("dataSetId", "qNtxTrp56wV") );
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of( "dataSetId", "qNtxTrp56wV" ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
                 "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
@@ -88,7 +88,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
     @Test
     public void testRecordInDeadLetterChannelIsCreatedGivenErrorWhileCreatingDataValueSet()
-        throws IOException
+        throws
+        IOException
     {
         camelContext.start();
 
@@ -97,7 +98,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Charset.defaultCharset() );
 
         assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, UUID.randomUUID() ), Map.of("dataSetId", "qNtxTrp56wV") ) );
+            ExchangePattern.InOut, String.format( webhookMessage, UUID.randomUUID() ),
+            Map.of( "dataSetId", "qNtxTrp56wV" ) ) );
 
         List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
@@ -113,7 +115,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
     @Test
     public void testRetryRecordInDeadLetterChannelIsReProcessed()
-        throws Exception
+        throws
+        Exception
     {
         AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
@@ -128,7 +131,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
         String wrongContactUuid = UUID.randomUUID().toString();
         assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, wrongContactUuid ), Map.of("dataSetId", "qNtxTrp56wV") ) );
+            ExchangePattern.InOut, String.format( webhookMessage, wrongContactUuid ),
+            Map.of( "dataSetId", "qNtxTrp56wV" ) ) );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
 
         String payload = (String) jdbcTemplate.queryForList( "SELECT payload FROM DEAD_LETTER_CHANNEL" ).get( 0 )
@@ -149,7 +153,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
     @Test
     public void testDataValueSetIsCreatedGivenOrgUnitIdSchemeIsCode()
-        throws IOException
+        throws
+        IOException
     {
         System.setProperty( "org.unit.id.scheme", "CODE" );
         camelContext.start();
@@ -159,7 +164,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of("dataSetId", "qNtxTrp56wV") );
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of( "dataSetId", "qNtxTrp56wV" ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
                 "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )

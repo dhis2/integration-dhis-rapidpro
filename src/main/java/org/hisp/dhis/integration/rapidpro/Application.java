@@ -94,11 +94,11 @@ public class Application
 
     @Bean
     public Dhis2Client dhis2Client()
-        throws Dhis2ToRapidProException
+        throws Dhis2RapidProException
     {
         if ( pat != null && (username != null || password != null) )
         {
-            throw new Dhis2ToRapidProException(
+            throw new Dhis2RapidProException(
                 "Bad DHIS2 configuration: PAT authentication and basic authentication are mutually exclusive" );
         }
 
@@ -112,7 +112,7 @@ public class Application
         }
         else
         {
-            throw new Dhis2ToRapidProException( "Bad DHIS2 configuration: missing authentication details" );
+            throw new Dhis2RapidProException( "Bad DHIS2 configuration: missing authentication details" );
         }
     }
 
