@@ -30,65 +30,54 @@ package org.hisp.dhis.integration.rapidpro.expression;
 import java.util.Date;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Expression;
+import org.apache.camel.Processor;
+import org.hisp.dhis.api.model.v2_36_11.DataSet;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CurrentPeriodExpression implements Expression
+public class CurrentPeriodProcessor implements Processor
 {
-    enum PeriodType
-    {
-        DAILY,
-        WEEKLY,
-        MONTHlY,
-        BI_MONTHLY,
-        SIX_MONTHLY,
-        YEARLY,
-        FINANCIAL_YEAR_NOV
-    }
-
-    @Value( "${report.period.type:#{null}}" )
-    private PeriodType periodType;
-
-    @Value( "${report.period.offset:0}" )
-    private int periodOffset;
-
     @Override
-    public <T> T evaluate( Exchange exchange, Class<T> type )
+    public void process( Exchange exchange )
+        throws Exception
     {
-        if ( periodType.equals( PeriodType.DAILY ) )
+        String periodType = (String) exchange.getMessage().getBody( DataSet.class ).getPeriodType().get();
+        int reportPeriodOffset = exchange.getMessage().getHeader( "reportPeriodOffset", Integer.class );
+        String period;
+        if ( periodType.equalsIgnoreCase( "Daily" ) )
         {
-            return (T) PeriodBuilder.dayOf( new Date(), periodOffset );
+            period = PeriodBuilder.dayOf( new Date(), reportPeriodOffset );
         }
-        else if ( periodType.equals( PeriodType.WEEKLY ) )
+        else if ( periodType.equalsIgnoreCase( "Weekly" ) )
         {
-            return (T) PeriodBuilder.weekOf( new Date(), periodOffset );
+            period = PeriodBuilder.weekOf( new Date(), reportPeriodOffset );
         }
-        else if ( periodType.equals( PeriodType.MONTHlY ) )
+        else if ( periodType.equalsIgnoreCase( "Monthly" ) )
         {
-            return (T) PeriodBuilder.monthOf( new Date(), periodOffset );
+            period = PeriodBuilder.monthOf( new Date(), reportPeriodOffset );
         }
-        else if ( periodType.equals( PeriodType.BI_MONTHLY ) )
+        else if ( periodType.equalsIgnoreCase( "BiMonthly" ) )
         {
-            return (T) PeriodBuilder.biMonthOf( new Date(), periodOffset );
+            period = PeriodBuilder.biMonthOf( new Date(), reportPeriodOffset );
         }
-        else if ( periodType.equals( PeriodType.SIX_MONTHLY ) )
+        else if ( periodType.equalsIgnoreCase( "SixMonthly" ) )
         {
-            return (T) PeriodBuilder.sixMonthOf( new Date(), periodOffset );
+            period = PeriodBuilder.sixMonthOf( new Date(), reportPeriodOffset );
         }
-        else if ( periodType.equals( PeriodType.YEARLY ) )
+        else if ( periodType.equalsIgnoreCase( "Yearly" ) )
         {
-            return (T) PeriodBuilder.yearOf( new Date(), periodOffset );
+            period = PeriodBuilder.yearOf( new Date(), reportPeriodOffset );
         }
-        else if ( periodType.equals( PeriodType.FINANCIAL_YEAR_NOV ) )
+        else if ( periodType.equalsIgnoreCase( "FinancialYearNov" ) )
         {
-            return (T) PeriodBuilder.financialYearStartingNovOf( new Date(), periodOffset );
+            period = PeriodBuilder.financialYearStartingNovOf( new Date(), reportPeriodOffset );
         }
         else
         {
             throw new UnsupportedOperationException();
         }
+
+        exchange.getMessage().setBody( period );
     }
 }

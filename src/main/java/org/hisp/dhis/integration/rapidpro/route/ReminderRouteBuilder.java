@@ -50,45 +50,47 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
         from( "servlet:reminders?muteException=true" )
             .removeHeaders( "*" )
             .to( "direct:reminders" )
+            .setHeader( "Content-Type", constant( "text/html" ) )
             .setBody( constant( "<html><body>Sent reminders of overdue reports</body></html>" ) );
 
         from( "quartz://reminders?cron={{reminder.schedule.expression:0 0 9 ? * *}}" )
-            .to( "direct://reminders" );
+            .to( "direct:reminders" );
 
-        from( "direct://reminders" )
+        from( "direct:reminders" )
             .log( LoggingLevel.INFO, LOGGER, "Reminding RapidPro contacts of overdue reports..." )
             .setProperty( "orgUnitIdScheme", simple( "{{org.unit.id.scheme}}" ) )
             .choice().when( simple( "{{sync.rapidpro.contacts}} == true" ) )
-                .to( "direct://sync" )
+                .to( "direct:sync" )
             .end()
-            .enrich("direct://fetchContacts").setHeader( "contacts", simple( "${body}" ) )
+            .enrich("direct:fetchContacts").setHeader( "contacts", simple( "${body}" ) )
             .split( simple( "{{reminder.data.set.ids:}}" ), "," )
-                .to( "direct://fetchDataSet" ).setHeader( "dataSet", simple(  "${body}" ) )
-                .to( "direct://fetchReportRate" )
+                .to( "direct:fetchDataSet" ).setHeader( "dataSet", simple(  "${body}" ) )
+                .to( "direct:fetchReportRate" )
                 .split( simple( "${body.rows.get}" ) )
                     .choice().when( simple( "${body[4]} != '100.0'" ) )
                         .process( prepareBroadcastProcessor )
                         .split(simple(  "${body}" ))
-                            .to( "direct://sendBroadcast" )
+                            .to( "direct:sendBroadcast" )
                         .end()
                     .end()
                 .end()
             .end();
 
-        from( "direct://fetchDataSet" )
-            .toD( "dhis2://get/resource?path=dataSets/${body}&fields=id,name,periodType,organisationUnits[id,${exchangeProperty.orgUnitIdScheme.toLowerCase()}]&client=#dhis2Client" )
+        from( "direct:fetchDataSet" )
+            .toD(
+                "dhis2://get/resource?path=dataSets/${body}&fields=id,name,periodType,organisationUnits[id,${exchangeProperty.orgUnitIdScheme.toLowerCase()}]&client=#dhis2Client" )
             .unmarshal().json( DataSet.class );
 
-        from( "direct://fetchContacts" )
+        from( "direct:fetchContacts" )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .toD( "{{rapidpro.api.url}}/contacts.json?group=DHIS2&httpMethod=GET" ).unmarshal().json();
 
-        from( "direct://fetchReportRate" )
+        from( "direct:fetchReportRate" )
             .process( setReportRateQueryParamProcessor )
             .to( "dhis2://get/resource?path=analytics&client=#dhis2Client" )
             .unmarshal().json( ListGrid.class );
 
-        from( "direct://sendBroadcast" )
+        from( "direct:sendBroadcast" )
             .marshal().json()
             .removeHeaders( "*" )
             .setHeader( "Content-Type", constant( "application/json" ) )
