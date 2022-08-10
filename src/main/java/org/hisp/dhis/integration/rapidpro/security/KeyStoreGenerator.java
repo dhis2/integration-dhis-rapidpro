@@ -27,22 +27,11 @@
  */
 package org.hisp.dhis.integration.rapidpro.security;
 
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -57,14 +46,25 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 @Component
 public class KeyStoreGenerator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( KeyStoreGenerator.class );
 
     public void generate()
-        throws NoSuchAlgorithmException, NoSuchProviderException, OperatorCreationException, CertificateException,
-        KeyStoreException, IOException
+        throws MalformedURLException
     {
         if ( !new File( "tls.jks" ).exists() )
         {
@@ -75,31 +75,40 @@ public class KeyStoreGenerator
                 Security.insertProviderAt( new BouncyCastleProvider(), 2 );
             }
 
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance( "RSA", "BC" );
-            keyPairGenerator.initialize( 1024, new SecureRandom() );
+            try
+            {
+                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance( "RSA", "BC" );
+                keyPairGenerator.initialize( 1024, new SecureRandom() );
 
-            java.security.KeyPair keyPair = keyPairGenerator.generateKeyPair();
+                java.security.KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
-            X500Name x500Name = new X500Name( "CN=dhis-to-rapidpro, O=HISP Centre, L=Oslo, C=NO" );
-            SubjectPublicKeyInfo pubKeyInfo = SubjectPublicKeyInfo.getInstance( keyPair.getPublic().getEncoded() );
-            final Date start = new Date();
-            final Date until = Date.from(
-                LocalDate.now().plus( 100, ChronoUnit.YEARS ).atStartOfDay().toInstant( ZoneOffset.UTC ) );
-            final X509v3CertificateBuilder certificateBuilder = new X509v3CertificateBuilder( x500Name,
-                new BigInteger( 10, new SecureRandom() ), start, until, x500Name, pubKeyInfo
-            );
-            ContentSigner contentSigner = new JcaContentSignerBuilder( "SHA256WithRSA" ).build( keyPair.getPrivate() );
+                X500Name x500Name = new X500Name( "CN=dhis-to-rapidpro, O=HISP Centre, L=Oslo, C=NO" );
+                SubjectPublicKeyInfo pubKeyInfo = SubjectPublicKeyInfo.getInstance( keyPair.getPublic().getEncoded() );
+                final Date start = new Date();
+                final Date until = Date.from(
+                    LocalDate.now().plus( 100, ChronoUnit.YEARS ).atStartOfDay().toInstant( ZoneOffset.UTC ) );
+                final X509v3CertificateBuilder certificateBuilder = new X509v3CertificateBuilder( x500Name,
+                    new BigInteger( 10, new SecureRandom() ), start, until, x500Name, pubKeyInfo );
 
-            Certificate certificate = new JcaX509CertificateConverter().setProvider( new BouncyCastleProvider() )
-                .getCertificate( certificateBuilder.build( contentSigner ) );
+                ContentSigner contentSigner = new JcaContentSignerBuilder( "SHA256WithRSA" ).build(
+                    keyPair.getPrivate() );
 
-            KeyStore keyStore = KeyStore.getInstance( "JKS" );
-            keyStore.load( null, null );
-            keyStore.setKeyEntry( "dhis2rapidpro", keyPair.getPrivate(), "secret".toCharArray(),
-                new Certificate[] { certificate } );
-            keyStore.store( new FileOutputStream( "tls.jks" ), "secret".toCharArray() );
+                Certificate certificate = new JcaX509CertificateConverter().setProvider( new BouncyCastleProvider() )
+                    .getCertificate( certificateBuilder.build( contentSigner ) );
 
-            LOGGER.info( "Key store generated at " + new File( "tls.jks" ).toURI().toURL().toExternalForm() );
+                KeyStore keyStore = KeyStore.getInstance( "JKS" );
+                keyStore.load( null, null );
+                keyStore.setKeyEntry( "dhis2rapidpro", keyPair.getPrivate(), "secret".toCharArray(),
+                    new Certificate[] { certificate } );
+                keyStore.store( new FileOutputStream( "tls.jks" ), "secret".toCharArray() );
+
+                LOGGER.info( "Key store generated at " + new File( "tls.jks" ).toURI().toURL().toExternalForm() );
+            }
+            catch ( CertificateException | OperatorCreationException | KeyStoreException | IOException
+                | NoSuchAlgorithmException | NoSuchProviderException e )
+            {
+                LOGGER.error( e.getMessage(), e );
+            }
         }
         else
         {
