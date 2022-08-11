@@ -27,6 +27,15 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import java.io.IOException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.cert.CertificateException;
+import java.sql.SQLException;
+
+import javax.annotation.PostConstruct;
+
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.hisp.dhis.integration.rapidpro.security.KeyStoreGenerator;
@@ -39,18 +48,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.cert.CertificateException;
-import java.sql.SQLException;
-
 @SpringBootApplication
-public class Application
+public class Application extends SpringBootServletInitializer
 {
     @Value( "${dhis2.api.url}" )
     private String baseApiUrl;
@@ -78,7 +80,11 @@ public class Application
 
     @PostConstruct
     public void postConstruct()
-        throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchProviderException,
+        throws CertificateException,
+        NoSuchAlgorithmException,
+        KeyStoreException,
+        IOException,
+        NoSuchProviderException,
         OperatorCreationException
     {
         keyStoreGenerator.generate();
