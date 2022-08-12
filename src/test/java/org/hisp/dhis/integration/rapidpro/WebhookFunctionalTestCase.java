@@ -27,22 +27,31 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import org.apache.camel.builder.AdviceWith;
+import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StreamUtils;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Test
     public void testWebhook()
-        throws IOException
+        throws
+        Exception
     {
+        AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         camelContext.start();
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
 
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
@@ -51,7 +60,11 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
         String response = producerTemplate.requestBody(
             rapidProConnectorHttpEndpointUri
                 + "/webhook?dataSetId=qNtxTrp56wV&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
-            webhookMessage, String.class );
+            String.format(  webhookMessage, contactUuid ), String.class );
+
         assertNull(response);
+
+        spyEndpoint.await( 10, TimeUnit.SECONDS );
+        assertEquals( 1, spyEndpoint.getReceivedCounter() );
     }
 }

@@ -63,7 +63,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
     @Test
     public void testDataValueSetIsCreated()
-        throws IOException
+        throws
+        IOException
     {
         camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
@@ -84,6 +85,31 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         DataValue__1 dataValue = dataValueSet.getDataValues().get().get( 0 );
         assertEquals( "2", dataValue.getValue().get() );
         assertTrue( dataValue.getComment().isPresent() );
+    }
+
+    @Test
+    public void testScheduledReportDelivery()
+        throws
+        Exception
+    {
+        System.setProperty( "report.delivery.schedule.expression", "0 0/2 * * * ?" );
+        AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+
+        camelContext.start();
+
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2?exchangePattern=InOnly",
+            String.format( webhookMessage, contactUuid ), Map.of( "dataSetId", "qNtxTrp56wV" ) );
+
+        spyEndpoint.await( 1, TimeUnit.MINUTES );
+        assertEquals( 0, spyEndpoint.getReceivedCounter() );
+        spyEndpoint.await( 1, TimeUnit.MINUTES );
+        assertEquals( 1, spyEndpoint.getReceivedCounter() );
     }
 
     @Test
@@ -123,8 +149,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         spyEndpoint.setExpectedCount( 1 );
 
         camelContext.start();
-        String contactUuid = syncContactsAndFetchFirstContactUuid();
 
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
@@ -158,8 +184,8 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
     {
         System.setProperty( "org.unit.id.scheme", "CODE" );
         camelContext.start();
-        String contactUuid = syncContactsAndFetchFirstContactUuid();
 
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
@@ -175,13 +201,5 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
         DataValue__1 dataValue = dataValueSet.getDataValues().get().get( 0 );
         assertEquals( "2", dataValue.getValue().get() );
-    }
-
-    private String syncContactsAndFetchFirstContactUuid()
-    {
-        producerTemplate.sendBody( "direct:sync", null );
-
-        return given( RAPIDPRO_API_REQUEST_SPEC ).get( "/contacts.json?group=DHIS2" )
-            .then().extract().path( "results[0].uuid" );
     }
 }

@@ -82,8 +82,10 @@ public class AbstractFunctionalTestCase
         System.clearProperty( "sync.rapidpro.contacts" );
         System.clearProperty( "org.unit.id.scheme" );
         System.clearProperty( "reminder.data.set.ids" );
+        System.clearProperty( "report.delivery.schedule.expression" );
 
-        jdbcTemplate.execute( "DELETE FROM DEAD_LETTER_CHANNEL" );
+        jdbcTemplate.execute( "TRUNCATE TABLE DEAD_LETTER_CHANNEL" );
+        jdbcTemplate.execute( "TRUNCATE TABLE MESSAGES" );
 
         for ( Map<String, Object> contact : fetchRapidProContacts() )
         {
@@ -104,5 +106,13 @@ public class AbstractFunctionalTestCase
             .body().as(
                 Map.class );
         return (List<Map<String, Object>>) contacts.get( "results" );
+    }
+
+    protected String syncContactsAndFetchFirstContactUuid()
+    {
+        producerTemplate.sendBody( "direct:sync", null );
+
+        return given( RAPIDPRO_API_REQUEST_SPEC ).get( "/contacts.json?group=DHIS2" )
+            .then().extract().path( "results[0].uuid" );
     }
 }
