@@ -121,7 +121,7 @@ public class DataValueSetDataSonnetTestCase
             Charset.defaultCharset() ), Map.class );
 
         ((Map<String, Object>) ((Map<String, Object>) payload.get( "results" )).get( "mal_llin_distr_pw" )).put(
-            "category", "FbLZS3ueWbQ" );
+            "category", "Male" );
 
         exchange.getMessage().setBody( payload );
 
@@ -144,7 +144,7 @@ public class DataValueSetDataSonnetTestCase
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
 
         assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
-        assertEquals( "FbLZS3ueWbQ", dataValues.get( 2 ).get( "categoryOptionCombo" ) );
+        assertEquals( "Male", dataValues.get( 2 ).get( "categoryOptionCombo" ) );
         assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
 
         assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
