@@ -92,7 +92,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         throws
         Exception
     {
-        System.setProperty( "report.delivery.schedule.expression", "0 0/2 * * * ?" );
+        System.setProperty( "report.delivery.schedule.expression", "0 0/3 * * * ?" );
         AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
@@ -108,7 +108,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
         spyEndpoint.await( 1, TimeUnit.MINUTES );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
-        spyEndpoint.await( 1, TimeUnit.MINUTES );
+        spyEndpoint.await( 2, TimeUnit.MINUTES );
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
     }
 
