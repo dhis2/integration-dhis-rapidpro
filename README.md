@@ -66,7 +66,8 @@ Set a code in each data element that will capture an aggregate value from RapidP
 
 1. Save each incoming aggregate value in the RapidPro flow to a result like what is shown next:
    ![Flow Result](static/images/opd-attendance.png)
-   The result name must match the code of the corresponding data element in DHIS2. Upper case letters in the data element code can be entered as lower case letters in the result name field while whitespaces and hyphens can be entered as underscores.
+   The result name must match the code of the corresponding data element in DHIS2. Upper case letters in the data element code can be entered as lower case letters in the result name field while whitespaces and hyphens can be entered as underscores. A category option combination ID for the value is specified in the `categorize as` field:
+   ![Flow Result](static/images/opd-attendance-category.png)
 
 2. Create a webhook call node in the RapidPro flow to dispatch the results to DHIS-to-RapidPro:
    ![Flow Result](static/images/webhook.png)

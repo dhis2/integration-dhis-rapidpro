@@ -53,13 +53,16 @@ public class DataValueSetDataSonnetTestCase
 {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private Map dataValueSet;
+    private DefaultExchange exchange;
+
+    private DatasonnetExpression dsExpression;
 
     @BeforeEach
     public void beforeEach()
-        throws IOException
+        throws
+        IOException
     {
-        DatasonnetExpression dsExpression = new DatasonnetExpression( "resource:classpath:dataValueSet.ds" );
+        dsExpression = new DatasonnetExpression( "resource:classpath:dataValueSet.ds" );
         dsExpression.setResultType( Map.class );
         dsExpression.setBodyMediaType( "application/x-java-object" );
         dsExpression.setOutputMediaType( "application/x-java-object" );
@@ -68,22 +71,25 @@ public class DataValueSetDataSonnetTestCase
             "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL_PEOPLE_PROT_BY_IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT",
             "GEN_FUND_NEED" );
 
-        Exchange exchange = new DefaultExchange( new DefaultCamelContext() );
+        exchange = new DefaultExchange( new DefaultCamelContext() );
         exchange.getMessage().setHeader( "orgUnitId", "fdc6uOvgoji" );
         exchange.getMessage().setHeader( "dataElementCodes", dataElementCodes );
         exchange.getMessage().setHeader( "period", PeriodBuilder.weekOf( new Date( 1657626227255L ) ) );
         exchange.getMessage().setHeader( "dataSetId", "qNtxTrp56wV" );
 
-        exchange.getMessage().setBody( OBJECT_MAPPER.readValue( StreamUtils.copyToString(
-            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
-            Charset.defaultCharset() ), Map.class ) );
-
-        dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
     }
 
     @Test
     public void testMapping()
+        throws
+        IOException
     {
+        exchange.getMessage().setBody( OBJECT_MAPPER.readValue( StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() ), Map.class ) );
+
+        Map dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
+
         assertNotNull( dataValueSet.get( "completedDate" ) );
         assertNull( dataValueSet.get( "attributeOptionCombo" ) );
         assertEquals( "fdc6uOvgoji", dataValueSet.get( "orgUnit" ) );
@@ -98,6 +104,51 @@ public class DataValueSetDataSonnetTestCase
         assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
         assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
         assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
+        assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
+
+        assertEquals(
+            "RapidPro contact details: \"{\\n \\\"name\\\": \\\"John Doe\\\",\\n \\\"urn\\\": \\\"tel:+12065551212\\\",\\n \\\"uuid\\\": \\\"%s\\\"\\n}\"",
+            dataValues.get( 0 ).get( "comment" ) );
+    }
+
+    @Test
+    public void testMappingGivenCategory()
+        throws
+        IOException
+    {
+        Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() ), Map.class );
+
+        ((Map<String, Object>) ((Map<String, Object>) payload.get( "results" )).get( "mal_llin_distr_pw" )).put(
+            "category", "FbLZS3ueWbQ" );
+
+        exchange.getMessage().setBody( payload );
+
+        Map dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
+
+        assertNotNull( dataValueSet.get( "completedDate" ) );
+        assertNull( dataValueSet.get( "attributeOptionCombo" ) );
+        assertEquals( "fdc6uOvgoji", dataValueSet.get( "orgUnit" ) );
+        assertEquals( "qNtxTrp56wV", dataValueSet.get( "dataSet" ) );
+        assertEquals( "2022W28", dataValueSet.get( "period" ) );
+
+        List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );
+
+        assertEquals( "GEN_EXT_FUND", dataValues.get( 0 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 0 ).get( "categoryOptionCombo" ) );
+        assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
+
+        assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 1 ).get( "categoryOptionCombo" ) );
+        assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
+
+        assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
+        assertEquals( "FbLZS3ueWbQ", dataValues.get( 2 ).get( "categoryOptionCombo" ) );
+        assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
+
+        assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 3 ).get( "categoryOptionCombo" ) );
         assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
 
         assertEquals(
