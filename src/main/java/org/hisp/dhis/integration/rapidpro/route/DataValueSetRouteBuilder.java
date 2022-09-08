@@ -30,7 +30,7 @@ package org.hisp.dhis.integration.rapidpro.route;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.camel.ExchangePattern;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.hisp.dhis.api.model.v2_36_11.DataSet;
 import org.hisp.dhis.integration.rapidpro.processor.CurrentPeriodProcessor;
@@ -55,6 +55,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
     protected void doConfigure()
     {
         from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
+            .removeHeader( Exchange.HTTP_URI )
             .to( "jms:queue:dhis2?exchangePattern=InOnly" )
             .setBody().simple( "${null}" );
 
@@ -84,7 +85,6 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
 
         from( "direct:dhis2" )
             .id( "dhis2Route" )
-            .removeHeaders( "*", "dataSetId", "orgUnitId", "reportPeriodOffset" )
             .setHeader( "originalPayload", simple( "${body}" ) )
             .onException( Exception.class )
                 .to( "direct:dlq" )
@@ -109,6 +109,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
                             newExchange.getMessage().getBody( String.class ) ) );
                         oldExchange.getMessage().setHeader( "orgUnitId",
                             jsonpath( "$.results[0].fields.dhis2_organisation_unit_id" ).evaluate( newExchange, String.class ) );
+                        oldExchange.getMessage().removeHeader( "Authorization" );
                         return oldExchange;
                     } )
                 .end()
@@ -120,8 +121,9 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
             .process( setIdSchemeQueryParamProcessor )
+            .marshal().json().transform().body(String.class)
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
-            .to( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
+            .toD( "{{report.destination.endpoint}}" );
 
         from( "direct:dlq" )
             .setHeader( "errorMessage", rootExceptionMessageExpression )
