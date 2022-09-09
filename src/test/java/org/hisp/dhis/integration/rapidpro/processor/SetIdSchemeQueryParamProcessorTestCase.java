@@ -24,6 +24,6 @@ public class SetIdSchemeQueryParamProcessorTestCase
 
         Map queryParams = exchange.getMessage().getHeader( "CamelDhis2.queryParams", Map.class );
         assertEquals( "CODE", queryParams.get( "dataElementIdScheme" ) );
-        assertEquals( "NAME", queryParams.get( "categoryOptionComboIdScheme" ) );
+        assertEquals( "CODE", queryParams.get( "categoryOptionComboIdScheme" ) );
     }
 }
