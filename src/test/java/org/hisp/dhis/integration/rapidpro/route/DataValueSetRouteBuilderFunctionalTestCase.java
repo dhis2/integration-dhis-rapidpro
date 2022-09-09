@@ -44,11 +44,13 @@ import java.util.concurrent.TimeUnit;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.AdviceWith;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
 import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
+import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,6 +112,45 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
         spyEndpoint.await( 2, TimeUnit.MINUTES );
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
+    }
+
+    @Test
+    public void testReportDestinationEndpoint()
+        throws
+        Exception
+    {
+        System.setProperty( "report.destination.endpoint",
+            "https://localhost:" + serverPort + "/rapidProConnector/legacy?skipRequestHeaders=true&httpClientConfigurer=#selfSignedHttpClientConfigurer&authenticationPreemptive=true&authMethod=Basic&authUsername=alice&authPassword=secret&httpMethod=POST" );
+
+        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
+        camelContext.addRoutes( new RouteBuilder()
+        {
+            @Override
+            public void configure()
+            {
+                from( "servlet:legacy?httpMethodRestrict=POST" ).to( "mock:destination" ).removeHeaders( "*" );
+            }
+        } );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:destination", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+
+        camelContext.start();
+
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+        producerTemplate.requestBody(
+            rapidProConnectorHttpEndpointUri
+                + "/webhook?aParam=aValue&dataSetId=qNtxTrp56wV&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+            String.format( webhookMessage, contactUuid ), String.class );
+
+        spyEndpoint.await( 5000, TimeUnit.MILLISECONDS );
+
+        assertEquals( 1, spyEndpoint.getReceivedCounter() );
+        Map<String, Object> headers = spyEndpoint.getReceivedExchanges().get( 0 ).getMessage().getHeaders();
+        assertEquals( "aValue", headers.get( "aParam" ) );
+        assertEquals( "Basic YWxpY2U6c2VjcmV0", headers.get( "Authorization" ) );
     }
 
     @Test

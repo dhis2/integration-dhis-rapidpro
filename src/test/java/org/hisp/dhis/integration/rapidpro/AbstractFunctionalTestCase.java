@@ -83,6 +83,7 @@ public class AbstractFunctionalTestCase
         System.clearProperty( "org.unit.id.scheme" );
         System.clearProperty( "reminder.data.set.ids" );
         System.clearProperty( "report.delivery.schedule.expression" );
+        System.clearProperty( "report.destination.endpoint" );
 
         jdbcTemplate.execute( "TRUNCATE TABLE DEAD_LETTER_CHANNEL" );
         jdbcTemplate.execute( "TRUNCATE TABLE MESSAGES" );
