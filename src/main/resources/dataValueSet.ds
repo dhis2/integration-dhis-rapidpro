@@ -16,5 +16,5 @@ local dataValueFn(result) = [
     orgUnit: cml.header('orgUnitId'),
     dataSet: cml.header('dataSetId'),
     period: cml.header('period'),
-    dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), v.key)))
+    dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) if ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), v.key) then true else native.logWarning("Ignoring data value because of unknown DHIS2 data element code '" + v.key + "'")))
 }
