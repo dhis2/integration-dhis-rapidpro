@@ -41,9 +41,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
-import com.datasonnet.header.Header;
-import com.datasonnet.spi.DataFormatService;
-import com.datasonnet.spi.Library;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ValueBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -53,17 +50,17 @@ import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import sjsonnet.Val;
+
+import com.datasonnet.header.Header;
+import com.datasonnet.spi.DataFormatService;
+import com.datasonnet.spi.Library;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class DataValueSetDataSonnetTestCase
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( DataValueSetDataSonnetTestCase.class );
-
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private DefaultExchange exchange;
@@ -74,8 +71,7 @@ public class DataValueSetDataSonnetTestCase
 
     @BeforeEach
     public void beforeEach()
-        throws
-        IOException
+        throws IOException
     {
         dsExpression = new DatasonnetExpression( "resource:classpath:dataValueSet.ds" );
         dsExpression.setResultType( Map.class );
@@ -138,8 +134,7 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMappingOmitsWarningWhenAllDataElementCodesAreKnown()
-        throws
-        IOException
+        throws IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
@@ -155,8 +150,7 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMapping()
-        throws
-        IOException
+        throws IOException
     {
         exchange.getMessage().setBody( OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
@@ -190,8 +184,7 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMappingGivenCategory()
-        throws
-        IOException
+        throws IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
