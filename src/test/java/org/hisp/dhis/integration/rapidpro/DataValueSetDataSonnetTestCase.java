@@ -33,29 +33,40 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 
-import org.apache.camel.Exchange;
+import com.datasonnet.header.Header;
+import com.datasonnet.spi.DataFormatService;
+import com.datasonnet.spi.Library;
+import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ValueBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.language.DatasonnetExpression;
 import org.apache.camel.support.DefaultExchange;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import sjsonnet.Val;
 
 public class DataValueSetDataSonnetTestCase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( DataValueSetDataSonnetTestCase.class );
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private DefaultExchange exchange;
 
     private DatasonnetExpression dsExpression;
+
+    private CountDownLatch logCountDownLatch;
 
     @BeforeEach
     public void beforeEach()
@@ -71,12 +82,76 @@ public class DataValueSetDataSonnetTestCase
             "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL_PEOPLE_PROT_BY_IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT",
             "GEN_FUND_NEED" );
 
-        exchange = new DefaultExchange( new DefaultCamelContext() );
+        logCountDownLatch = new CountDownLatch( 1 );
+        CamelContext camelContext = new DefaultCamelContext();
+        camelContext.getRegistry().bind( "native", new Library()
+        {
+            @Override
+            public String namespace()
+            {
+                return "native";
+            }
+
+            @Override
+            public Map<String, Val.Func> functions( DataFormatService dataFormats, Header header )
+            {
+                Map<String, Val.Func> answer = new HashMap<>();
+                answer.put( "logWarning", makeSimpleFunc(
+                    Collections.singletonList( "key" ), new Function<List<Val>, Val>()
+                    {
+                        @Override
+                        public Val apply( List<Val> vals )
+                        {
+                            logCountDownLatch.countDown();
+                            return null;
+                        }
+                    } ) );
+
+                return answer;
+            }
+
+            @Override
+            public Map<String, Val.Obj> modules( DataFormatService dataFormats, Header header )
+            {
+                return Collections.emptyMap();
+            }
+
+            @Override
+            public Set<String> libsonnets()
+            {
+                return Collections.emptySet();
+            }
+        } );
+
+        exchange = new DefaultExchange( camelContext );
         exchange.getMessage().setHeader( "orgUnitId", "fdc6uOvgoji" );
         exchange.getMessage().setHeader( "dataElementCodes", dataElementCodes );
         exchange.getMessage().setHeader( "period", PeriodBuilder.weekOf( new Date( 1657626227255L ) ) );
         exchange.getMessage().setHeader( "dataSetId", "qNtxTrp56wV" );
 
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        logCountDownLatch = new CountDownLatch( 1 );
+    }
+
+    @Test
+    public void testMappingOmitsWarningWhenAllDataElementCodesAreKnown()
+        throws
+        IOException
+    {
+        Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() ), Map.class );
+
+        ((Map<String, Object>) payload.get( "results" )).remove( "msg" );
+
+        exchange.getMessage().setBody( payload );
+
+        new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
+        assertEquals( 1, logCountDownLatch.getCount() );
     }
 
     @Test
@@ -97,6 +172,7 @@ public class DataValueSetDataSonnetTestCase
         assertEquals( "2022W28", dataValueSet.get( "period" ) );
 
         List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );
+        assertEquals( 4, dataValues.size() );
         assertEquals( "GEN_EXT_FUND", dataValues.get( 0 ).get( "dataElement" ) );
         assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
         assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
@@ -109,6 +185,8 @@ public class DataValueSetDataSonnetTestCase
         assertEquals(
             "RapidPro contact details: \"{\\n \\\"name\\\": \\\"John Doe\\\",\\n \\\"urn\\\": \\\"tel:+12065551212\\\",\\n \\\"uuid\\\": \\\"%s\\\"\\n}\"",
             dataValues.get( 0 ).get( "comment" ) );
+
+        assertEquals( 0, logCountDownLatch.getCount() );
     }
 
     @Test
@@ -154,5 +232,7 @@ public class DataValueSetDataSonnetTestCase
         assertEquals(
             "RapidPro contact details: \"{\\n \\\"name\\\": \\\"John Doe\\\",\\n \\\"urn\\\": \\\"tel:+12065551212\\\",\\n \\\"uuid\\\": \\\"%s\\\"\\n}\"",
             dataValues.get( 0 ).get( "comment" ) );
+
+        assertEquals( 0, logCountDownLatch.getCount() );
     }
 }

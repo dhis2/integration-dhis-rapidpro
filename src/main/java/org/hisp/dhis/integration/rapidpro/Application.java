@@ -27,17 +27,8 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import java.io.IOException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.cert.CertificateException;
-import java.sql.SQLException;
-
-import javax.annotation.PostConstruct;
-
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
-import org.bouncycastle.operator.OperatorCreationException;
+import org.apache.camel.CamelContext;
 import org.hisp.dhis.integration.rapidpro.security.KeyStoreGenerator;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
@@ -50,6 +41,10 @@ import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCu
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
+
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.sql.SQLException;
 
 @SpringBootApplication
 public class Application extends SpringBootServletInitializer
@@ -78,20 +73,21 @@ public class Application extends SpringBootServletInitializer
     @Autowired
     private KeyStoreGenerator keyStoreGenerator;
 
+    @Autowired
+    private CamelContext camelContext;
+
     @PostConstruct
     public void postConstruct()
-        throws CertificateException,
-        NoSuchAlgorithmException,
-        KeyStoreException,
-        IOException,
-        NoSuchProviderException,
-        OperatorCreationException
+        throws
+        IOException
     {
         keyStoreGenerator.generate();
+        camelContext.getRegistry().bind( "native", new NativeDataSonnetLibrary() );
     }
 
     public static void main( String[] args )
-        throws SQLException
+        throws
+        SQLException
     {
         SpringApplication springApplication = new SpringApplication( Application.class );
         springApplication.setBannerMode( Banner.Mode.OFF );
@@ -100,7 +96,8 @@ public class Application extends SpringBootServletInitializer
 
     @Bean
     public Dhis2Client dhis2Client()
-        throws Dhis2RapidProException
+        throws
+        Dhis2RapidProException
     {
         if ( pat != null && (username != null || password != null) )
         {
