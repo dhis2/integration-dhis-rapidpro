@@ -24,7 +24,7 @@ DHIS-to-RapidPro provides:
 
 * Routine synchronisation of RapidPro contacts with DHIS2 users
 * A webhook consumer to receive aggregate reports from RapidPro and transfer them to DHIS2 as data value sets
-* Automated reminders to RapidPro contacts for overdue aggregate reports
+* Automated reminders for RapidPro contacts when aggregate reports are overdue
 
 ## Requirements
 
