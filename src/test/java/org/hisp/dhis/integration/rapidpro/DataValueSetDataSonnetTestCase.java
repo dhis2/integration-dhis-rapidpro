@@ -33,9 +33,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Function;
 
 import com.datasonnet.header.Header;
 import com.datasonnet.spi.DataFormatService;
@@ -97,14 +101,9 @@ public class DataValueSetDataSonnetTestCase
             {
                 Map<String, Val.Func> answer = new HashMap<>();
                 answer.put( "logWarning", makeSimpleFunc(
-                    Collections.singletonList( "key" ), new Function<List<Val>, Val>()
-                    {
-                        @Override
-                        public Val apply( List<Val> vals )
-                        {
-                            logCountDownLatch.countDown();
-                            return null;
-                        }
+                    Collections.singletonList( "key" ), vals -> {
+                        logCountDownLatch.countDown();
+                        return null;
                     } ) );
 
                 return answer;
