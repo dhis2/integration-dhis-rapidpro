@@ -98,7 +98,15 @@ The interval rate at which contacts are reminded is expressed as a cron expressi
 
 ## Getting Started
 
-### *nix Usage Examples
+### Shell
+
+The JAR distribution of DHIS-to-RapidPro allows you to run it a stand-alone program. On *nix operating systems, you can execute DHIS-to-RapidPro from your terminal like so:
+
+```shell
+./dhis2rapidpro.jar
+```
+
+The above command will give an error since no parameters are provided. The next commands are common DHIS-to-RapidPro *nix usage examples:
 
 ##### Basic usage
 ```shell
@@ -114,6 +122,37 @@ The interval rate at which contacts are reminded is expressed as a cron expressi
 ```shell
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --sync.rapidpro.contacts=false
 ```
+
+To execute DHIS-to-RapidPro from Windows, enter the following terminal command:
+
+```shell
+java -jar dhis2-to-rapidpro.jar
+```
+
+The above command will give an error since no parameters are provided. The next commands are common DHIS-to-RapidPro Windows usage examples:
+
+##### Basic usage
+```shell
+java -jar dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+```
+
+##### Auto-reminders
+```shell
+java -jar dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 --reminder.data.set.ids=V8MHeZHIrcP,PLq9sJluXvc,aLpVgfXiz0f
+```
+
+##### Contact synchronisation disabled
+```shell
+java -jar dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 --sync.rapidpro.contacts=false
+```
+
+### WAR
+
+To run DHIS-to-RapidPro as a web application inside a web container like Tomcat, download the WAR distribution and drop it in the web container's applications directory. Configuration properties for WAR deployment can be expressed as:
+
+1. OS environments variables
+2. Key/value pairs in a file named `application.properties`. Create a directory called `config` within the web container's working directory and place `application.properties` in this new directory.
+3. YAML in a file named `application.yml`. Create a directory called `config` within the web container's working directory and place `application.yml` in this new directory.
 
 ## Configuration
 
