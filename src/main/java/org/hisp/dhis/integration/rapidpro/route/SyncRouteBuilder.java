@@ -32,6 +32,7 @@ import static org.apache.camel.component.http.HttpMethods.POST;
 
 import java.util.Map;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.hisp.dhis.integration.rapidpro.expression.BodyIterableToListExpression;
 import org.hisp.dhis.integration.rapidpro.processor.ModifyContactsProcessor;
@@ -82,10 +83,14 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
             .setProperty( "rapidProContacts", simple( "${body}" ) ).process( newContactsProcessor )
             .split().body()
                 .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object", "application/x-java-object" ) )
+                .setProperty( "dhis2UserId", simple( "${body['fields']['dhis2_user_id']}" ) )
                 .marshal().json().convertBodyTo( String.class )
                 .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
                 .log( LoggingLevel.DEBUG, LOGGER, "Creating RapidPro contact => ${body}" )
-                .toD( "{{rapidpro.api.url}}/contacts.json?httpMethod=POST" )
+                .toD( "{{rapidpro.api.url}}/contacts.json?httpMethod=POST&okStatusCodeRange=200-499" )
+                .choice()
+                    .when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "201" ) ).log( LoggingLevel.WARN, LOGGER, "Unexpected status code when creating RapidPro contact for DHIS2 user ${exchangeProperty.dhis2UserId} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
+                .end()
             .end()
             .process( modifyContactsProcessor )
             .split().body()
@@ -94,7 +99,10 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
                 .marshal().json().convertBodyTo( String.class )
                 .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
                 .log( LoggingLevel.DEBUG, LOGGER, "Updating RapidPro contact => ${body}" )
-                .toD( "{{rapidpro.api.url}}/contacts.json?uuid=${header.rapidProUuid}&httpMethod=POST" )
+                .toD( "{{rapidpro.api.url}}/contacts.json?uuid=${header.rapidProUuid}&httpMethod=POST&okStatusCodeRange=200-499" )
+                .choice()
+                    .when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "200" ) ).log( LoggingLevel.WARN, LOGGER, "Unexpected status code when updating RapidPro contact ${header.rapidProUuid} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
+                .end()
             .end()
             .log( LoggingLevel.INFO, LOGGER, "Completed synchronisation of RapidPro contacts with DHIS2 users" );
     }

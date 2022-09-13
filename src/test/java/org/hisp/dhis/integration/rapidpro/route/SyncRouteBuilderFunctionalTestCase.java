@@ -27,19 +27,11 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.camel.CamelExecutionException;
+import org.apache.camel.Exchange;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
+import org.apache.camel.spi.CamelLogger;
+import org.apache.camel.spring.boot.SpringBootCamelContext;
 import org.hisp.dhis.api.model.v2_37_7.DescriptiveWebMessage;
 import org.hisp.dhis.api.model.v2_37_7.ImportReportWebMessageResponse;
 import org.hisp.dhis.api.model.v2_37_7.User;
@@ -48,10 +40,30 @@ import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
 import org.junit.jupiter.api.Test;
 
-import com.github.javafaker.Faker;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
+    @Override
+    public void doBeforeEach()
+        throws
+        IOException
+    {
+        Environment.deleteDhis2Users();
+        Environment.createDhis2Users( Environment.ORG_UNIT_ID );
+    }
+
     @Test
     public void testContactSynchronisationFailsGivenThatSyncPropertyIsFalse()
     {
@@ -72,6 +84,35 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
             .body( "results.size()", equalTo( 10 ) )
             .body( "results[0].fields.dhis2_organisation_unit_id", equalTo( Environment.ORG_UNIT_ID ) );
+    }
+
+    @Test
+    public void testNewContactSynchronisationGivenInvalidPhoneNumber()
+    {
+        String invalidPhoneNoUserId = Environment.createDhis2User( Environment.ORG_UNIT_ID, "Invalid" );
+        CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
+        ((SpringBootCamelContext) camelContext)
+            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
+                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.startsWith(
+                    String.format(
+                        "Unexpected status code when creating RapidPro contact for DHIS2 user %s => HTTP 400.",
+                        invalidPhoneNoUserId ) ) )
+                {
+                    expectedLogMessage.countDown();
+                }
+                return message;
+            } );
+
+        camelContext.start();
+        assertPreCondition();
+        producerTemplate.sendBody( "direct:sync", null );
+        assertPostCondition();
+
+        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
+            .body( "results.size()", equalTo( 10 ) )
+            .body( "results[0].fields.dhis2_organisation_unit_id", equalTo( Environment.ORG_UNIT_ID ) );
+
+        assertEquals( 1, expectedLogMessage.getCount() );
     }
 
     @Test
@@ -115,7 +156,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
 
         producerTemplate.sendBody( "direct:sync", null );
 
-        User user = updateDhis2User();
+        User user = updateDhis2User( "0035661000000" );
 
         producerTemplate.sendBody( "direct:sync", null );
 
@@ -129,7 +170,33 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
             }
         }
 
-        assertEquals( user.getFirstName().get() + " " + user.getSurname().get(), contactUnderTest.get( "name" ) );
+        assertEquals( "tel:+35661000000", ((List) contactUnderTest.get( "urns" )).get( 0 ) );
+    }
+
+    @Test
+    public void testUpdateContactSynchronisationGivenInvalidPhoneNumber()
+    {
+        assertPreCondition();
+
+        CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
+        ((SpringBootCamelContext) camelContext)
+            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
+                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.startsWith(
+                    "Unexpected status code when updating RapidPro contact " ) )
+                {
+                    expectedLogMessage.countDown();
+                }
+                return message;
+            } );
+
+        camelContext.start();
+        producerTemplate.sendBody( "direct:sync", null );
+        assertEquals( 2, expectedLogMessage.getCount() );
+
+        updateDhis2User( "invalid" );
+        producerTemplate.sendBody( "direct:sync", null );
+
+        assertEquals( 1, expectedLogMessage.getCount() );
     }
 
     private void assertPreCondition()
@@ -145,7 +212,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
             .body( "results[1].key", equalTo( "dhis2_organisation_unit_id" ) );
     }
 
-    private User updateDhis2User()
+    private User updateDhis2User( String phoneNumber )
     {
         List<User> users = new ArrayList<>();
         Iterable<User> usersIterable = Environment.DHIS2_CLIENT.get( "users" ).withFilter( "phoneNumber:!null" )
@@ -154,7 +221,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
             .returnAs( User.class, "users" );
         usersIterable.forEach( users::add );
         User user = users.get( ThreadLocalRandom.current().nextInt( 0, users.size() ) );
-        user.setFirstName( new Faker().name().firstName() );
+        user.setPhoneNumber( phoneNumber );
         ImportReportWebMessageResponse importReportWebMessageResponse = Environment.DHIS2_CLIENT.put( "users/{id}",
                 user.getId().get() )
             .withResource( user ).transfer()

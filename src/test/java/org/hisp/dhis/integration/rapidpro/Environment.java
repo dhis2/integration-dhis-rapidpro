@@ -42,6 +42,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.hisp.dhis.api.model.v2_36_11.DescriptiveWebMessage;
+import org.hisp.dhis.api.model.v2_36_11.ImportReport;
 import org.hisp.dhis.api.model.v2_36_11.Notification;
 import org.hisp.dhis.api.model.v2_36_11.OrganisationUnit;
 import org.hisp.dhis.api.model.v2_36_11.OrganisationUnitLevel;
@@ -257,7 +258,9 @@ public final class Environment
     }
 
     public static void runAnalytics()
-        throws InterruptedException, IOException
+        throws
+        InterruptedException,
+        IOException
     {
         DHIS2_CLIENT.post( "maintenance" ).withParameter( "cacheClear", "true" )
             .transfer().close();
@@ -279,13 +282,16 @@ public final class Environment
     }
 
     private static void addOrgUnitToAdminUser( String orgUnitId )
-        throws IOException
+        throws
+        IOException
     {
         DHIS2_CLIENT.post( "users/M5zQapPyTZI/organisationUnits/{organisationUnitId}", orgUnitId ).transfer().close();
     }
 
     private static void addOrgUnitToDataSet( String orgUnitId )
-        throws IOException, InterruptedException
+        throws
+        IOException,
+        InterruptedException
     {
         DHIS2_CLIENT.post( "dataSets/qNtxTrp56wV/organisationUnits/{orgUnitId}", orgUnitId )
             .transfer()
@@ -296,26 +302,50 @@ public final class Environment
             .close();
     }
 
-    private static void createDhis2Users( String orgUnitId )
+    public static void createDhis2Users( String orgUnitId )
+        throws
+        IOException
     {
         int phoneNumber = 21000000;
-        Faker faker = new Faker();
         for ( int i = 0; i < 10; i++ )
         {
-            Name name = faker.name();
-            DHIS2_CLIENT.post( "users" )
-                .withResource( new User().withFirstName( name.firstName() ).withSurname( name.lastName() )
-                    .withPhoneNumber( "00356" + phoneNumber )
-                    .withAttributeValues( Collections.emptyList() )
-                    .withOrganisationUnits( List.of( new OrganisationUnit().withId( orgUnitId ) ) )
-                    .withUserCredentials(
-                        new UserCredentials().withCatDimensionConstraints( Collections.emptyList() )
-                            .withCogsDimensionConstraints( Collections.emptyList() ).withUsername( name.username() )
-                            .withPassword( "aKa9CD8HyAi8Y7!" ).withUserRoles(
-                                List.of( new UserAuthorityGroup().withId( "yrB6vc5Ip3r" ) ) ) ) )
-                .transfer();
+            createDhis2User( orgUnitId, "00356" + phoneNumber );
             phoneNumber++;
         }
+    }
+
+    public static void deleteDhis2Users()
+        throws
+        IOException
+    {
+        Iterable<User> usersIterable = Environment.DHIS2_CLIENT.get( "users" ).withFilter( "phoneNumber:!null" )
+            .withFields( "*" ).withoutPaging()
+            .transfer()
+            .returnAs( User.class, "users" );
+
+        for ( User user : usersIterable )
+        {
+            Environment.DHIS2_CLIENT.delete( "users/{id}", user.getId().get() ).transfer().close();
+        }
+    }
+
+    public static String createDhis2User( String orgUnitId, String phoneNumber )
+    {
+        Faker faker = new Faker();
+        Name name = faker.name();
+
+        return DHIS2_CLIENT.post( "users" )
+            .withResource( new User().withFirstName( name.firstName() ).withSurname( name.lastName() )
+                .withPhoneNumber( phoneNumber )
+                .withAttributeValues( Collections.emptyList() )
+                .withOrganisationUnits( List.of( new OrganisationUnit().withId( orgUnitId ) ) )
+                .withUserCredentials(
+                    new UserCredentials().withCatDimensionConstraints( Collections.emptyList() )
+                        .withCogsDimensionConstraints( Collections.emptyList() ).withUsername( name.username() )
+                        .withPassword( "aKa9CD8HyAi8Y7!" ).withUserRoles(
+                            List.of( new UserAuthorityGroup().withId( "yrB6vc5Ip3r" ) ) ) ) )
+            .transfer().returnAs( ImportReport.class ).getTypeReports().get().get( 0 ).getObjectReports().get().get( 0 )
+            .getUid().get();
     }
 
     private static String generateRapidProApiToken()
@@ -340,7 +370,8 @@ public final class Environment
     }
 
     private static void importMetaData( String orgUnitLevelId )
-        throws IOException
+        throws
+        IOException
     {
         String metaData = StreamUtils.copyToString(
                 Thread.currentThread().getContextClassLoader().getResourceAsStream( "MLAG00_1.2.1_DHIS2.36.json" ),
@@ -355,7 +386,8 @@ public final class Environment
     }
 
     private static void createOrgUnitLevel()
-        throws IOException
+        throws
+        IOException
     {
         DHIS2_CLIENT.post( "filledOrganisationUnitLevels" )
             .withResource( Map.of( "organisationUnitLevels",
