@@ -76,13 +76,16 @@ public class Application extends SpringBootServletInitializer
     @Autowired
     private CamelContext camelContext;
 
+    @Autowired
+    private NativeDataSonnetLibrary nativeDataSonnetLibrary;
+
     @PostConstruct
     public void postConstruct()
         throws
         IOException
     {
         keyStoreGenerator.generate();
-        camelContext.getRegistry().bind( "native", new NativeDataSonnetLibrary() );
+        camelContext.getRegistry().bind( "native", nativeDataSonnetLibrary );
     }
 
     public static void main( String[] args )

@@ -22,7 +22,8 @@
       "value": "3"
     },
     "gen_domestic_fund": {
-      "value": "5"
+      "value": "5",
+      "category": "Domestic funding"
     }
   }
 }

@@ -27,11 +27,19 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import com.datasonnet.document.DefaultDocument;
+import com.datasonnet.document.MediaTypes;
 import com.datasonnet.header.Header;
 import com.datasonnet.spi.DataFormatService;
 import com.datasonnet.spi.Library;
+import org.hisp.dhis.api.model.v2_36_11.CategoryOptionCombo;
+import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import sjsonnet.Materializer;
 import sjsonnet.Val;
 
 import java.util.Collections;
@@ -39,9 +47,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+@Component
 public class NativeDataSonnetLibrary extends Library
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( NativeDataSonnetLibrary.class );
+
+    @Autowired
+    @Lazy
+    private Dhis2Client dhis2Client;
 
     @Override
     public String namespace()
@@ -57,6 +70,21 @@ public class NativeDataSonnetLibrary extends Library
             Collections.singletonList( "key" ), vals -> {
                 LOGGER.warn( ((Val.Str) vals.get( 0 )).value() );
                 return null;
+            } ) );
+        answer.put( "isCategoryOptionCombo", makeSimpleFunc(
+            Collections.singletonList( "key" ), vals -> {
+                Iterable<CategoryOptionCombo> categoryOptionCombos = dhis2Client.get( "categoryOptionCombos" )
+                    .withFilter( "code:eq:" + ((Val.Str) vals.get( 0 )).value() ).withoutPaging()
+                    .transfer().returnAs( CategoryOptionCombo.class, "categoryOptionCombos" );
+                boolean categoryOptionComboExists = categoryOptionCombos.iterator().hasNext();
+                if ( !categoryOptionComboExists )
+                {
+                    LOGGER.warn(
+                        "Ignoring category option combination because of unknown category option combination code '" + ((Val.Str) vals.get(
+                            0 )).value() + "'. Hint: ensure that the RapidPro category matches the corresponding DHIS2 category option combination code" );
+                }
+                return Materializer.reverse( dataFormats.mandatoryRead(
+                    new DefaultDocument<>( categoryOptionComboExists, MediaTypes.APPLICATION_JAVA ) ) );
             } ) );
 
         return answer;
