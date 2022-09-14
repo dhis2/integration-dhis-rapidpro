@@ -7,7 +7,7 @@ local dataValueFn(result) = [
       dataElement: ds.filter(cml.header('dataElementCodes'), function(v, i) normaliseDeCodeFn(v) == result.key)[0],
       value: result.value.value,
       comment: 'RapidPro contact details: %s' % std.escapeStringJson(std.manifestJsonEx(payload.contact, ' ')),
-      [if std.objectHas(result.value, 'category') then 'categoryOptionCombo']: result.value.category
+      [if std.objectHas(result.value, 'category') && native.isCategoryOptionCombo(result.value.category) then 'categoryOptionCombo']: result.value.category
     }
 ];
 
@@ -16,5 +16,5 @@ local dataValueFn(result) = [
     orgUnit: cml.header('orgUnitId'),
     dataSet: cml.header('dataSetId'),
     period: cml.header('period'),
-    dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) if ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), v.key) then true else native.logWarning("Ignoring data value because of unknown DHIS2 data element code '" + v.key + "'")))
+    dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) if ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), v.key) then true else native.logWarning("Ignoring data value because of unknown DHIS2 data element code '" + v.key + "'. Hint: ensure that the RapidPro result name matches the corresponding DHIS2 data element code")))
 }

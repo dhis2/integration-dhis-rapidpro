@@ -41,6 +41,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
+import com.datasonnet.document.DefaultDocument;
+import com.datasonnet.document.MediaTypes;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ValueBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -52,6 +54,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StreamUtils;
 
+import sjsonnet.Materializer;
 import sjsonnet.Val;
 
 import com.datasonnet.header.Header;
@@ -71,7 +74,6 @@ public class DataValueSetDataSonnetTestCase
 
     @BeforeEach
     public void beforeEach()
-        throws IOException
     {
         dsExpression = new DatasonnetExpression( "resource:classpath:dataValueSet.ds" );
         dsExpression.setResultType( Map.class );
@@ -100,6 +102,17 @@ public class DataValueSetDataSonnetTestCase
                     Collections.singletonList( "key" ), vals -> {
                         logCountDownLatch.countDown();
                         return null;
+                    } ) );
+                answer.put( "isCategoryOptionCombo", makeSimpleFunc(
+                    Collections.singletonList( "key" ), vals -> {
+                        if ( ((Val.Str) vals.get( 0 )).value().equals( "Male" ))
+                        {
+                            return Materializer.reverse( dataFormats.mandatoryRead(
+                                new DefaultDocument( true, MediaTypes.APPLICATION_JAVA ) ) );
+                        } else {
+                            return Materializer.reverse( dataFormats.mandatoryRead(
+                                new DefaultDocument( false, MediaTypes.APPLICATION_JAVA ) ) );
+                        }
                     } ) );
 
                 return answer;
@@ -183,7 +196,7 @@ public class DataValueSetDataSonnetTestCase
     }
 
     @Test
-    public void testMappingGivenCategory()
+    public void testMappingGivenValidCategoryOptionComboCode()
         throws IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
@@ -196,12 +209,6 @@ public class DataValueSetDataSonnetTestCase
         exchange.getMessage().setBody( payload );
 
         Map dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
-
-        assertNotNull( dataValueSet.get( "completedDate" ) );
-        assertNull( dataValueSet.get( "attributeOptionCombo" ) );
-        assertEquals( "fdc6uOvgoji", dataValueSet.get( "orgUnit" ) );
-        assertEquals( "qNtxTrp56wV", dataValueSet.get( "dataSet" ) );
-        assertEquals( "2022W28", dataValueSet.get( "period" ) );
 
         List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );
 
@@ -221,9 +228,41 @@ public class DataValueSetDataSonnetTestCase
         assertNull( dataValues.get( 3 ).get( "categoryOptionCombo" ) );
         assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
 
-        assertEquals(
-            "RapidPro contact details: \"{\\n \\\"name\\\": \\\"John Doe\\\",\\n \\\"urn\\\": \\\"tel:+12065551212\\\",\\n \\\"uuid\\\": \\\"%s\\\"\\n}\"",
-            dataValues.get( 0 ).get( "comment" ) );
+        assertEquals( 0, logCountDownLatch.getCount() );
+    }
+
+    @Test
+    public void testMappingGivenInvalidCategoryOptionComboCode()
+        throws IOException
+    {
+        Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() ), Map.class );
+
+        ((Map<String, Object>) ((Map<String, Object>) payload.get( "results" )).get( "mal_llin_distr_pw" )).put(
+            "category", "M" );
+
+        exchange.getMessage().setBody( payload );
+
+        Map dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
+
+        List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );
+
+        assertEquals( "GEN_EXT_FUND", dataValues.get( 0 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 0 ).get( "categoryOptionCombo" ) );
+        assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
+
+        assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 1 ).get( "categoryOptionCombo" ) );
+        assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
+
+        assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 2 ).get( "categoryOptionCombo" ) );
+        assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
+
+        assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 3 ).get( "categoryOptionCombo" ) );
+        assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
 
         assertEquals( 0, logCountDownLatch.getCount() );
     }
