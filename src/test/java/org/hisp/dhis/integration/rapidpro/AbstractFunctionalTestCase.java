@@ -29,6 +29,7 @@ package org.hisp.dhis.integration.rapidpro;
 
 import static io.restassured.RestAssured.given;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -78,6 +79,8 @@ public class AbstractFunctionalTestCase
 
     @BeforeEach
     public void beforeEach()
+        throws
+        IOException
     {
         System.clearProperty( "sync.rapidpro.contacts" );
         System.clearProperty( "org.unit.id.scheme" );
@@ -98,6 +101,15 @@ public class AbstractFunctionalTestCase
 
         rapidProConnectorHttpEndpointUri = String.format( "https://0.0.0.0:%s/rapidProConnector",
             serverPort);
+
+        doBeforeEach();
+    }
+
+    public void doBeforeEach()
+        throws
+        IOException
+    {
+
     }
 
     protected List<Map<String, Object>> fetchRapidProContacts()
