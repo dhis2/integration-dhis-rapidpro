@@ -77,7 +77,7 @@ Set a code in each data element that will capture an aggregate value from RapidP
    - Set the URL field to the HTTP/S address that DHIS-to-RapidPro is listening on. The default HTTPS port number is _8443_ (see `server.port` in [Configuration](#configuration)): the path in the URL field is required to end with `/rapidProConnector/webhook`:
      ![URL webhook](static/images/url-webhook.png)
    - Append to the URL the `dataSetCode` query parameter which identifies by code the data set that the contact is reporting. You need to look up the data set from the DHIS2 maintenance app and hard-code its code as shown below:
-     ![Data set ID query parameter](static/images/data-set-code-query-param.png)
+     ![Data set ID code parameter](static/images/data-set-code-query-param.png)
    - You can optionally append the `reportPeriodOffset` query parameter which is the relative period to add or subtract from the current reporting period sent to DHIS2. If omitted, the `reportPeriodOffset` parameter defaults to -1.
      ![Report period offset query parameter](static/images/report-period-offset-query-param.png)
    - Another optional query parameter you can append is `orgUnitId`. This parameter overrides the value set in the contact's _DHIS2 Organisation Unit ID_ field.
