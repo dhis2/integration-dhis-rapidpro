@@ -32,7 +32,6 @@ import java.util.Map;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.api.model.v2_36_11.DataSet;
 import org.hisp.dhis.integration.rapidpro.processor.CurrentPeriodProcessor;
 import org.hisp.dhis.integration.rapidpro.expression.RootExceptionMessageExpression;
 import org.hisp.dhis.integration.rapidpro.processor.SetIdSchemeQueryParamProcessor;
@@ -65,7 +64,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             .split().body()
                 .setHeader( "id", simple( "${body['ID']}" ) )
                 .log( LoggingLevel.INFO, LOGGER, "Retrying row with ID ${header.id}" )
-                .setHeader( "dataSetId", simple( "${body['DATA_SET_ID']}" ) )
+                .setHeader( "dataSetCode", simple( "${body['DATA_SET_CODE']}" ) )
                 .setHeader( "reportPeriodOffset", simple( "${body['REPORT_PERIOD_OFFSET']}" ) )
                 .setHeader( "orgUnitId", simple( "${body['ORGANISATION_UNIT_ID']}" ) )
                 .setBody( simple( "${body['PAYLOAD']}" ) )
@@ -94,7 +93,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
                 .setHeader( "reportPeriodOffset", constant( -1 ) )
             .end()
             .enrich()
-                .simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.id:eq:${headers['dataSetId']}&fields=code&client=#dhis2Client" )
+                .simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.code:eq:${headers['dataSetCode']}&fields=code&client=#dhis2Client" )
                 .aggregationStrategy( ( oldExchange, newExchange ) -> {
                     oldExchange.getMessage().setHeader( "dataElementCodes",
                         jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
@@ -132,11 +131,11 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
                 .setHeader( "orgUnitId", constant( null ) )
             .end()
             .setBody( simple(
-                "INSERT INTO DEAD_LETTER_CHANNEL (payload, data_set_id, report_period_offset, organisation_unit_id, status, error_message) VALUES (:?payload, :?dataSetId, :?reportPeriodOffset, :?orgUnitId, 'ERROR', :?errorMessage)" ) )
+                "INSERT INTO DEAD_LETTER_CHANNEL (payload, data_set_code, report_period_offset, organisation_unit_id, status, error_message) VALUES (:?payload, :?dataSetCode, :?reportPeriodOffset, :?orgUnitId, 'ERROR', :?errorMessage)" ) )
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
 
         from( "direct:computePeriod" )
-            .toD( "dhis2://get/resource?path=dataSets/${headers['dataSetId']}&fields=periodType&client=#dhis2Client" )
-            .unmarshal().json( DataSet.class ).process( currentPeriodProcessor );
+            .toD( "dhis2://get/collection?path=dataSets&filter=code:eq:${headers['dataSetCode']}&fields=periodType&itemType=org.hisp.dhis.api.model.v2_36_11.DataSet&paging=false&client=#dhis2Client" )
+            .process( currentPeriodProcessor );
     }
 }

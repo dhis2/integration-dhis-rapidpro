@@ -43,6 +43,8 @@ public class SetIdSchemeQueryParamProcessor implements Processor
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put( "dataElementIdScheme", "CODE" );
         queryParams.put( "categoryOptionComboIdScheme", "CODE" );
+        queryParams.put( "dataSetIdScheme", "CODE" );
+
         String orgUnitIdScheme = exchange.getContext().resolvePropertyPlaceholders( "{{org.unit.id.scheme}}" );
         // FIXME: DHIS 2.36 returns an HTTP 500 when orgUnitIdScheme is set to the default identifier 'ID'
         if ( !orgUnitIdScheme.equalsIgnoreCase( "ID" ) )

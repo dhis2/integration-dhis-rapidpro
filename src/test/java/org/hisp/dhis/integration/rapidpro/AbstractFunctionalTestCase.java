@@ -84,7 +84,7 @@ public class AbstractFunctionalTestCase
     {
         System.clearProperty( "sync.rapidpro.contacts" );
         System.clearProperty( "org.unit.id.scheme" );
-        System.clearProperty( "reminder.data.set.ids" );
+        System.clearProperty( "reminder.data.set.codes" );
         System.clearProperty( "report.delivery.schedule.expression" );
         System.clearProperty( "report.destination.endpoint" );
 

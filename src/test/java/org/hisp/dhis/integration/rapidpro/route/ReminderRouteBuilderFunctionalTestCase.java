@@ -27,6 +27,9 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import org.apache.camel.Exchange;
+import org.apache.camel.spi.CamelLogger;
+import org.apache.camel.spring.boot.SpringBootCamelContext;
 import org.hisp.dhis.api.model.v2_36_11.DataValueSet;
 import org.hisp.dhis.api.model.v2_36_11.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
@@ -41,10 +44,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
@@ -52,7 +57,7 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
     @Test
     public void testReportIsOverdue()
     {
-        System.setProperty( "reminder.data.set.ids", "qNtxTrp56wV" );
+        System.setProperty( "reminder.data.set.codes", "MAL_YEARLY" );
         camelContext.start();
         producerTemplate.sendBody( "direct:reminders", null );
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "broadcasts.json" ).then()
@@ -61,10 +66,31 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
     }
 
     @Test
+    public void testUnknownDataSetCode()
+    {
+        System.setProperty( "reminder.data.set.codes", "Foo" );
+
+        CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
+        ((SpringBootCamelContext) camelContext)
+            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
+                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.equals( "Cannot remind contacts for unknown data set code 'Foo'" ) )
+                {
+                    expectedLogMessage.countDown();
+                }
+                return message;
+            } );
+
+        camelContext.start();
+        producerTemplate.sendBody( "direct:reminders", null );
+
+        assertEquals( 1, expectedLogMessage.getCount() );
+    }
+
+    @Test
     public void testReportIsNotOverdue()
         throws IOException, InterruptedException
     {
-        System.setProperty( "reminder.data.set.ids", "VEM58nY22sO" );
+        System.setProperty( "reminder.data.set.codes", "MAL_EL" );
         camelContext.start();
 
         DHIS2_CLIENT.post( "dataValueSets" ).withResource(

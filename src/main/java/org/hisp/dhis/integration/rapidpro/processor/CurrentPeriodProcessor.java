@@ -42,7 +42,8 @@ public class CurrentPeriodProcessor implements Processor
     public void process( Exchange exchange )
         throws Exception
     {
-        String periodType = (String) exchange.getMessage().getBody( DataSet.class ).getPeriodType().get();
+        Iterable<DataSet> dataSets = exchange.getMessage().getBody( Iterable.class );
+        String periodType = (String) dataSets.iterator().next().getPeriodType().get();
         int reportPeriodOffset = exchange.getMessage().getHeader( "reportPeriodOffset", Integer.class );
         String period;
         if ( periodType.equalsIgnoreCase( "Daily" ) )
