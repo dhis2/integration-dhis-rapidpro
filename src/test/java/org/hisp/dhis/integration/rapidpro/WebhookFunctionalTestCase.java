@@ -59,7 +59,7 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
 
         String response = producerTemplate.requestBody(
             rapidProConnectorHttpEndpointUri
-                + "/webhook?dataSetId=qNtxTrp56wV&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+                + "/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
             String.format(  webhookMessage, contactUuid ), String.class );
 
         assertNull(response);

@@ -135,7 +135,7 @@ public class DataValueSetDataSonnetTestCase
         exchange.getMessage().setHeader( "orgUnitId", "fdc6uOvgoji" );
         exchange.getMessage().setHeader( "dataElementCodes", dataElementCodes );
         exchange.getMessage().setHeader( "period", PeriodBuilder.weekOf( new Date( 1657626227255L ) ) );
-        exchange.getMessage().setHeader( "dataSetId", "qNtxTrp56wV" );
+        exchange.getMessage().setHeader( "dataSetCode", "MAL_YEARLY" );
 
     }
 
@@ -174,7 +174,7 @@ public class DataValueSetDataSonnetTestCase
         assertNotNull( dataValueSet.get( "completedDate" ) );
         assertNull( dataValueSet.get( "attributeOptionCombo" ) );
         assertEquals( "fdc6uOvgoji", dataValueSet.get( "orgUnit" ) );
-        assertEquals( "qNtxTrp56wV", dataValueSet.get( "dataSet" ) );
+        assertEquals( "MAL_YEARLY", dataValueSet.get( "dataSet" ) );
         assertEquals( "2022W28", dataValueSet.get( "period" ) );
 
         List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );

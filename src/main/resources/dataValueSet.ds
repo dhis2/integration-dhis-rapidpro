@@ -14,7 +14,7 @@ local dataValueFn(result) = [
 {
     completedDate: ds.datetime.now(),
     orgUnit: cml.header('orgUnitId'),
-    dataSet: cml.header('dataSetId'),
+    dataSet: cml.header('dataSetCode'),
     period: cml.header('period'),
     dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) if ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), v.key) then true else native.logWarning("Ignoring data value because of unknown DHIS2 data element code '" + v.key + "'. Hint: ensure that the RapidPro result name matches the corresponding DHIS2 data element code")))
 }

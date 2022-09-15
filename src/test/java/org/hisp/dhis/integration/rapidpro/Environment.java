@@ -290,8 +290,7 @@ public final class Environment
 
     private static void addOrgUnitToDataSet( String orgUnitId )
         throws
-        IOException,
-        InterruptedException
+        IOException
     {
         DHIS2_CLIENT.post( "dataSets/qNtxTrp56wV/organisationUnits/{orgUnitId}", orgUnitId )
             .transfer()

@@ -75,7 +75,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of( "dataSetId", "qNtxTrp56wV" ) );
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
                 "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
@@ -106,7 +106,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2?exchangePattern=InOnly",
-            String.format( webhookMessage, contactUuid ), Map.of( "dataSetId", "qNtxTrp56wV" ) );
+            String.format( webhookMessage, contactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
         spyEndpoint.await( 1, TimeUnit.MINUTES );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
@@ -142,7 +142,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Charset.defaultCharset() );
         producerTemplate.requestBody(
             rapidProConnectorHttpEndpointUri
-                + "/webhook?aParam=aValue&dataSetId=qNtxTrp56wV&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+                + "/webhook?aParam=aValue&dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
             String.format( webhookMessage, contactUuid ), String.class );
 
         spyEndpoint.await( 5000, TimeUnit.MILLISECONDS );
@@ -166,7 +166,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
 
         assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
             ExchangePattern.InOut, String.format( webhookMessage, UUID.randomUUID() ),
-            Map.of( "dataSetId", "qNtxTrp56wV" ) ) );
+            Map.of( "dataSetCode", "MAL_YEARLY" ) ) );
 
         List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
@@ -199,7 +199,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
         String wrongContactUuid = UUID.randomUUID().toString();
         assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
             ExchangePattern.InOut, String.format( webhookMessage, wrongContactUuid ),
-            Map.of( "dataSetId", "qNtxTrp56wV" ) ) );
+            Map.of( "dataSetCode", "MAL_YEARLY" ) ) );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
 
         String payload = (String) jdbcTemplate.queryForList( "SELECT payload FROM DEAD_LETTER_CHANNEL" ).get( 0 )
@@ -231,7 +231,7 @@ public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunction
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of( "dataSetId", "qNtxTrp56wV" ) );
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
                 "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )

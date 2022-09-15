@@ -28,8 +28,8 @@
 package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.api.model.v2_36_11.DataSet;
 import org.hisp.dhis.api.model.v2_36_11.ListGrid;
+import org.hisp.dhis.integration.rapidpro.expression.BodyIterableToListExpression;
 import org.hisp.dhis.integration.rapidpro.processor.PrepareBroadcastProcessor;
 import org.hisp.dhis.integration.rapidpro.processor.SetReportRateQueryParamProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +43,9 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
 
     @Autowired
     private PrepareBroadcastProcessor prepareBroadcastProcessor;
+
+    @Autowired
+    private BodyIterableToListExpression bodyIterableToListExpression;
 
     @Override
     protected void doConfigure()
@@ -62,24 +65,37 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
             .choice().when( simple( "{{sync.rapidpro.contacts}} == true" ) )
                 .to( "direct:sync" )
             .end()
-            .enrich("direct:fetchContacts").setHeader( "contacts", simple( "${body}" ) )
-            .split( simple( "{{reminder.data.set.ids:}}" ), "," )
-                .to( "direct:fetchDataSet" ).setHeader( "dataSet", simple(  "${body}" ) )
-                .to( "direct:fetchReportRate" )
-                .split( simple( "${body.rows.get}" ) )
-                    .choice().when( simple( "${body[4]} != '100.0'" ) )
-                        .process( prepareBroadcastProcessor )
-                        .split(simple(  "${body}" ))
-                            .to( "direct:sendBroadcast" )
+            .enrich("direct:fetchContacts").setProperty( "contacts", simple( "${body}" ) )
+            .split( simple( "{{reminder.data.set.codes:}}" ), "," )
+                .setProperty( "dataSetCode", simple( "${body}" ) )
+                .to( "direct:fetchDataSet" )
+                .choice()
+                    .when( body().isNull() )
+                        .log( LoggingLevel.WARN, LOGGER, "Cannot remind contacts for unknown data set code '${exchangeProperty.dataSetCode}'" )
+                    .otherwise()
+                        .setProperty( "dataSet", simple(  "${body}" ) )
+                        .to( "direct:fetchReportRate" )
+                        .split( simple( "${body.rows.get}" ) )
+                            .choice()
+                                .when( simple( "${body[4]} != '100.0'" ) )
+                                    .process( prepareBroadcastProcessor )
+                                    .split(simple(  "${body}" ))
+                                    .to( "direct:sendBroadcast" )
+                            .end()
                         .end()
                     .end()
                 .end()
             .end();
 
         from( "direct:fetchDataSet" )
-            .toD(
-                "dhis2://get/resource?path=dataSets/${body}&fields=id,name,periodType,organisationUnits[id,${exchangeProperty.orgUnitIdScheme.toLowerCase()}]&client=#dhis2Client" )
-            .unmarshal().json( DataSet.class );
+            .toD( "dhis2://get/collection?path=dataSets&filter=code:eq:${body}&fields=id,name,periodType,organisationUnits[id,${exchangeProperty.orgUnitIdScheme.toLowerCase()}]&itemType=org.hisp.dhis.api.model.v2_36_11.DataSet&paging=false&client=#dhis2Client" )
+            .transform( bodyIterableToListExpression )
+            .choice()
+                .when( simple( "${body.size()} > 0" ) )
+                    .transform( simple( "${body[0]}" ) )
+                .otherwise()
+                    .setBody(simple( "${null}" ))
+            .end();
 
         from( "direct:fetchContacts" )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )

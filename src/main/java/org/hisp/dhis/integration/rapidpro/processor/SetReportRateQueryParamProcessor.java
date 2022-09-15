@@ -48,7 +48,7 @@ public class SetReportRateQueryParamProcessor implements Processor
     public void process( Exchange exchange )
     {
         DataSet dataSet = exchange.getMessage().getBody( DataSet.class );
-        Map<String, Object> contacts = (Map<String, Object>) exchange.getMessage().getHeader( "contacts" );
+        Map<String, Object> contacts = (Map<String, Object>) exchange.getProperty( "contacts" );
         Set<String> contactOrgUnitIds = reduceOrgUnitIds( (List<Map<String, Object>>) contacts.get( "results" ) );
 
         String periodType = (String) dataSet.getPeriodType().get();

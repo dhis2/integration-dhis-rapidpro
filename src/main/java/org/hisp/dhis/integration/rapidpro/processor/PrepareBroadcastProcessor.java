@@ -54,8 +54,8 @@ public class PrepareBroadcastProcessor implements Processor
         String orgUnitIdScheme = exchange.getProperty( "orgUnitIdScheme", String.class ).toLowerCase();
         List<String> broadcastContactIds = new ArrayList<>();
         List<String> row = exchange.getMessage().getBody( List.class );
-        DataSet dataSet = exchange.getMessage().getHeader( "dataSet", DataSet.class );
-        Map<String, Object> contacts = exchange.getMessage().getHeader( "contacts", Map.class );
+        DataSet dataSet = exchange.getProperty( "dataSet", DataSet.class );
+        Map<String, Object> contacts = exchange.getProperty( "contacts", Map.class );
 
         String orgUnitId = row.get( 0 );
         OrganisationUnit organisationUnit = dataSet.getOrganisationUnits().get().stream()
