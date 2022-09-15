@@ -44,7 +44,7 @@ Prior to synchronisation, DHIS-to-RapidPro automatically creates in RapidPro:
 * the contact group `DHIS2`, and 
 * two contact fields named `dhis2_organisation_unit_id` and `dhis2_user_id`
 
-DHIS-to-RapidPro will re-create this group and these fields should they be deleted. During synchronisation, each contact is assigned to the `DHIS2` group and has its fields populated accordingly. Any application error during the syncing of a contact will lead to an exception log entry but the error will not abort the synchronisation process. In other words, synchronisation may be partially successful.
+DHIS-to-RapidPro will re-create this group and these fields should they be deleted. During synchronisation, each contact is assigned to the `DHIS2` group and has its fields populated accordingly. Application errors during the syncing of a contact will lead to warnings in the log but the error will not abort the synchronisation process. In other words, synchronisation may be partially successful.
 
 Contact synchronisation is enabled by default. Setting `sync.rapidpro.contacts` to `false` disables synchronisation. The interval rate at which contacts are synchronised is expressed as a cron expression with the config key `sync.schedule.expression`. Alternatively, hit DHIS-to-RapidPro's URL path `/rapidProConnector/sync`to manually kickoff syncing.
 
