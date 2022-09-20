@@ -14,8 +14,9 @@ loop
         note over Dhis2RapidPro: Read data set code from webhook message
         Dhis2RapidPro -> DHIS2: Fetch data elements by data set code
         DHIS2 --> Dhis2RapidPro: Data set data elements
-        note over Dhis2RapidPro: Read org unit ID from webhook message
-        alt org unit ID is missing
+        alt
+            note over Dhis2RapidPro: Read org unit ID from webhook message
+        else org unit ID is missing
             note over Dhis2RapidPro: Read contact UUID from webhook message
             Dhis2RapidPro -> RapidPro: Fetch contact by UUID
             RapidPro --> Dhis2RapidPro: Contact
@@ -24,7 +25,11 @@ loop
         Dhis2RapidPro -> DHIS2: Fetch data set by code
         DHIS2 --> Dhis2RapidPro: Data set
         note over Dhis2RapidPro: Read period type from data set
-        note over Dhis2RapidPro: Read report period offset from webhook message
+        alt
+            note over Dhis2RapidPro: Read report period offset from webhook message
+         else report period offset is missing
+           note over Dhis2RapidPro: Assume report period offset is -1
+        end
         note over Dhis2RapidPro: Compute report period from period type & period offset
         note over Dhis2RapidPro: Assemble data value set & soft validate DHIS2 identifiers
         Dhis2RapidPro -> DHIS2: Create data value set
