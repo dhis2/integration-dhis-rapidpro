@@ -23,7 +23,7 @@ loop sync.schedule.expression
         == Synchronisation ==
         Dhis2RapidPro -> DHIS2: Fetch users
         DHIS2 -> Dhis2RapidPro: Users
-        Dhis2RapidPro -> RapidPro: Fetch DHIS2 group contacts
+        Dhis2RapidPro -> RapidPro: Fetch contacts in DHIS2 group
         RapidPro -> Dhis2RapidPro: Contacts
         note over Dhis2RapidPro: Compile list of DHIS2 users that do not have corresponding RapidPro contacts
         note over Dhis2RapidPro: Compile list of DHIS2 users that have corresponding RapidPro contacts

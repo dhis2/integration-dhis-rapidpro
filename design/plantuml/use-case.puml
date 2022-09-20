@@ -1,0 +1,39 @@
+@startuml
+left to right direction
+
+"Health Manager" as HealthManager
+"System Operator" as Operator
+"Implementer" as Implementer
+
+package "DHIS to RapidPro Integration" {
+    usecase SynchroniseContacts as "Synchronise RapidPro contacts"
+    usecase SendReminders as "Send reminders of overdue reports to RapidPro contacts"
+    usecase TransferAggrReport as "Transfer aggregate report from RapidPro to DHIS2"
+    usecase DisaggregatedData as "Disaggregated data in report"
+    usecase ReplayAggrReport as "Replay aggregate report transfer"
+    usecase EditAggrReport as "Edit aggregate report transfer"
+    usecase ScheduleReport as "Schedule report transfer"
+    usecase IdentityOrgUnitsByCode as "Identify org units by code instead of ID"
+    usecase TraceDataValueSet as "Trace data value set to RapidPro contact"
+    usecase TransferAggrReportToNonDhis2 as "Transfer aggregate report to non-DHIS2 system"
+}
+
+HealthManager -le-> SynchroniseContacts
+HealthManager --> SendReminders
+SendReminders --> SynchroniseContacts: could happen after
+TraceDataValueSet --> TransferAggrReport: as a consequence of
+HealthManager -> TraceDataValueSet
+SendReminders --> TransferAggrReport: needs
+Operator --> ScheduleReport
+Operator --> ReplayAggrReport
+ReplayAggrReport --> TransferAggrReport: after failed
+ReplayAggrReport --> EditAggrReport: could happen after
+Operator --> EditAggrReport
+EditAggrReport --> TransferAggrReport: after failed
+ScheduleReport --> TransferAggrReport: requires
+Implementer --> TransferAggrReportToNonDhis2
+TransferAggrReportToNonDhis2 --> TransferAggrReport: instead of
+Implementer --> IdentityOrgUnitsByCode
+IdentityOrgUnitsByCode --> SynchroniseContacts: when
+TransferAggrReport --> DisaggregatedData: could have
+@enduml
