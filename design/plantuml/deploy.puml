@@ -1,0 +1,42 @@
+@startuml
+actor Operator
+agent "Web Browser" as Browser
+agent "SQL Client" as SqlClient
+database "Dead Letter Channel" as DLQ
+queue "Message Broker" as Broker
+node DHIS2
+node RapidPro
+node Dhis2RapidPro {
+    artifact dhis2rapidpro.jar <<artifact>> {
+      stack stack [
+      DataSonnet
+      Apache Camel
+      Spring Boot
+      JVM]
+    }
+    artifact dhis2rapidpro.war <<artifact>>
+    dhis2rapidpro.war ..> dhis2rapidpro.jar
+    interface "Management Endpoint" as Management
+    component Hawtio
+    component "H2 Console" as H2Console
+    component H2
+    component "ActiveMQ Artemis" as ActiveMqArtemis
+    Management ..> H2Console
+    Management ..> Hawtio
+    H2Console ..> H2
+    Hawtio --0 ActiveMqArtemis: JMX
+    Hawtio --0 H2: JMX
+    Hawtio -ri-0 dhis2rapidpro.jar: JMX
+}
+
+Operator ..> Browser
+Browser -- Management: HTTP(S)
+Operator ..> SqlClient
+SqlClient --0 DLQ: JDBC
+Broker ..> ActiveMqArtemis
+Broker 0-ri- Dhis2RapidPro: JMS
+Dhis2RapidPro --0 DLQ: JDBC
+DLQ ..> H2
+RapidPro 0--0 Dhis2RapidPro: JSON over HTTP(S)
+Dhis2RapidPro --0 DHIS2: JSON over HTTP(S)
+@enduml

@@ -56,6 +56,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
         from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
             .removeHeader( Exchange.HTTP_URI )
             .to( "jms:queue:dhis2?exchangePattern=InOnly" )
+            .setHeader( Exchange.HTTP_RESPONSE_CODE, constant( 202 ) )
             .setBody().simple( "${null}" );
 
         from( "timer://retry?fixedRate=true&period=5000" )

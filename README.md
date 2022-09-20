@@ -15,6 +15,7 @@
 6. [Monitoring & Management](#monitoring--management)
 7. [Recovering Failed Reports](#recovering-failed-reports)
 8. [Troubleshooting Guide](#troubleshooting-guide)
+9. [Acknowledgments](#acknowledgments)
 
 ## Introduction
 
@@ -271,4 +272,6 @@ Deeper technical problems might not manifest themselves up as failed reports but
 >***CAUTION:*** be careful about increasing log verbosity since it may quickly eat up the server's disk space if the application is logging to a file, the default behaviour.
 
 
+## Acknowledgments
 
+This project is funded by UNICEF and developed by [HISP Centre](https://hisp.uio.no/) in collaboration with [HISP Uganda](https://www.hispuganda.org/) and [ITINORDIC](https://itinordic.com).

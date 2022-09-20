@@ -64,7 +64,7 @@ public class ModifyContactsProcessor implements Processor
                     .equals( dhis2User.getId().get() ) )
                 .findFirst();
 
-            rapidProContact.ifPresent( stringObjectMap -> updatedDhis2Users.put( (String) stringObjectMap.get( "uuid" ),
+            rapidProContact.ifPresent( c -> updatedDhis2Users.put( (String) c.get( "uuid" ),
                 new DefaultDocument<>( OBJECT_MAPPER.convertValue( dhis2User, Map.class ),
                     new MediaType( "application", "x-java-object" ) ) ) );
         }

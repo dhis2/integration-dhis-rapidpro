@@ -1,0 +1,11 @@
+@startuml
+title Receive Aggregate Report
+participant RapidPro as RapidPro
+participant Dhis2RapidPro as Dhis2RapidPro
+queue Queue as Queue
+autonumber
+skinparam responseMessageBelowArrow true
+RapidPro -> Dhis2RapidPro: Webhook message
+Dhis2RapidPro -> Queue: Enqueue webhook message
+Dhis2RapidPro -> RapidPro: Accepted
+@enduml

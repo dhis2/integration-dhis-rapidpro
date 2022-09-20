@@ -1,0 +1,20 @@
+@startuml
+title Auto-Reminders
+autonumber
+skinparam responseMessageBelowArrow true
+alt sync.rapidpro.contacts = true
+    ref over Dhis2RapidPro : Synchronise contacts
+end
+Dhis2RapidPro -> RapidPro: Fetch contacts in DHIS2 group
+RapidPro -> Dhis2RapidPro: Contacts
+loop data set codes
+    Dhis2RapidPro -> DHIS2: Fetch data set
+    DHIS2 -> Dhis2RapidPro: Data set
+    Dhis2RapidPro -> DHIS2: Fetch data set report rate
+    DHIS2 -> Dhis2RapidPro: Report rate
+    alt report rate < 100
+        note over Dhis2RapidPro: Find contacts belonging to the data set org unit ID
+        Dhis2RapidPro -> RapidPro: Broadcast reminder to found contacts
+    end
+end
+@enduml
