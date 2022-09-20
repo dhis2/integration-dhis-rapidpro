@@ -14,5 +14,5 @@ jobs:
       - run: java -jar plantuml.jar -v -tpng -r design/plantuml/**.puml -o ../../static/images
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: Generate UML diagrams
+          commit_message: docs: generate UML diagrams
           file_pattern: 'static/images/*.png'
