@@ -4,11 +4,11 @@ on:
   push:
     branches: [ main ]
     paths-ignore:
-      - 'static/**'
+      - '/static/**'
   pull_request:
     branches: [ main ]
     paths-ignore:
-      - 'static/**'
+      - '/static/**'
   schedule:
     - cron:  '0 0 * * *'
 
