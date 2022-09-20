@@ -1,25 +1,21 @@
-DHIS-to-RapidPro is a stand-alone Java solution that integrates DHIS2 with RapidPro. [DHIS2](https://dhis2.org/about/) is an open-source information system primarily used in the health domain while [RapidPro](https://rapidpro.github.io/rapidpro/) is an open-source workflow engine for running mobile-based services.
+# Table of Contents
 
-DHIS-to-RapidPro provides:
+1. [Use case Diagram](#use-case-diagram)
+2. [Sequence Diagrams](#sequence-diagrams)
+3. [Deployment Diagram](#deployment-diagram)
 
-* Routine synchronisation of RapidPro contacts with DHIS2 users
-* A webhook consumer to receive aggregate reports from RapidPro and transfer them to DHIS2 as data value sets
-* Automated reminders to RapidPro contacts when their aggregate reports are overdue
+## Use case Diagram
 
-DHIS-to-RapidPro is developed and maintained with the following design goals:
-
-* Testable: it is easy to test end-to-end without requiring the 
-* Flexible: DHIS-to-RapidPro is powered by Apache Camel
-* Monitor & Manage: DHIS-to-RapidPro comes bundled
-* Configurable: DHIS-to-RapidPro comes bundled with a variety swappable tools and libraries.
-
-Extensible
-Testable
-
+![Contact synchronisation](../static/images/use-case.png)
 
 ## Sequence Diagrams
 
+![Contact synchronisation](../static/images/contact-synchronisation.png)
+![Auto-reminders](../static/images/auto-reminders.png)
+![Receive aggregate report](../static/images/receive-aggr-report.png)
+![Transfer aggregate report](../static/images/transfer-aggr-report.png)
+![Replay aggregate report](../static/images/replay-aggr-report.png)
 
-![auto-reminders](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.github.com/plantuml/plantuml-server/master/src/main/webapp/resource/test2diagrams.txt)
+## Deployment Diagram
 
-## Deployment Diagrams
+![Deployment diagram](../static/images/deploy.png)
