@@ -1,5 +1,5 @@
 @startuml
-actor Operator
+actor "System Operator" as Operator
 agent "Web Browser" as Browser
 agent "SQL Client" as SqlClient
 database "Dead Letter Channel" as DLQ
