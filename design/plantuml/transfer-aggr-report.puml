@@ -23,9 +23,10 @@ loop
         end
         Dhis2RapidPro -> DHIS2: Fetch data set by code
         DHIS2 -> Dhis2RapidPro: Data set
+        note over Dhis2RapidPro: Read period type from data set
         note over Dhis2RapidPro: Read report period offset from webhook message
-        note over Dhis2RapidPro: Compute report's period
-        note over Dhis2RapidPro: Assemble data value set & soft validate DHIS2 codes
+        note over Dhis2RapidPro: Compute report period from period type & period offset
+        note over Dhis2RapidPro: Assemble data value set & soft validate DHIS2 identifiers
         Dhis2RapidPro -> DHIS2: Create data value set
     else exception
         Dhis2RapidPro -> DLC: Save webhook message

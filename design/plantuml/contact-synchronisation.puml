@@ -6,31 +6,31 @@ loop sync.schedule.expression
     alt sync.rapidpro.contacts = true
         == Preparation ==
         Dhis2RapidPro -> RapidPro: Fetch dhis2_organisation_unit_id contact field
-        RapidPro -> Dhis2RapidPro: Field results
+        RapidPro --> Dhis2RapidPro: Field results
         alt results is empty
             Dhis2RapidPro -> RapidPro: Create dhis2_organisation_unit_id contact field
         end
         Dhis2RapidPro -> RapidPro: Fetch dhis2_user_id contact field
-        RapidPro -> Dhis2RapidPro: Field results
+        RapidPro --> Dhis2RapidPro: Field results
         alt results is empty
             Dhis2RapidPro -> RapidPro: Create dhis2_user_id contact field
         end
         Dhis2RapidPro -> RapidPro: Fetch DHIS2 group
-        RapidPro -> Dhis2RapidPro: Group results
+        RapidPro --> Dhis2RapidPro: Group results
         alt results is empty
             Dhis2RapidPro -> RapidPro: Create DHIS2 group
         end
         == Synchronisation ==
         Dhis2RapidPro -> DHIS2: Fetch users
-        DHIS2 -> Dhis2RapidPro: Users
+        DHIS2 --> Dhis2RapidPro: Users
         Dhis2RapidPro -> RapidPro: Fetch contacts in DHIS2 group
-        RapidPro -> Dhis2RapidPro: Contacts
+        RapidPro --> Dhis2RapidPro: Contacts
         note over Dhis2RapidPro: Compile list of DHIS2 users that do not have corresponding RapidPro contacts
         note over Dhis2RapidPro: Compile list of DHIS2 users that have corresponding RapidPro contacts
         loop unmapped DHIS2 users
             note over Dhis2RapidPro: Transform unmapped DHIS2 user to RapidPro contact
             Dhis2RapidPro -> RapidPro: Create contact & assign it to DHIS2 group
-            RapidPro -> Dhis2RapidPro: HTTP response
+            RapidPro --> Dhis2RapidPro: HTTP response
             alt HTTP RC != 201 and HTTP RC < 500
                 Dhis2RapidPro -> Dhis2RapidPro: Print warning
             else HTTP RC >= 500
@@ -40,7 +40,7 @@ loop sync.schedule.expression
         loop mapped DHIS2 users
             note over Dhis2RapidPro: Transform mapped DHIS2 user to RapidPro contact
             Dhis2RapidPro -> RapidPro: Update contact
-            RapidPro -> Dhis2RapidPro: HTTP response
+            RapidPro --> Dhis2RapidPro: HTTP response
             alt HTTP RC != 200 & HTTP RC < 500
                 Dhis2RapidPro -> Dhis2RapidPro: Print warning
             else HTTP RC >= 500
