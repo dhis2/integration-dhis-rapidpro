@@ -1,10 +1,10 @@
 # Table of Contents
 
-1. [Use case Diagram](#use-case-diagram)
+1. [Use Case Diagram](#use-case-diagram)
 2. [Sequence Diagrams](#sequence-diagrams)
 3. [Deployment Diagram](#deployment-diagram)
 
-## Use case Diagram
+## Use Case Diagram
 
 ![Contact synchronisation](../static/images/use-case.png)
 
