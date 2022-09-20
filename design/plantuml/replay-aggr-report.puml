@@ -1,0 +1,16 @@
+@startuml
+title Replay Aggregate Report
+queue Queue as Queue
+participant Dhis2RapidPro as Dhis2RapidPro
+database DLC as DLC
+autonumber
+skinparam responseMessageBelowArrow true
+loop every 5s
+    Dhis2RapidPro -> DLC: Select rows where status is 'RETRY'
+    DLC -> Dhis2RapidPro: Rows
+    loop rows
+        Dhis2RapidPro -> Queue: Enqueue webhook message
+        Dhis2RapidPro -> DLC: Update row status to 'PROCESSED'
+    end
+end
+@enduml

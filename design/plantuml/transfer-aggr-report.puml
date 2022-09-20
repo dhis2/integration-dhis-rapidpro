@@ -1,0 +1,34 @@
+@startuml
+title Transfer Aggregate Report
+participant Dhis2RapidPro as Dhis2RapidPro
+queue Queue as Queue
+participant DHIS2 as DHIS2
+participant RapidPro as RapidPro
+database DLC as DLC
+autonumber
+skinparam responseMessageBelowArrow true
+loop
+    alt
+        Dhis2RapidPro -> Queue: Dequeue
+        Queue -> Dhis2RapidPro: Webhook message
+        note over Dhis2RapidPro: Read data set code from webhook message
+        Dhis2RapidPro -> DHIS2: Fetch data elements by data set code
+        DHIS2 -> Dhis2RapidPro: Data set data elements
+        note over Dhis2RapidPro: Read org unit ID from webhook message
+        alt org unit ID is missing
+            note over Dhis2RapidPro: Read contact UUID from webhook message
+            Dhis2RapidPro -> RapidPro: Fetch contact by UUID
+            RapidPro -> Dhis2RapidPro: Contact
+            note over Dhis2RapidPro: Read org unit ID from contact
+        end
+        Dhis2RapidPro -> DHIS2: Fetch data set by code
+        DHIS2 -> Dhis2RapidPro: Data set
+        note over Dhis2RapidPro: Read report period offset from webhook message
+        note over Dhis2RapidPro: Compute report's period
+        note over Dhis2RapidPro: Assemble data value set & soft validate DHIS2 codes
+        Dhis2RapidPro -> DHIS2: Create data value set
+    else exception
+        Dhis2RapidPro -> DLC: Save webhook message
+    end
+end
+@enduml
