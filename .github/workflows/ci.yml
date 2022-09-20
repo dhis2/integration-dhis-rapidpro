@@ -3,8 +3,12 @@ name: CI
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'static/**'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - 'static/**'
   schedule:
     - cron:  '0 0 * * *'
 
