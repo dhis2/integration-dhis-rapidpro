@@ -9,8 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: ts-graphviz/setup-graphviz@v1
       - run: curl -LJ https://github.com/plantuml/plantuml/releases/download/v1.2022.7/plantuml-1.2022.7.jar -o plantuml.jar
-      - run: java -jar plantuml.jar -v -tpng -r -o "design/plantuml" "design/plantuml/**.puml"
+      - run: java -jar plantuml.jar -v -tpng -r "design/plantuml/**.puml"
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Generate PlantUML diagrams
