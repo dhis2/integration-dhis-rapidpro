@@ -24,7 +24,7 @@ rectangle "DHIS to RapidPro Integration" {
     }
     package "Integration" {
       usecase SyncContacts as "Synchronise RapidPro contacts with DHIS2 users"
-      usecase TransferAggrReport as "Transfer aggregate report from RapidPro in DHIS2"
+      usecase TransferAggrReport as "Transfer aggregate report from RapidPro to DHIS2"
       usecase SendReminders as "Send reminders of overdue DHIS2 report to RapidPro contacts"
     }
 }
