@@ -5,35 +5,49 @@ left to right direction
 "System Operator" as Operator
 "Implementer" as Implementer
 
-package "DHIS to RapidPro Integration" {
-    usecase SynchroniseContacts as "Synchronise RapidPro contacts"
-    usecase SendReminders as "Send reminders of overdue reports to RapidPro contacts"
-    usecase TransferAggrReport as "Transfer aggregate report from RapidPro to DHIS2"
-    usecase DisaggregatedData as "Disaggregated data in report"
-    usecase ReplayAggrReport as "Replay aggregate report transfer"
-    usecase EditAggrReport as "Edit aggregate report transfer"
-    usecase ScheduleReport as "Schedule report transfer"
-    usecase IdentityOrgUnitsByCode as "Identify org units by code instead of ID"
-    usecase TraceDataValueSet as "Trace data value set to RapidPro contact"
-    usecase TransferAggrReportToNonDhis2 as "Transfer aggregate report to non-DHIS2 system"
+rectangle "DHIS to RapidPro Integration" {
+    package "System Monitoring & Management" {
+      usecase ReplayAggrReport as "Replay aggregate report transfer"
+      usecase EditAggrReport as "Edit aggregate report transfer"
+      usecase ScheduleAggrReport as "Schedule aggregate report transfer"
+    }
+    package "Implementation" {
+      usecase IdentityOrgUnitsByCode as "Identify org units by code instead of ID"
+      usecase TransferAggrReportToNonDhis2 as "Transfer aggregate report to non-DHIS2 system"
+      usecase RegisterHealthWorkers as "Register HMIS health workers in RapidPro"
+    }
+    package "Health Care" {
+      usecase AnalyseAggrReport as "Analyse aggregated data from HMIS"
+      usecase NotifyHealthWorkers as "Notify health workers when their reports are overdue"
+      usecase AnalyseDisaggrData as "Analyse disaggregated data from HMIS"
+      usecase TraceHmisReport as "Trace HMIS report to health worker"
+    }
+    package "Integration" {
+      usecase SyncContacts as "Synchronise RapidPro contacts with DHIS2 users"
+      usecase TransferAggrReport as "Transfer aggregate report from RapidPro in DHIS2"
+      usecase SendReminders as "Send reminders of overdue DHIS2 report to RapidPro contacts"
+    }
 }
-
-HealthManager -le-> SynchroniseContacts
-HealthManager --> SendReminders
-SendReminders --> SynchroniseContacts: could happen after
-TraceDataValueSet --> TransferAggrReport: as a consequence of
-HealthManager -> TraceDataValueSet
-SendReminders --> TransferAggrReport: needs
-Operator --> ScheduleReport
-Operator --> ReplayAggrReport
-ReplayAggrReport --> TransferAggrReport: after failed
-ReplayAggrReport --> EditAggrReport: could happen after
-Operator --> EditAggrReport
-EditAggrReport --> TransferAggrReport: after failed
-ScheduleReport --> TransferAggrReport: requires
-Implementer --> TransferAggrReportToNonDhis2
-TransferAggrReportToNonDhis2 --> TransferAggrReport: instead of
-Implementer --> IdentityOrgUnitsByCode
-IdentityOrgUnitsByCode --> SynchroniseContacts: when
-TransferAggrReport --> DisaggregatedData: could have
+HealthManager -- AnalyseAggrReport
+AnalyseAggrReport --> TransferAggrReport
+AnalyseDisaggrData --> TransferAggrReport
+HealthManager -- NotifyHealthWorkers
+NotifyHealthWorkers --> SendReminders
+TraceHmisReport --> TransferAggrReport
+HealthManager - TraceHmisReport
+NotifyHealthWorkers --> TransferAggrReport
+Operator -- ScheduleAggrReport
+Operator -- ReplayAggrReport
+ReplayAggrReport --> TransferAggrReport
+Operator -- EditAggrReport
+EditAggrReport --> ReplayAggrReport
+ScheduleAggrReport --> TransferAggrReport
+Implementer -- TransferAggrReportToNonDhis2
+TransferAggrReportToNonDhis2 --> TransferAggrReport
+Implementer -- IdentityOrgUnitsByCode
+IdentityOrgUnitsByCode --> TransferAggrReport
+IdentityOrgUnitsByCode --> SyncContacts
+HealthManager -- AnalyseDisaggrData
+Implementer -- RegisterHealthWorkers
+RegisterHealthWorkers --> SyncContacts
 @enduml

@@ -10,7 +10,7 @@
 
 ## Sequence Diagrams
 
-![Contact synchronisation](../static/images/contact-synchronisation.png)
+![Contact synchronisation](../static/images/contact-sync.png)
 ![Auto-reminders](../static/images/auto-reminders.png)
 ![Receive aggregate report](../static/images/receive-aggr-report.png)
 ![Transfer aggregate report](../static/images/transfer-aggr-report.png)
