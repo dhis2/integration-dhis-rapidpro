@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,6 @@ import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
 {
@@ -57,12 +57,14 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
 
-        String response = producerTemplate.requestBody(
+        producerTemplate.setDefaultEndpoint( camelContext.getEndpoint( rapidProConnectorHttpEndpointUri ) );
+        Exchange responseExchange = producerTemplate.send(
             rapidProConnectorHttpEndpointUri
                 + "/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
-            String.format(  webhookMessage, contactUuid ), String.class );
+            exchange -> exchange.getMessage().setBody( String.format(  webhookMessage, contactUuid ) ) );
 
-        assertNull(response);
+        assertEquals( "", responseExchange.getMessage().getBody( String.class ) );
+        assertEquals( 202, responseExchange.getMessage().getHeaders().get( "CamelHttpResponseCode" ) );
 
         spyEndpoint.await( 10, TimeUnit.SECONDS );
         assertEquals( 1, spyEndpoint.getReceivedCounter() );

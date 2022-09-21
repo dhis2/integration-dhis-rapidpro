@@ -1,11 +1,18 @@
 @startuml
 title Replay Aggregate Report
-queue Queue as Queue
-participant Dhis2RapidPro as Dhis2RapidPro
+actor "System Operator" as Operator
 database DLC as DLC
+participant Dhis2RapidPro as Dhis2RapidPro
+queue Queue as Queue
 autonumber
 skinparam responseMessageBelowArrow true
+activate Dhis2RapidPro
+activate Operator
+Operator -> DLC: Update failed rows to 'RETRY'
+return
+deactivate Operator
 loop every 5s
+    autonumber
     Dhis2RapidPro -> DLC: Select rows where status is 'RETRY'
     DLC --> Dhis2RapidPro: Rows
     loop rows
