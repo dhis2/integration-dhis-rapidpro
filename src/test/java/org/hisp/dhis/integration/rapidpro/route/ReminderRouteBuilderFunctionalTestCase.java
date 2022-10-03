@@ -73,7 +73,7 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
         CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
         ((SpringBootCamelContext) camelContext)
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
-                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.equals( "Cannot remind contacts for unknown data set code 'Foo'" ) )
+                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.equals( "Cannot remind contacts given unknown data set code 'Foo'" ) )
                 {
                     expectedLogMessage.countDown();
                 }

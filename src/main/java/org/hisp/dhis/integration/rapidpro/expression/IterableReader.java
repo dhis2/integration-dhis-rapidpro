@@ -25,32 +25,23 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro;
+package org.hisp.dhis.integration.rapidpro.expression;
 
-public class Dhis2RapidProException extends RuntimeException
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.Expression;
+import org.springframework.stereotype.Component;
+
+@Component
+public class IterableReader implements Expression
 {
-    public Dhis2RapidProException()
+    @Override
+    public <T> T evaluate( Exchange exchange, Class<T> type )
     {
-        super();
-    }
-
-    public Dhis2RapidProException(String message )
-    {
-        super( message );
-    }
-
-    public Dhis2RapidProException(String message, Throwable cause )
-    {
-        super( message, cause );
-    }
-
-    public Dhis2RapidProException(Throwable cause )
-    {
-        super( cause );
-    }
-
-    protected Dhis2RapidProException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace )
-    {
-        super( message, cause, enableSuppression, writableStackTrace );
+        return (T) StreamSupport
+            .stream( exchange.getMessage().getBody( Iterable.class ).spliterator(), false )
+            .collect( Collectors.toList() );
     }
 }

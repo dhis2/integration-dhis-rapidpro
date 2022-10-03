@@ -30,37 +30,30 @@ package org.hisp.dhis.integration.rapidpro.route;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.integration.rapidpro.processor.CurrentPeriodProcessor;
-import org.hisp.dhis.integration.rapidpro.expression.RootExceptionMessageExpression;
-import org.hisp.dhis.integration.rapidpro.processor.SetIdSchemeQueryParamProcessor;
+import org.hisp.dhis.integration.rapidpro.processor.CurrentPeriodCalculator;
+import org.hisp.dhis.integration.rapidpro.expression.RootCauseExpr;
+import org.hisp.dhis.integration.rapidpro.processor.IdSchemeQueryParamSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DataValueSetRouteBuilder extends AbstractRouteBuilder
+public class TransmitReportRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
-    private CurrentPeriodProcessor currentPeriodProcessor;
+    private CurrentPeriodCalculator currentPeriodCalculator;
 
     @Autowired
-    private RootExceptionMessageExpression rootExceptionMessageExpression;
+    private RootCauseExpr rootCauseExpr;
 
     @Autowired
-    private SetIdSchemeQueryParamProcessor setIdSchemeQueryParamProcessor;
+    private IdSchemeQueryParamSetter idSchemeQueryParamSetter;
 
     @Override
     protected void doConfigure()
     {
-        from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
-            .removeHeader( Exchange.HTTP_URI )
-            .to( "jms:queue:dhis2?exchangePattern=InOnly" )
-            .setHeader( Exchange.HTTP_RESPONSE_CODE, constant( 202 ) )
-            .setBody().simple( "${null}" );
-
         from( "timer://retry?fixedRate=true&period=5000" )
-            .setBody( constant( "SELECT * FROM DEAD_LETTER_CHANNEL WHERE status = 'RETRY' LIMIT 100" ) )
+            .setBody( simple( "${properties:retry.dlc.select.{{spring.datasource.platform}}}" ) )
             .to( "jdbc:dataSource" )
             .split().body()
                 .setHeader( "id", simple( "${body['ID']}" ) )
@@ -70,7 +63,7 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
                 .setHeader( "orgUnitId", simple( "${body['ORGANISATION_UNIT_ID']}" ) )
                 .setBody( simple( "${body['PAYLOAD']}" ) )
                 .to( "jms:queue:dhis2?exchangePattern=InOnly" )
-                .setBody( constant( "UPDATE DEAD_LETTER_CHANNEL SET status = 'PROCESSED', last_processed_at = CURRENT_TIMESTAMP WHERE id = :?id" ) )
+                .setBody( simple( "${properties:processed.dlc.update.{{spring.datasource.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .end();
 
@@ -120,23 +113,20 @@ public class DataValueSetRouteBuilder extends AbstractRouteBuilder
             } )
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
-            .process( setIdSchemeQueryParamProcessor )
+            .process( idSchemeQueryParamSetter )
             .marshal().json().transform().body(String.class)
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
             .toD( "{{report.destination.endpoint}}" );
 
         from( "direct:dlq" )
-            .setHeader( "errorMessage", rootExceptionMessageExpression )
+            .setHeader( "errorMessage", rootCauseExpr )
             .setHeader( "payload", header( "originalPayload" ) )
-            .choice().when( header( "orgUnitId" ).isNull() )
-                .setHeader( "orgUnitId", constant( null ) )
-            .end()
-            .setBody( simple(
-                "INSERT INTO DEAD_LETTER_CHANNEL (payload, data_set_code, report_period_offset, organisation_unit_id, status, error_message) VALUES (:?payload, :?dataSetCode, :?reportPeriodOffset, :?orgUnitId, 'ERROR', :?errorMessage)" ) )
+            .setHeader( "orgUnitId" ).ognl( "request.headers.orgUnitId == null ? null : header(orgUnitId)" )
+            .setBody( simple( "${properties:error.dlc.insert.{{spring.datasource.platform}}}" ) )
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
 
         from( "direct:computePeriod" )
             .toD( "dhis2://get/collection?path=dataSets&filter=code:eq:${headers['dataSetCode']}&fields=periodType&itemType=org.hisp.dhis.api.model.v2_36_11.DataSet&paging=false&client=#dhis2Client" )
-            .process( currentPeriodProcessor );
+            .process( currentPeriodCalculator );
     }
 }

@@ -10,17 +10,16 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SetIdSchemeQueryParamProcessorTestCase
+public class IdSchemeQueryParamSetterTestCase
 {
-
     @Test
     public void testProcess()
     {
-        SetIdSchemeQueryParamProcessor setIdSchemeQueryParamProcessor = new SetIdSchemeQueryParamProcessor();
+        IdSchemeQueryParamSetter idSchemeQueryParamSetter = new IdSchemeQueryParamSetter();
         CamelContext camelContext = new DefaultCamelContext();
         camelContext.getPropertiesComponent().addInitialProperty( "org.unit.id.scheme", "ID" );
         Exchange exchange = new DefaultExchange( camelContext );
-        setIdSchemeQueryParamProcessor.process( exchange );
+        idSchemeQueryParamSetter.process( exchange );
 
         Map queryParams = exchange.getMessage().getHeader( "CamelDhis2.queryParams", Map.class );
         assertEquals( "CODE", queryParams.get( "dataElementIdScheme" ) );

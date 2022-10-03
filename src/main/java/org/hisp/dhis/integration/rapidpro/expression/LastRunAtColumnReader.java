@@ -25,32 +25,35 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro;
+package org.hisp.dhis.integration.rapidpro.expression;
 
-public class Dhis2RapidProException extends RuntimeException
+import org.apache.camel.Exchange;
+import org.apache.camel.Expression;
+import org.springframework.stereotype.Component;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+
+@Component
+public class LastRunAtColumnReader implements Expression
 {
-    public Dhis2RapidProException()
+    @Override
+    public <T> T evaluate( Exchange exchange, Class<T> type )
     {
-        super();
-    }
-
-    public Dhis2RapidProException(String message )
-    {
-        super( message );
-    }
-
-    public Dhis2RapidProException(String message, Throwable cause )
-    {
-        super( message, cause );
-    }
-
-    public Dhis2RapidProException(Throwable cause )
-    {
-        super( cause );
-    }
-
-    protected Dhis2RapidProException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace )
-    {
-        super( message, cause, enableSuppression, writableStackTrace );
+        List<Map<String, Object>> rows = exchange.getMessage().getBody( List.class );
+        if ( !rows.isEmpty() )
+        {
+            Map<String, Object> row = rows.get( 0 );
+            OffsetDateTime lastRunAt = (OffsetDateTime) row.get( "LAST_RUN_AT" );
+            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" );
+            return (T) dateTimeFormatter.withZone( ZoneId.of( "UTC" ) ).format( lastRunAt );
+        }
+        else
+        {
+            return null;
+        }
     }
 }

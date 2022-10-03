@@ -27,10 +27,10 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.hisp.dhis.api.model.v2_36_11.ListGrid;
-import org.hisp.dhis.integration.rapidpro.expression.BodyIterableToListExpression;
-import org.hisp.dhis.integration.rapidpro.processor.PrepareBroadcastProcessor;
+import org.hisp.dhis.integration.rapidpro.expression.IterableReader;
 import org.hisp.dhis.integration.rapidpro.processor.SetReportRateQueryParamProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -42,10 +42,7 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
     private SetReportRateQueryParamProcessor setReportRateQueryParamProcessor;
 
     @Autowired
-    private PrepareBroadcastProcessor prepareBroadcastProcessor;
-
-    @Autowired
-    private BodyIterableToListExpression bodyIterableToListExpression;
+    private IterableReader iterableReader;
 
     @Override
     protected void doConfigure()
@@ -53,7 +50,7 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
         from( "servlet:reminders?muteException=true" )
             .removeHeaders( "*" )
             .to( "direct:reminders" )
-            .setHeader( "Content-Type", constant( "text/html" ) )
+            .setHeader( Exchange.CONTENT_TYPE, constant( "text/html" ) )
             .setBody( constant( "<html><body>Sent reminders of overdue reports</body></html>" ) );
 
         from( "quartz://reminders?cron={{reminder.schedule.expression:0 0 9 ? * *}}" )
@@ -65,41 +62,40 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
             .choice().when( simple( "{{sync.rapidpro.contacts}} == true" ) )
                 .to( "direct:sync" )
             .end()
-            .enrich("direct:fetchContacts").setProperty( "contacts", simple( "${body}" ) )
             .split( simple( "{{reminder.data.set.codes:}}" ), "," )
                 .setProperty( "dataSetCode", simple( "${body}" ) )
                 .to( "direct:fetchDataSet" )
-                .choice()
-                    .when( body().isNull() )
-                        .log( LoggingLevel.WARN, LOGGER, "Cannot remind contacts for unknown data set code '${exchangeProperty.dataSetCode}'" )
-                    .otherwise()
-                        .setProperty( "dataSet", simple(  "${body}" ) )
+                .choice().when( body().isNull() )
+                    .log( LoggingLevel.WARN, LOGGER, "Cannot remind contacts given unknown data set code '${exchangeProperty.dataSetCode}'" )
+                .otherwise()
+                    .setProperty( "dataSet", simple(  "${body}" ) )
+                    .setProperty( "nextContactsPageUrl", simple( "{{rapidpro.api.url}}/contacts.json?group=DHIS2" ) )
+                    .loopDoWhile( exchangeProperty( "nextContactsPageUrl" ).isNotNull() )
+                        .to("direct:fetchContacts" )
+                        .setProperty( "contacts", simple( "${body}" ) )
                         .to( "direct:fetchReportRate" )
                         .split( simple( "${body.rows.get}" ) )
-                            .choice()
-                                .when( simple( "${body[4]} != '100.0'" ) )
-                                    .process( prepareBroadcastProcessor )
-                                    .split(simple(  "${body}" ))
-                                    .to( "direct:sendBroadcast" )
-                            .end()
+                            .filter( simple( "${body[4]} != '100.0'" ) )
+                            .to( "direct:sendBroadcast" )
                         .end()
                     .end()
                 .end()
             .end();
 
         from( "direct:fetchDataSet" )
-            .toD( "dhis2://get/collection?path=dataSets&filter=code:eq:${body}&fields=id,name,periodType,organisationUnits[id,${exchangeProperty.orgUnitIdScheme.toLowerCase()}]&itemType=org.hisp.dhis.api.model.v2_36_11.DataSet&paging=false&client=#dhis2Client" )
-            .transform( bodyIterableToListExpression )
-            .choice()
-                .when( simple( "${body.size()} > 0" ) )
-                    .transform( simple( "${body[0]}" ) )
-                .otherwise()
-                    .setBody(simple( "${null}" ))
+            .toD( "dhis2://get/resource?path=dataSets&filter=code:eq:${body}&fields=id,name,periodType,organisationUnits[id,${exchangeProperty.orgUnitIdScheme.toLowerCase()}]&client=#dhis2Client" )
+            .setProperty( "dataSetCount", jsonpath( "$.dataSets.length()" ) )
+            .choice().when().simple( "${exchangeProperty.dataSetCount} > 0" )
+                .transform( jsonpath( "$.dataSets[0]" ) )
+            .otherwise()
+                .setBody( simple( "${null}" ) )
             .end();
 
         from( "direct:fetchContacts" )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .toD( "{{rapidpro.api.url}}/contacts.json?group=DHIS2&httpMethod=GET" ).unmarshal().json();
+            .toD( "${exchangeProperty.nextContactsPageUrl}&httpMethod=GET" )
+            .unmarshal().json()
+            .setProperty( "nextContactsPageUrl", simple( "${body[next]}" ) );
 
         from( "direct:fetchReportRate" )
             .process( setReportRateQueryParamProcessor )
@@ -107,9 +103,9 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
             .unmarshal().json( ListGrid.class );
 
         from( "direct:sendBroadcast" )
-            .marshal().json()
+            .transform( datasonnet( "resource:classpath:broadcast.ds", String.class, "application/x-java-object", "application/json" ) )
             .removeHeaders( "*" )
-            .setHeader( "Content-Type", constant( "application/json" ) )
+            .setHeader( Exchange.CONTENT_TYPE, constant( "application/json" ) )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .toD( "{{rapidpro.api.url}}/broadcasts.json?httpMethod=POST" )
             .log( LoggingLevel.INFO, LOGGER, "Overdue report reminder sent => ${body}" );

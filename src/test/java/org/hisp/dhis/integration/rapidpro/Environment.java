@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import io.restassured.builder.MultiPartSpecBuilder;
 import org.hisp.dhis.api.model.v2_36_11.DescriptiveWebMessage;
 import org.hisp.dhis.api.model.v2_36_11.ImportReport;
 import org.hisp.dhis.api.model.v2_36_11.Notification;
@@ -75,9 +76,9 @@ import io.restassured.specification.RequestSpecification;
 
 public final class Environment
 {
-    public static final String ORG_UNIT_ID;
+    public static String ORG_UNIT_ID;
 
-    public static final Dhis2Client DHIS2_CLIENT;
+    public static Dhis2Client DHIS2_CLIENT;
 
     public static GenericContainer<?> DHIS2_CONTAINER;
 
@@ -95,9 +96,9 @@ public final class Environment
 
     private static GenericContainer<?> MAILROOM_CONTAINER;
 
-    public static final RequestSpecification RAPIDPRO_REQUEST_SPEC;
+    public static RequestSpecification RAPIDPRO_REQUEST_SPEC;
 
-    public static final RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
+    public static RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
 
     private static PostgreSQLContainer<?> DHIS2_DB_CONTAINER;
 
@@ -105,55 +106,14 @@ public final class Environment
     {
         try
         {
+            RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+
             composeRapidProContainers();
             composeDhis2Containers();
             startContainers();
 
-            RAPIDPRO_CONTAINER.execInContainer(
-                "sh", "-c", "python manage.py createsuperuser --username root --email admin@dhis2.org --noinput" );
-
-            String rapidProBaseUri = String.format( "http://%s:%s", RAPIDPRO_CONTAINER.getHost(),
-                RAPIDPRO_CONTAINER.getFirstMappedPort() );
-
-            String rapidProApiUrl = rapidProBaseUri + "/api/v2";
-
-            String dhis2ApiUrl = String.format( "http://%s:%s/api", DHIS2_CONTAINER.getHost(),
-                DHIS2_CONTAINER.getFirstMappedPort() );
-
-            System.setProperty( "dhis2.api.url", dhis2ApiUrl );
-            System.setProperty( "rapidpro.api.url", rapidProApiUrl );
-
-            RAPIDPRO_REQUEST_SPEC = new RequestSpecBuilder().setBaseUri( rapidProBaseUri ).build();
-            RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
-
-            given( RAPIDPRO_REQUEST_SPEC ).contentType( ContentType.URLENC ).formParams(
-                    Map.of( "first_name", "Alice", "last_name", "Wonderland", "email", "claude@dhis2.org", "password",
-                        "12345678", "timezone", "Europe/Berlin", "name", "dhis2" ) )
-                .when()
-                .post( "/org/signup/" ).then().statusCode( 302 );
-
-            String apiToken = generateRapidProApiToken();
-            RAPIDPRO_API_REQUEST_SPEC = new RequestSpecBuilder().setBaseUri( rapidProApiUrl )
-                .addHeader( "Authorization", "Token " + apiToken ).build();
-            System.setProperty( "rapidpro.api.token", apiToken );
-
-            DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl, "admin", "district" ).build();
-
-            ORG_UNIT_ID = createOrgUnit();
-            createOrgUnitLevel();
-            String orgUnitLevelId = null;
-            for ( OrganisationUnitLevel organisationUnitLevel : DHIS2_CLIENT.get( "organisationUnitLevels" )
-                .withFields( "id" )
-                .withoutPaging().transfer().returnAs( OrganisationUnitLevel.class, "organisationUnitLevels" ) )
-            {
-                orgUnitLevelId = organisationUnitLevel.getId().get();
-            }
-
-            importMetaData( Objects.requireNonNull( orgUnitLevelId ) );
-            addOrgUnitToAdminUser( ORG_UNIT_ID );
-            addOrgUnitToDataSet( ORG_UNIT_ID );
-            createDhis2Users( ORG_UNIT_ID );
-            runAnalytics();
+            setUpRapidPro();
+            setUpDhis2();
         }
         catch ( Exception e )
         {
@@ -162,9 +122,95 @@ public final class Environment
         }
     }
 
+    private static void setUpDhis2()
+        throws
+        IOException,
+        InterruptedException
+    {
+        String dhis2ApiUrl = String.format( "http://%s:%s/api", DHIS2_CONTAINER.getHost(),
+            DHIS2_CONTAINER.getFirstMappedPort() );
+
+        System.setProperty( "dhis2.api.url", dhis2ApiUrl );
+
+        DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl, "admin", "district" ).build();
+
+        ORG_UNIT_ID = createOrgUnit();
+        createOrgUnitLevel();
+        String orgUnitLevelId = null;
+        for ( OrganisationUnitLevel organisationUnitLevel : DHIS2_CLIENT.get( "organisationUnitLevels" )
+            .withFields( "id" )
+            .withoutPaging().transfer().returnAs( OrganisationUnitLevel.class, "organisationUnitLevels" ) )
+        {
+            orgUnitLevelId = organisationUnitLevel.getId().get();
+        }
+
+        importMetaData( Objects.requireNonNull( orgUnitLevelId ) );
+        addOrgUnitToAdminUser( ORG_UNIT_ID );
+        addOrgUnitToDataSet( ORG_UNIT_ID );
+        createDhis2Users( ORG_UNIT_ID );
+        runAnalytics();
+    }
+
+    private static void setUpRapidPro()
+        throws
+        IOException,
+        InterruptedException
+    {
+        RAPIDPRO_CONTAINER.execInContainer(
+            "sh", "-c", "python manage.py createsuperuser --username root --email admin@dhis2.org --noinput" );
+
+        String rapidProBaseUri = String.format( "http://%s:%s", RAPIDPRO_CONTAINER.getHost(),
+            RAPIDPRO_CONTAINER.getFirstMappedPort() );
+
+        String rapidProApiUrl = rapidProBaseUri + "/api/v2";
+
+        System.setProperty( "rapidpro.api.url", rapidProApiUrl );
+
+        RAPIDPRO_REQUEST_SPEC = new RequestSpecBuilder().setBaseUri( rapidProBaseUri ).build();
+
+        given( RAPIDPRO_REQUEST_SPEC ).contentType( ContentType.URLENC ).formParams(
+                Map.of( "first_name", "Alice", "last_name", "Wonderland", "email", "claude@dhis2.org", "password",
+                    "12345678", "timezone", "Europe/Berlin", "name", "dhis2" ) )
+            .when()
+            .post( "/org/signup/" ).then().statusCode( 302 );
+
+        importFlowUnderTest();
+
+        String apiToken = generateRapidProApiToken();
+        RAPIDPRO_API_REQUEST_SPEC = new RequestSpecBuilder().setBaseUri( rapidProApiUrl )
+            .addHeader( "Authorization", "Token " + apiToken ).build();
+        System.setProperty( "rapidpro.api.token", apiToken );
+    }
+
     private Environment()
     {
 
+    }
+
+    private static void importFlowUnderTest()
+        throws
+        IOException
+    {
+        String flowDefinition = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "flow.json" ),
+            Charset.defaultCharset() );
+
+        String sessionId = fetchRapidProSessionId( "claude@dhis2.org", "12345678" );
+        ExtractableResponse<Response> flowImportPageResponse = given( RAPIDPRO_REQUEST_SPEC ).cookie( "sessionid",
+                sessionId ).
+            when().get( "/org/import/" ).then().statusCode( 200 ).extract();
+        String flowImportCsrfMiddlewareToken = flowImportPageResponse.htmlPath()
+            .getString( "html.body.div.div[4].div.div.div.div[3].form.input.@value" );
+
+        given( RAPIDPRO_REQUEST_SPEC ).cookie( "sessionid", sessionId ).contentType( "multipart/form-data" )
+            .multiPart(
+                new MultiPartSpecBuilder( flowImportCsrfMiddlewareToken ).emptyFileName().mimeType( "text/plain" )
+                    .controlName( "csrfmiddlewaretoken" ).build() )
+            .multiPart( new MultiPartSpecBuilder( flowDefinition ).mimeType( "application/json" )
+                .header( "Content-Disposition", "form-data; name=\"import_file\"; filename=\"flow.json\"" )
+                .header( "Content-Transfer-Encoding", "binary" ).build() )
+            .when()
+            .post( "/org/import/" ).then().statusCode( 302 ).header( "Location", "/org/home/" );
     }
 
     private static void startContainers()
@@ -302,8 +348,6 @@ public final class Environment
     }
 
     public static void createDhis2Users( String orgUnitId )
-        throws
-        IOException
     {
         int phoneNumber = 21000000;
         for ( int i = 0; i < 10; i++ )
@@ -347,7 +391,7 @@ public final class Environment
             .getUid().get();
     }
 
-    private static String generateRapidProApiToken()
+    private static String fetchRapidProSessionId( String username, String password )
     {
         ExtractableResponse<Response> loginPageResponse = given( RAPIDPRO_REQUEST_SPEC ).when()
             .get( "/users/login/" ).then().statusCode( 200 ).extract();
@@ -356,12 +400,17 @@ public final class Environment
             .getString( "html.body.div.div[3].div.div.div[1].div.div.form.input.@value" );
         String csrfToken = loginPageResponse.cookie( "csrftoken" );
 
-        String sessionId = given( RAPIDPRO_REQUEST_SPEC ).contentType( ContentType.URLENC )
+        return given( RAPIDPRO_REQUEST_SPEC ).contentType( ContentType.URLENC )
             .cookie( "csrftoken", csrfToken )
             .formParams( Map.of( "csrfmiddlewaretoken", csrfMiddlewareToken,
-                "username", "root", "password", "12345678" ) )
+                "username", username, "password", password ) )
             .when()
             .post( "/users/login/" ).then().statusCode( 302 ).extract().cookie( "sessionid" );
+    }
+
+    private static String generateRapidProApiToken()
+    {
+        String sessionId = fetchRapidProSessionId( "root", "12345678" );
 
         return given( RAPIDPRO_REQUEST_SPEC )
             .cookie( "sessionid", sessionId ).when()

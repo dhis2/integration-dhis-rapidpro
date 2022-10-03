@@ -1,0 +1,5 @@
+{
+    flow: body.flow,
+    contact: body.contact,
+    results: body.values
+}
