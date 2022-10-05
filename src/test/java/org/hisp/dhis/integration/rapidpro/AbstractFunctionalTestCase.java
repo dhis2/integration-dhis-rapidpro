@@ -80,13 +80,14 @@ public class AbstractFunctionalTestCase
     @BeforeEach
     public void beforeEach()
         throws
-        IOException
+        Exception
     {
         System.clearProperty( "sync.rapidpro.contacts" );
         System.clearProperty( "org.unit.id.scheme" );
         System.clearProperty( "reminder.data.set.codes" );
         System.clearProperty( "report.delivery.schedule.expression" );
         System.clearProperty( "report.destination.endpoint" );
+        System.clearProperty( "rapidpro.flow.uuids" );
 
         jdbcTemplate.execute( "TRUNCATE TABLE DEAD_LETTER_CHANNEL" );
         jdbcTemplate.execute( "TRUNCATE TABLE MESSAGES" );
@@ -107,7 +108,7 @@ public class AbstractFunctionalTestCase
 
     public void doBeforeEach()
         throws
-        IOException
+        Exception
     {
 
     }

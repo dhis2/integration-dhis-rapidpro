@@ -41,12 +41,14 @@ import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCu
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.PropertySource;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.sql.SQLException;
 
 @SpringBootApplication
+@PropertySource("classpath:sql.properties")
 public class Application extends SpringBootServletInitializer
 {
     @Value( "${dhis2.api.url}" )

@@ -25,34 +25,23 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro.expression;
+package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.support.DefaultExchange;
-import org.junit.jupiter.api.Test;
+import org.apache.camel.LoggingLevel;
+import org.springframework.stereotype.Component;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class RootExceptionMessageExpressionTestCase
+@Component
+public class WebHookRouteBuilder extends AbstractRouteBuilder
 {
-    @Test
-    public void testEvaluateGivenExceptionWithNoCause()
+    @Override
+    protected void doConfigure()
     {
-        RootExceptionMessageExpression rootExceptionMessageExpression = new RootExceptionMessageExpression();
-        Exchange exchange = new DefaultExchange( new DefaultCamelContext() );
-        exchange.setProperty( Exchange.EXCEPTION_CAUGHT, new Exception( "foo" ) );
-        String message = rootExceptionMessageExpression.evaluate( exchange, String.class );
-        assertEquals( "foo", message );
-    }
-
-    @Test
-    public void testEvaluateGivenExceptionWithCause()
-    {
-        RootExceptionMessageExpression rootExceptionMessageExpression = new RootExceptionMessageExpression();
-        Exchange exchange = new DefaultExchange( new DefaultCamelContext() );
-        exchange.setProperty( Exchange.EXCEPTION_CAUGHT, new Exception( new Exception( "foo" ) ) );
-        String message = rootExceptionMessageExpression.evaluate( exchange, String.class );
-        assertEquals( "foo", message );
+        from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
+            .removeHeader( Exchange.HTTP_URI )
+            .to( "jms:queue:dhis2?exchangePattern=InOnly" )
+            .log( LoggingLevel.DEBUG, LOGGER, "Enqueued webhook message [data set code = ${header.dataSetCode},report period offset = ${header.reportPeriodOffset},orgUnitId = ${header.orgUnitId},content = ${body}]" )
+            .setHeader( Exchange.HTTP_RESPONSE_CODE, constant( 202 ) )
+            .setBody().simple( "${null}" );
     }
 }

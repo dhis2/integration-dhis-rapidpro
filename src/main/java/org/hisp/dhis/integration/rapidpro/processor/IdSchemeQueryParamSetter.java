@@ -25,23 +25,32 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro.expression;
+package org.hisp.dhis.integration.rapidpro.processor;
 
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Expression;
+import org.apache.camel.Processor;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BodyIterableToListExpression implements Expression
+public class IdSchemeQueryParamSetter implements Processor
 {
     @Override
-    public <T> T evaluate( Exchange exchange, Class<T> type )
+    public void process( Exchange exchange )
     {
-        return (T) StreamSupport
-            .stream( exchange.getMessage().getBody( Iterable.class ).spliterator(), false )
-            .collect( Collectors.toList() );
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put( "dataElementIdScheme", "CODE" );
+        queryParams.put( "categoryOptionComboIdScheme", "CODE" );
+        queryParams.put( "dataSetIdScheme", "CODE" );
+
+        String orgUnitIdScheme = exchange.getContext().resolvePropertyPlaceholders( "{{org.unit.id.scheme}}" );
+        // FIXME: DHIS 2.36 returns an HTTP 500 when orgUnitIdScheme is set to the default identifier 'ID'
+        if ( !orgUnitIdScheme.equalsIgnoreCase( "ID" ) )
+        {
+            queryParams.put( "orgUnitIdScheme", orgUnitIdScheme );
+        }
+        exchange.getMessage().setHeader( "CamelDhis2.queryParams", queryParams );
     }
 }

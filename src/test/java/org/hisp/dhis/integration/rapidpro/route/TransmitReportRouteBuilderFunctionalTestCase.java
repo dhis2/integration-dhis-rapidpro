@@ -58,7 +58,7 @@ import org.springframework.util.StreamUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class DataValueSetRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
+public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Autowired
     private ObjectMapper objectMapper;

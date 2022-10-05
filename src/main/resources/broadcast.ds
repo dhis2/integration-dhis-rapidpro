@@ -1,0 +1,8 @@
+local selectOrgUnitFn(orgUnits, reportRateOrgUnitId) = ds.filter(orgUnits, function(o, i) reportRateOrgUnitId == o.id)[0];
+
+local getAssignedContactsFn(contact) = contact.fields.dhis2_organisation_unit_id == ds.util.select(selectOrgUnitFn(cml.exchangeProperty('dataSet').organisationUnits, payload[0]), ds.lower(cml.exchangeProperty('orgUnitIdScheme')));
+
+{
+    contacts: std.map(function(c) c.uuid, ds.filter(cml.exchangeProperty('contacts').results, getAssignedContactsFn)),
+    text: native.formatResource('text', cml.exchangeProperty('dataSet').name)
+}

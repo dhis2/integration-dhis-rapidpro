@@ -42,9 +42,12 @@ import org.springframework.stereotype.Component;
 import sjsonnet.Materializer;
 import sjsonnet.Val;
 
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.Set;
 
 @Component
@@ -66,13 +69,39 @@ public class NativeDataSonnetLibrary extends Library
     public Map<String, Val.Func> functions( DataFormatService dataFormats, Header header )
     {
         Map<String, Val.Func> answer = new HashMap<>();
-        answer.put( "logWarning", makeSimpleFunc(
-            Collections.singletonList( "key" ), vals -> {
+        answer.put( "logWarning", logWarningFn() );
+        answer.put( "isCategoryOptionCombo", isCategoryOptionComboFn( dataFormats ) );
+        answer.put( "formatResource", formatResource( dataFormats ) );
+
+        return answer;
+    }
+
+    protected Val.Func formatResource( DataFormatService dataFormats )
+    {
+        return makeSimpleFunc(
+            List.of( "key", "dataSetName" ), vals -> {
+                ResourceBundle resourceBundle = ResourceBundle.getBundle( "reminder" );
+                String resource = MessageFormat.format( resourceBundle.getString( ((Val.Str) vals.get( 0 )).value() ),
+                    ((Val.Str) vals.get( 1 )).value() );
+
+                return Materializer.reverse( dataFormats.mandatoryRead(
+                    new DefaultDocument<>( resource, MediaTypes.APPLICATION_JAVA ) ) );
+            } );
+    }
+
+    protected Val.Func logWarningFn()
+    {
+        return makeSimpleFunc(
+            Collections.singletonList( "msg" ), vals -> {
                 LOGGER.warn( ((Val.Str) vals.get( 0 )).value() );
                 return null;
-            } ) );
-        answer.put( "isCategoryOptionCombo", makeSimpleFunc(
-            Collections.singletonList( "key" ), vals -> {
+            } );
+    }
+
+    protected Val.Func isCategoryOptionComboFn( DataFormatService dataFormats )
+    {
+        return makeSimpleFunc(
+            Collections.singletonList( "categoryComboOptionCode" ), vals -> {
                 Iterable<CategoryOptionCombo> categoryOptionCombos = dhis2Client.get( "categoryOptionCombos" )
                     .withFilter( "code:eq:" + ((Val.Str) vals.get( 0 )).value() ).withoutPaging()
                     .transfer().returnAs( CategoryOptionCombo.class, "categoryOptionCombos" );
@@ -85,9 +114,7 @@ public class NativeDataSonnetLibrary extends Library
                 }
                 return Materializer.reverse( dataFormats.mandatoryRead(
                     new DefaultDocument<>( categoryOptionComboExists, MediaTypes.APPLICATION_JAVA ) ) );
-            } ) );
-
-        return answer;
+            } );
     }
 
     @Override

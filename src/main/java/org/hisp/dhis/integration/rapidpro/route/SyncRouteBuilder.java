@@ -27,16 +27,13 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
-import static org.apache.camel.component.http.HttpMethods.GET;
-import static org.apache.camel.component.http.HttpMethods.POST;
-
 import java.util.Map;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.integration.rapidpro.expression.BodyIterableToListExpression;
-import org.hisp.dhis.integration.rapidpro.processor.ModifyContactsProcessor;
-import org.hisp.dhis.integration.rapidpro.processor.NewContactsProcessor;
+import org.hisp.dhis.integration.rapidpro.expression.IterableReader;
+import org.hisp.dhis.integration.rapidpro.processor.ExistingUserEnumerator;
+import org.hisp.dhis.integration.rapidpro.processor.NewUserEnumerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -45,13 +42,13 @@ import org.springframework.stereotype.Component;
 public class SyncRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
-    private NewContactsProcessor newContactsProcessor;
+    private NewUserEnumerator newUserEnumerator;
 
     @Autowired
-    private BodyIterableToListExpression bodyIterableToListExpression;
+    private IterableReader iterableReader;
 
     @Autowired
-    private ModifyContactsProcessor modifyContactsProcessor;
+    private ExistingUserEnumerator existingUserEnumerator;
 
     @Value( "${org.unit.id.scheme}" )
     private String orgUnitIdScheme;
@@ -66,7 +63,7 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
             .setHeader( "Content-Type", constant( "text/html" ) )
             .setBody( constant( "<html><body>Synchronised RapidPro contacts with DHIS2 users</body></html>" ) );
 
-        from( "quartz://sync?cron={{sync.schedule.expression:0 0/30 * * * ?}}" )
+        from( "quartz://sync?cron={{sync.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
             .precondition( "{{sync.rapidpro.contacts}}" )
             .to( "direct:sync" );
 
@@ -77,33 +74,46 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
             .to( "direct:prepareRapidPro" )
             .setProperty( "orgUnitIdScheme", simple( "{{org.unit.id.scheme}}" ) )
             .toD( "dhis2://get/collection?path=users&fields=id,firstName,surname,phoneNumber,organisationUnits[${exchangeProperty.orgUnitIdScheme.toLowerCase()}~rename(id)]&filter=phoneNumber:!null:&itemType=org.hisp.dhis.api.model.v2_36_11.User&paging=false&client=#dhis2Client" )
-            .setProperty( "dhis2Users", bodyIterableToListExpression )
+            .setProperty( "dhis2Users", iterableReader )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .toD( "{{rapidpro.api.url}}/contacts.json?group=DHIS2&httpMethod=GET" ).unmarshal().json()
-            .setProperty( "rapidProContacts", simple( "${body}" ) ).process( newContactsProcessor )
-            .split().body()
-                .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object", "application/x-java-object" ) )
-                .setProperty( "dhis2UserId", simple( "${body['fields']['dhis2_user_id']}" ) )
-                .marshal().json().convertBodyTo( String.class )
-                .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-                .log( LoggingLevel.DEBUG, LOGGER, "Creating RapidPro contact => ${body}" )
-                .toD( "{{rapidpro.api.url}}/contacts.json?httpMethod=POST&okStatusCodeRange=200-499" )
-                .choice()
-                    .when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "201" ) ).log( LoggingLevel.WARN, LOGGER, "Unexpected status code when creating RapidPro contact for DHIS2 user ${exchangeProperty.dhis2UserId} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
+            .setProperty( "nextContactsPageUrl", simple( "{{rapidpro.api.url}}/contacts.json?group=DHIS2" ) )
+            .loopDoWhile( exchangeProperty( "nextContactsPageUrl" ).isNotNull() )
+                .toD( "${exchangeProperty.nextContactsPageUrl}" ).unmarshal().json()
+                .setProperty( "nextContactsPageUrl", simple( "${body[next]}" ) )
+                .setProperty( "rapidProContacts", simple( "${body}" ) )
+                .process( newUserEnumerator )
+                .split().body()
+                    .to( "direct:createContact" )
                 .end()
-            .end()
-            .process( modifyContactsProcessor )
-            .split().body()
-                .setHeader( "rapidProUuid", simple( "${body.getKey}" ) ).setBody( simple( "${body.getValue}" ) )
-                .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object", "application/x-java-object" ) )
-                .marshal().json().convertBodyTo( String.class )
-                .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-                .log( LoggingLevel.DEBUG, LOGGER, "Updating RapidPro contact => ${body}" )
-                .toD( "{{rapidpro.api.url}}/contacts.json?uuid=${header.rapidProUuid}&httpMethod=POST&okStatusCodeRange=200-499" )
-                .choice()
-                    .when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "200" ) ).log( LoggingLevel.WARN, LOGGER, "Unexpected status code when updating RapidPro contact ${header.rapidProUuid} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
+                .process( existingUserEnumerator )
+                .split().body()
+                    .to( "direct:updateContact" )
                 .end()
             .end()
             .log( LoggingLevel.INFO, LOGGER, "Completed synchronisation of RapidPro contacts with DHIS2 users" );
+
+        from( "direct:createContact" )
+            .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object", "application/x-java-object" ) )
+            .setProperty( "dhis2UserId", simple( "${body['fields']['dhis2_user_id']}" ) )
+            .marshal().json().convertBodyTo( String.class )
+            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+            .log( LoggingLevel.DEBUG, LOGGER, "Creating RapidPro contact => ${body}" )
+            .toD( "{{rapidpro.api.url}}/contacts.json?httpMethod=POST&okStatusCodeRange=200-499" )
+            .choice().when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "201" ) )
+                .log( LoggingLevel.WARN, LOGGER, "Unexpected status code when creating RapidPro contact for DHIS2 user ${exchangeProperty.dhis2UserId} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
+            .end();
+
+        from( "direct:updateContact" )
+            .setProperty( "rapidProUuid", simple( "${body.getKey}" ) )
+            .setBody( simple( "${body.getValue}" ) )
+            .transform( datasonnet( "resource:classpath:contact.ds", Map.class, "application/x-java-object", "application/x-java-object" ) )
+            .marshal().json().convertBodyTo( String.class )
+            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+            .log( LoggingLevel.DEBUG, LOGGER, "Updating RapidPro contact => ${body}" )
+            .toD( "{{rapidpro.api.url}}/contacts.json?uuid=${exchangeProperty.rapidProUuid}&httpMethod=POST&okStatusCodeRange=200-499" )
+            .choice().when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "200" ) )
+                .log( LoggingLevel.WARN, LOGGER, "Unexpected status code when updating RapidPro contact ${exchangeProperty.rapidProUuid} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
+            .end();
+
     }
 }

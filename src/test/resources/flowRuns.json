@@ -1,0 +1,107 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "uuid": "3e9137ee-574c-4d3e-8ac8-9103788b91ac",
+      "flow": {
+        "uuid": "1dd832bb-0f3b-4522-9457-d56859f3cc18",
+        "name": "Flow Under Test"
+      },
+      "contact": {
+        "uuid": "8ea7d369-3e32-4089-94da-ff7b3f1fcf98",
+        "urn": "tel:+35621000001",
+        "name": "Tiera Senger"
+      },
+      "start": {
+        "uuid": "13f71aac-f7dc-4082-a902-085c1b510671"
+      },
+      "responded": false,
+      "path": [
+        {
+          "node": "bafd114e-86e8-4b8f-abec-ddfaaacc9198",
+          "time": "2022-09-30T15:01:52.938515Z"
+        },
+        {
+          "node": "ea4d9800-89b7-4933-b2f7-a1af02b9d33f",
+          "time": "2022-09-30T15:01:52.938919Z"
+        },
+        {
+          "node": "51df2118-989d-4263-9087-471e14ba8be4",
+          "time": "2022-09-30T15:01:52.938937Z"
+        },
+        {
+          "node": "c3fbaa83-54ba-4481-ae49-a5ee8827698c",
+          "time": "2022-09-30T15:01:52.938951Z"
+        },
+        {
+          "node": "d1f2ba28-fd9d-47eb-8954-c051f9cc59c9",
+          "time": "2022-09-30T15:01:52.938962Z"
+        },
+        {
+          "node": "2e63cbae-1464-481b-89fc-b710815248d2",
+          "time": "2022-09-30T15:01:52.938974Z"
+        },
+        {
+          "node": "4387f111-1b2b-47e6-abcd-963535a66057",
+          "time": "2022-09-30T15:01:52.938986Z"
+        }
+      ],
+      "values": {
+        "data_set_code": {
+          "value": "MAL_YEARLY",
+          "category": null,
+          "node": "ea4d9800-89b7-4933-b2f7-a1af02b9d33f",
+          "time": "2022-09-30T15:01:52.938934Z",
+          "input": null,
+          "name": "data_set_code"
+        },
+        "gen_domestic_fund": {
+          "value": "5",
+          "category": "Domestic funding",
+          "node": "4387f111-1b2b-47e6-abcd-963535a66057",
+          "time": "2022-09-30T15:01:52.938996Z",
+          "input": null,
+          "name": "gen_domestic_fund"
+        },
+        "mal_llin_distr_pw": {
+          "value": "3",
+          "category": null,
+          "node": "2e63cbae-1464-481b-89fc-b710815248d2",
+          "time": "2022-09-30T15:01:52.938984Z",
+          "input": null,
+          "name": "mal_llin_distr_pw"
+        },
+        "mal_pop_total": {
+          "value": "10",
+          "category": null,
+          "node": "d1f2ba28-fd9d-47eb-8954-c051f9cc59c9",
+          "time": "2022-09-30T15:01:52.938972Z",
+          "input": null,
+          "name": "mal_pop_total"
+        },
+        "msg": {
+          "value": "",
+          "category": "All Responses",
+          "node": "bafd114e-86e8-4b8f-abec-ddfaaacc9198",
+          "time": "2022-09-30T15:01:52.938909Z",
+          "input": null,
+          "name": "msg"
+        },
+        "report_period_offset": {
+          "value": "-3",
+          "category": null,
+          "node": "51df2118-989d-4263-9087-471e14ba8be4",
+          "time": "2022-09-30T15:01:52.938948Z",
+          "input": null,
+          "name": "report_period_offset"
+        }
+      },
+      "created_on": "2022-09-30T15:01:52.938505Z",
+      "modified_on": "2022-09-30T15:01:52.939079Z",
+      "exited_on": "2022-09-30T15:01:52.938999Z",
+      "exit_type": "completed"
+    }
+  ]
+}

@@ -1,0 +1,222 @@
+{
+  "version": "13",
+  "site": "https://rapidpro.dhis2.org",
+  "flows": [
+    {
+      "_ui": {
+        "nodes": {
+          "dbad1f96-7e83-4ae8-9475-6281bbd21ee5": {
+            "config": {
+              "cases": {}
+            },
+            "position": {
+              "left": 140,
+              "top": 20
+            },
+            "type": "split_by_expression"
+          },
+          "d00f6ce0-f757-47d5-b725-517206e745c5": {
+            "position": {
+              "left": 140,
+              "top": 200
+            },
+            "type": "execute_actions"
+          },
+          "36fc0156-c3de-4d2f-a84f-9b4c90be2d56": {
+            "position": {
+              "left": 140,
+              "top": 420
+            },
+            "type": "execute_actions"
+          },
+          "fcbc5729-d6fe-4d3e-aad0-03bfaccce447": {
+            "position": {
+              "left": 140,
+              "top": 520
+            },
+            "type": "execute_actions"
+          },
+          "f9781e4d-236d-4abd-9388-2dd232d9b524": {
+            "position": {
+              "left": 140,
+              "top": 640
+            },
+            "type": "execute_actions"
+          },
+          "eea3a71a-cf89-4c97-a08c-c3fb72c949f2": {
+            "position": {
+              "left": 140,
+              "top": 760
+            },
+            "type": "execute_actions"
+          },
+          "687269b3-2f19-4b39-8015-4209b17725c9": {
+            "position": {
+              "left": 140,
+              "top": 320
+            },
+            "type": "execute_actions"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 10080,
+      "language": "eng",
+      "localization": {},
+      "name": "Flow Under Test",
+      "nodes": [
+        {
+          "actions": [],
+          "exits": [
+            {
+              "destination_uuid": "d00f6ce0-f757-47d5-b725-517206e745c5",
+              "uuid": "31ce11b0-6198-4914-9027-b9af4502d2bf"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
+              {
+                "exit_uuid": "31ce11b0-6198-4914-9027-b9af4502d2bf",
+                "name": "All Responses",
+                "uuid": "a2767815-bedc-40e5-bad7-8659beac212e"
+              }
+            ],
+            "default_category_uuid": "a2767815-bedc-40e5-bad7-8659beac212e",
+            "operand": "@(remove_first_word(input.text))",
+            "result_name": "msg",
+            "type": "switch"
+          },
+          "uuid": "dbad1f96-7e83-4ae8-9475-6281bbd21ee5"
+        },
+        {
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "data_set_code",
+              "value": "MAL_YEARLY",
+              "category": "",
+              "uuid": "0e0cc4e8-52a8-4ebf-8e14-e72beb3d4ab7"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "687269b3-2f19-4b39-8015-4209b17725c9",
+              "uuid": "291a255b-12f0-496b-991c-8f990a65ed1f"
+            }
+          ],
+          "uuid": "d00f6ce0-f757-47d5-b725-517206e745c5"
+        },
+        {
+          "uuid": "687269b3-2f19-4b39-8015-4209b17725c9",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "report_period_offset",
+              "value": "-3",
+              "category": "",
+              "uuid": "28a4811b-2c06-4d92-97eb-5c682263b3bc"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "cf626b1f-478f-47c1-8742-d30b6958d7ce",
+              "destination_uuid": "36fc0156-c3de-4d2f-a84f-9b4c90be2d56"
+            }
+          ]
+        },
+        {
+          "actions": [
+            {
+              "category": "",
+              "name": "gen_domestic_fund",
+              "type": "set_run_result",
+              "uuid": "776a0ea9-43c0-4edd-999c-43afb88f57b5",
+              "value": "2"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "fcbc5729-d6fe-4d3e-aad0-03bfaccce447",
+              "uuid": "90ff6918-1b3e-4e68-b0fc-84fa7cb17385"
+            }
+          ],
+          "uuid": "36fc0156-c3de-4d2f-a84f-9b4c90be2d56"
+        },
+        {
+          "actions": [
+            {
+              "category": "",
+              "name": "mal_pop_total",
+              "type": "set_run_result",
+              "uuid": "ef2eb210-d0a3-41d6-b825-26d6282534ab",
+              "value": "10"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "f9781e4d-236d-4abd-9388-2dd232d9b524",
+              "uuid": "d5fb1e1e-7085-4c66-adbb-0531aed4e8e6"
+            }
+          ],
+          "uuid": "fcbc5729-d6fe-4d3e-aad0-03bfaccce447"
+        },
+        {
+          "actions": [
+            {
+              "category": "",
+              "name": "mal_llin_distr_pw",
+              "type": "set_run_result",
+              "uuid": "10c305ab-cdef-4d53-9b41-b9ebb409ac73",
+              "value": "3"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "eea3a71a-cf89-4c97-a08c-c3fb72c949f2",
+              "uuid": "af9c1ea0-7af8-4308-b17e-6cc9779dfcd4"
+            }
+          ],
+          "uuid": "f9781e4d-236d-4abd-9388-2dd232d9b524"
+        },
+        {
+          "actions": [
+            {
+              "category": "Domestic funding",
+              "name": "gen_domestic_fund",
+              "type": "set_run_result",
+              "uuid": "f9f42331-1f00-42ff-afe3-7aee983460f5",
+              "value": "5"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": null,
+              "uuid": "43d0c1a5-9760-4005-98bc-5e7869887439"
+            }
+          ],
+          "uuid": "eea3a71a-cf89-4c97-a08c-c3fb72c949f2"
+        }
+      ],
+      "spec_version": "13.1.0",
+      "type": "messaging",
+      "uuid": "21a055c2-f0a7-4ec3-9e5e-bc05504b8967",
+      "revision": 69
+    }
+  ],
+  "campaigns": [],
+  "triggers": [
+    {
+      "trigger_type": "K",
+      "flow": {
+        "uuid": "21a055c2-f0a7-4ec3-9e5e-bc05504b8967",
+        "name": "Flow Under Test"
+      },
+      "groups": [],
+      "exclude_groups": [],
+      "keyword": "hello"
+    }
+  ],
+  "fields": [],
+  "groups": []
+}

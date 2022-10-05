@@ -27,58 +27,47 @@
  */
 package org.hisp.dhis.integration.rapidpro.processor;
 
-import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.hisp.dhis.api.model.v2_36_11.DataSet;
-import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
+import org.hisp.dhis.api.model.v2_36_11.User;
 import org.springframework.stereotype.Component;
 
+import com.datasonnet.document.DefaultDocument;
+import com.datasonnet.document.Document;
+import com.datasonnet.document.MediaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+
 @Component
-public class CurrentPeriodProcessor implements Processor
+public class ExistingUserEnumerator implements Processor
 {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule( new Jdk8Module() );
+
     @Override
     public void process( Exchange exchange )
         throws Exception
     {
-        Iterable<DataSet> dataSets = exchange.getMessage().getBody( Iterable.class );
-        String periodType = (String) dataSets.iterator().next().getPeriodType().get();
-        int reportPeriodOffset = exchange.getMessage().getHeader( "reportPeriodOffset", Integer.class );
-        String period;
-        if ( periodType.equalsIgnoreCase( "Daily" ) )
-        {
-            period = PeriodBuilder.dayOf( new Date(), reportPeriodOffset );
-        }
-        else if ( periodType.equalsIgnoreCase( "Weekly" ) )
-        {
-            period = PeriodBuilder.weekOf( new Date(), reportPeriodOffset );
-        }
-        else if ( periodType.equalsIgnoreCase( "Monthly" ) )
-        {
-            period = PeriodBuilder.monthOf( new Date(), reportPeriodOffset );
-        }
-        else if ( periodType.equalsIgnoreCase( "BiMonthly" ) )
-        {
-            period = PeriodBuilder.biMonthOf( new Date(), reportPeriodOffset );
-        }
-        else if ( periodType.equalsIgnoreCase( "SixMonthly" ) )
-        {
-            period = PeriodBuilder.sixMonthOf( new Date(), reportPeriodOffset );
-        }
-        else if ( periodType.equalsIgnoreCase( "Yearly" ) )
-        {
-            period = PeriodBuilder.yearOf( new Date(), reportPeriodOffset );
-        }
-        else if ( periodType.equalsIgnoreCase( "FinancialYearNov" ) )
-        {
-            period = PeriodBuilder.financialYearStartingNovOf( new Date(), reportPeriodOffset );
-        }
-        else
-        {
-            throw new UnsupportedOperationException();
-        }
+        Map<String, Document<Map<String, Object>>> updatedDhis2Users = new HashMap<>();
+        List<User> dhis2Users = exchange.getProperty( "dhis2Users", List.class );
+        Map<String, Object> rapidProContacts = exchange.getProperty( "rapidProContacts", Map.class );
+        List<Map<String, Object>> results = (List<Map<String, Object>>) rapidProContacts.get( "results" );
 
-        exchange.getMessage().setBody( period );
+        for ( User dhis2User : dhis2Users )
+        {
+            Optional<Map<String, Object>> rapidProContact = results.stream().filter(
+                c -> ((Map<String, Object>) c.get( "fields" )).get( "dhis2_user_id" )
+                    .equals( dhis2User.getId().get() ) )
+                .findFirst();
+
+            rapidProContact.ifPresent( c -> updatedDhis2Users.put( (String) c.get( "uuid" ),
+                new DefaultDocument<>( OBJECT_MAPPER.convertValue( dhis2User, Map.class ),
+                    new MediaType( "application", "x-java-object" ) ) ) );
+        }
+        exchange.getMessage().setBody( updatedDhis2Users );
     }
 }
