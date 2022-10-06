@@ -45,7 +45,7 @@ public class PullReportsRouteBuilder extends AbstractRouteBuilder
     @Override
     protected void doConfigure()
     {
-        from( "quartz://pull?cron={{poll.reports.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
+        from( "quartz://pull?cron={{scan.reports.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
             .to( "direct:pull" );
 
         from( "direct:pull" )
