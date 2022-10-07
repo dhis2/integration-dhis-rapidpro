@@ -27,21 +27,32 @@
  */
 package org.hisp.dhis.integration.rapidpro.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@ConditionalOnProperty( value = "webhook.security.auth", havingValue = "none", matchIfMissing = true )
-public class WebhookDefaultSecurityConfig
+@ConditionalOnProperty( value = "webhook.security.auth", havingValue = "token" )
+public class WebhookTokenAuthSecurityConfig
 {
+    @Value( "${webhook.security.token}" )
+    private String token;
+
     @Bean
-    protected SecurityFilterChain webhookFilterChain( HttpSecurity http )
-        throws Exception
+    protected SecurityFilterChain filterChain( HttpSecurity http )
+        throws
+        Exception
     {
-        return http.antMatcher( "/dhis2rapidpro/webhook" ).csrf()
-            .disable().build();
+        return http.antMatcher( "/dhis2rapidpro/webhook" )
+            .csrf().disable()
+            .formLogin().disable()
+            .httpBasic().disable()
+            .addFilterBefore( new TokenAuthenticationFilter( token ), UsernamePasswordAuthenticationFilter.class )
+            .authorizeRequests()
+            .anyRequest().authenticated().and().build();
     }
 }

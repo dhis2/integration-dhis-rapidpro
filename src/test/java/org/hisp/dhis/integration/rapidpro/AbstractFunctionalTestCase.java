@@ -29,7 +29,6 @@ package org.hisp.dhis.integration.rapidpro;
 
 import static io.restassured.RestAssured.given;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -69,7 +68,7 @@ public class AbstractFunctionalTestCase
     @LocalServerPort
     protected int serverPort;
 
-    protected String rapidProConnectorHttpEndpointUri;
+    protected String dhis2RapidProHttpEndpointUri;
 
     @BeforeAll
     public static void beforeAll()
@@ -100,7 +99,7 @@ public class AbstractFunctionalTestCase
                 .statusCode( 204 );
         }
 
-        rapidProConnectorHttpEndpointUri = String.format( "https://0.0.0.0:%s/rapidProConnector",
+        dhis2RapidProHttpEndpointUri = String.format( "https://0.0.0.0:%s/dhis2rapidpro",
             serverPort);
 
         doBeforeEach();

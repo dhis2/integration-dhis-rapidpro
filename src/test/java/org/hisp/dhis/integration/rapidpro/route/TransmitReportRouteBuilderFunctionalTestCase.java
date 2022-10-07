@@ -120,7 +120,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         Exception
     {
         System.setProperty( "report.destination.endpoint",
-            "https://localhost:" + serverPort + "/rapidProConnector/legacy?skipRequestHeaders=true&httpClientConfigurer=#selfSignedHttpClientConfigurer&authenticationPreemptive=true&authMethod=Basic&authUsername=alice&authPassword=secret&httpMethod=POST" );
+            "https://localhost:" + serverPort + "/dhis2rapidpro/legacy?skipRequestHeaders=true&httpClientConfigurer=#selfSignedHttpClientConfigurer&authenticationPreemptive=true&authMethod=Basic&authUsername=alice&authPassword=secret&httpMethod=POST" );
 
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         camelContext.addRoutes( new RouteBuilder()
@@ -141,7 +141,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.requestBody(
-            rapidProConnectorHttpEndpointUri
+            dhis2RapidProHttpEndpointUri
                 + "/webhook?aParam=aValue&dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
             String.format( webhookMessage, contactUuid ), String.class );
 
