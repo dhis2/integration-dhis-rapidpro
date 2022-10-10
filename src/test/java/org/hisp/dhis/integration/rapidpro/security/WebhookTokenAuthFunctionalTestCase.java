@@ -31,6 +31,8 @@ import org.apache.camel.CamelExecutionException;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
@@ -39,9 +41,19 @@ import java.nio.charset.Charset;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@TestPropertySource( properties = { "webhook.security.auth=token", "webhook.security.token=secret" } )
+@TestPropertySource( properties = { "webhook.security.auth=token" } )
 public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCase
 {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Override
+    public void doBeforeEach()
+    {
+        jdbcTemplate.execute( "TRUNCATE TABLE token" );
+        jdbcTemplate.execute( "INSERT INTO TOKEN (value_) VALUES ('secret')" );
+    }
+
     @Test
     public void testWebhookGivenCorrectToken()
         throws
