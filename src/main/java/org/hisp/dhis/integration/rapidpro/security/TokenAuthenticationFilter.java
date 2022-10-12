@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro.security;
 
+import com.google.common.hash.Hashing;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,6 +44,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -71,7 +73,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter
         {
             String token = resolveFromAuthorizationHeader( request );
 
-            if ( !token.equals( requiredToken ) )
+            if ( !Hashing.sha256().hashString( token, StandardCharsets.UTF_8 ).toString().equals( requiredToken ) )
             {
                 throw new BadCredentialsException( "Bad token" );
             }

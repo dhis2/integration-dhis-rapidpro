@@ -49,7 +49,7 @@ public class PullReportsRouteBuilder extends AbstractRouteBuilder
             .to( "direct:pull" );
 
         from( "direct:pull" )
-            .id( "pullFlowsRoute" )
+            .routeId( "Scan RapidPro Flows" )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .split( simple( "{{rapidpro.flow.uuids:}}" ), "," )
                 .setHeader( "flowUuid", simple( "${body}" ) )

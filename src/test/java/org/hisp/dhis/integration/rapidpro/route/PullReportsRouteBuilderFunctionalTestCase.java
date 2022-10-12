@@ -64,7 +64,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         throws
         Exception
     {
-        AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
@@ -80,7 +80,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         throws
         Exception
     {
-        AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
@@ -99,7 +99,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         throws
         Exception
     {
-        AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
@@ -120,7 +120,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         throws
         Exception
     {
-        AdviceWith.adviceWith( camelContext, "pullFlowsRoute",
+        AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
             r -> r.weaveByToUri( "${exchangeProperty.nextRunsPageUrl}" ).replace().to( "mock:rapidPro" ) );
         MockEndpoint rapidProMockEndpoint = camelContext.getEndpoint( "mock:rapidPro", MockEndpoint.class );
         rapidProMockEndpoint.whenAnyExchangeReceived( exchange -> {
@@ -143,7 +143,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
             exchange.getMessage().setBody( objectMapper.writeValueAsString( flowRuns ) );
         } );
 
-        AdviceWith.adviceWith( camelContext, "pullFlowsRoute",
+        AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
             r -> r.weaveByToUri( "jms:queue:dhis2?exchangePattern=InOnly" ).replace().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 

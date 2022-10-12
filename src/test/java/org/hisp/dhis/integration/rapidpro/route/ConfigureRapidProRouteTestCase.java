@@ -68,7 +68,7 @@ public class ConfigureRapidProRouteTestCase
     public void testDhis2OrgUnitIdAndDhis2UserIdFieldsAreCreatedWhenTheyDoNotExistOnRapidPro()
         throws Exception
     {
-        AdviceWith.adviceWith( camelContext, "createRapidProFieldsRoute",
+        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint(
                     "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_organisation_unit_id" )
                 .skipSendToOriginalEndpoint().setBody(
@@ -81,7 +81,7 @@ public class ConfigureRapidProRouteTestCase
                         }
                     } ) );
 
-        AdviceWith.adviceWith( camelContext, "createRapidProFieldsRoute",
+        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint( "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_user_id" )
                 .skipSendToOriginalEndpoint().setBody(
                     new Expression()
@@ -111,7 +111,7 @@ public class ConfigureRapidProRouteTestCase
     public void testDhis2OrgUnitIdFieldIsCreatedWhenItDoesNotExistOnRapidPro()
         throws Exception
     {
-        AdviceWith.adviceWith( camelContext, "createRapidProFieldsRoute",
+        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint(
                     "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_organisation_unit_id" )
                 .skipSendToOriginalEndpoint().setBody(
@@ -124,7 +124,7 @@ public class ConfigureRapidProRouteTestCase
                         }
                     } ) );
 
-        AdviceWith.adviceWith( camelContext, "createRapidProFieldsRoute",
+        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint( "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_user_id" )
                 .skipSendToOriginalEndpoint().setBody(
                     new Expression()
@@ -151,7 +151,7 @@ public class ConfigureRapidProRouteTestCase
     public void testDhis2UserIdFieldIsCreatedWhenItDoesNotExistOnRapidPro()
         throws Exception
     {
-        AdviceWith.adviceWith( camelContext, "createRapidProFieldsRoute",
+        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint(
                     "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_organisation_unit_id" )
                 .skipSendToOriginalEndpoint().setBody(
@@ -164,7 +164,7 @@ public class ConfigureRapidProRouteTestCase
                         }
                     } ) );
 
-        AdviceWith.adviceWith( camelContext, "createRapidProFieldsRoute",
+        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint( "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_user_id" )
                 .skipSendToOriginalEndpoint().setBody(
                     new Expression()

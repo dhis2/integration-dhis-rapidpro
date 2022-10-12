@@ -35,18 +35,19 @@ import java.util.Optional;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.hisp.dhis.api.model.v2_36_11.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.datasonnet.document.DefaultDocument;
 import com.datasonnet.document.Document;
 import com.datasonnet.document.MediaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 @Component
 public class ExistingUserEnumerator implements Processor
 {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule( new Jdk8Module() );
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public void process( Exchange exchange )
@@ -65,7 +66,7 @@ public class ExistingUserEnumerator implements Processor
                 .findFirst();
 
             rapidProContact.ifPresent( c -> updatedDhis2Users.put( (String) c.get( "uuid" ),
-                new DefaultDocument<>( OBJECT_MAPPER.convertValue( dhis2User, Map.class ),
+                new DefaultDocument<>( objectMapper.convertValue( dhis2User, Map.class ),
                     new MediaType( "application", "x-java-object" ) ) ) );
         }
         exchange.getMessage().setBody( updatedDhis2Users );

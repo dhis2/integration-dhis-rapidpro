@@ -44,7 +44,6 @@ import java.security.NoSuchAlgorithmException;
 
 public class SelfSignedHttpClientConfigurer implements HttpClientConfigurer
 {
-
     @Override
     public void configureHttpClient( HttpClientBuilder clientBuilder )
     {
@@ -55,7 +54,7 @@ public class SelfSignedHttpClientConfigurer implements HttpClientConfigurer
 
             clientBuilder.setSSLContext( sslContext )
                 .setConnectionManager( new PoolingHttpClientConnectionManager( RegistryBuilder
-                    .<ConnectionSocketFactory>create().register( "http", PlainConnectionSocketFactory.INSTANCE )
+                    .<ConnectionSocketFactory> create().register( "http", PlainConnectionSocketFactory.INSTANCE )
                     .register( "https",
                         new SSLConnectionSocketFactory( sslContext, NoopHostnameVerifier.INSTANCE ) )
                     .build() ) );
