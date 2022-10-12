@@ -10,8 +10,10 @@
 4. [Features](#features)
     1. [Contact Synchronisation](#contact-synchronisation)
     2. [Aggregate Report Transfer](#aggregate-report-transfer)
-        1. [Polling](#polling)
-        2. [Webhook](#webhook)
+        1. [DHIS2 Instructions](#dhis2-instructions)
+        2. [RapidPro Instructions](#rapidpro-instructions)
+           1. [Polling](#polling)
+           2. [Webhook](#webhook)
     3. [Auto-Reminders](#auto-reminders)
 5. [Configuration](#configuration)
 6. [Monitoring & Management](#monitoring--management)
@@ -147,7 +149,7 @@ Prior to synchronisation, DHIS-to-RapidPro automatically creates in RapidPro:
 
 DHIS-to-RapidPro will re-create this group and these fields should they be deleted. During synchronisation, each contact is assigned to the `DHIS2` group and has its fields populated accordingly. Application errors during the syncing of a contact will lead to warnings in the log but the error will not abort the synchronisation process. In other words, synchronisation may be partially successful.
 
-Contact synchronisation is enabled by default. Setting `sync.rapidpro.contacts` to `false` disables synchronisation. The interval rate at which contacts are synchronised is expressed as a cron expression with the config key `sync.schedule.expression`. Alternatively, hit DHIS-to-RapidPro's URL path `/rapidProConnector/sync`to manually kickoff syncing.
+Contact synchronisation is enabled by default. Setting `sync.rapidpro.contacts` to `false` disables synchronisation. The interval rate at which contacts are synchronised is expressed as a cron expression with the config key `sync.schedule.expression`. Alternatively, hit DHIS-to-RapidPro's URL path `/dhis2rapidpro/sync`to manually kickoff syncing.
 
 ### Aggregate Report Transfer
 
@@ -161,7 +163,7 @@ Follow the subsequent DHIS2 and RapidPro setup instructions to be able to transf
     3. Search for the data set
     4. Enter a suitable code in the _Code_ field as shown next:
        ![Data set form](static/images/dhis2-data-set.png)
-       >***IMPORTANT:*** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
+       >**IMPORTANT:** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
 
 2. Configure a code in each data element that will capture an aggregate value from RapidPro. To configure the data element code:
    1. Go to the maintenance app
@@ -169,7 +171,7 @@ Follow the subsequent DHIS2 and RapidPro setup instructions to be able to transf
    3. Search for the data element
    4. Enter a suitable code in the _Code_ field as shown next:
       ![Data element form](static/images/dhis2-data-element.png)
-      >***IMPORTANT:*** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
+      >**IMPORTANT:** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
 
 3. Configure a code in each category option combination that will be used to dissagregate captured values. To configure the category option combination code:
     1. Go to the maintenance app
@@ -177,7 +179,7 @@ Follow the subsequent DHIS2 and RapidPro setup instructions to be able to transf
     3. Search for the category option combination
     4. Enter a suitable code in the _Code_ field as shown next:
        ![Category option combination form](static/images/cat-option-combo.png)
-       >***IMPORTANT:*** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
+       >**IMPORTANT:** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
       
 #### RapidPro Instructions
 
@@ -242,7 +244,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
    --rapidpro.flow.uuids=21a055c2-f0a7-4ec3-9e5e-bc05504b8967,1baa7dd3-9ccf-4ee8-b7a4-8779ba22b933,a6fd08af-4757-46a0-b4a7-c9a210b425db
     ```
 
-    >NOTE: The `scan.reports.schedule.expression` config property determines how often flow executions are polled. Consult the [configuration](#configuration) section for further information.
+    >NOTE: `scan.reports.schedule.expression` config property determines how often flow executions are polled. Consult the [configuration](#configuration) section for further information.
 
 ##### Webhook
 
@@ -262,16 +264,19 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
    The webhook call node must be configured as follows:
    - Select the HTTP method to be `POST`:
-
-      <img src="static/images/post-webhook.png" width="50%" height="50%"/>
-
-   - Set the URL field to the HTTP/S address that DHIS-to-RapidPro is listening on. The default HTTPS port number is _8443_ (see `server.port` in [Configuration](#configuration)): the path in the URL field is required to end with `/rapidProConnector/webhook`:
+     <img src="static/images/post-webhook.png" width="50%" height="50%"/>
+   - Set the URL field to the HTTP(S) address that DHIS-to-RapidPro is listening on. The default HTTPS port number is _8443_ (see `server.port` in [Configuration](#configuration)): the path in the URL field is required to end with `/dhis2rapidpro/webhook`:
      ![URL webhook](static/images/url-webhook.png)
    - Append to the URL the `dataSetCode` query parameter which identifies by code the data set that the contact is reporting. You need to look up the data set from the DHIS2 maintenance app and hard-code its code as shown below:
      ![Data set ID code parameter](static/images/data-set-code-query-param.png)
    - You can optionally append the `reportPeriodOffset` query parameter which is the relative period to add or subtract from the current reporting period sent to DHIS2. If omitted, the `reportPeriodOffset` parameter defaults to -1.
      ![Report period offset query parameter](static/images/report-period-offset-query-param.png)
    - Another optional query parameter you can append is `orgUnitId`. This parameter overrides the value set in the contact's _DHIS2 Organisation Unit ID_ field.
+   - If you have set the config property `webhook.security.auth` in DHIS-to-RapidPro to `token` in order to protect the webhook endpoint from unauthorised access, switch to the _HTTP Headers_ tab and enter a new header named `Authorization` having as value the authentication scheme `Token` alongside the token generated at startup from DHIS-to-RapidPro:
+
+     <img src="static/images/webhook-header.png" width="50%" height="50%"/>
+    
+     >***SECURITY***: inside the _Authorization_ header value text field, you should reference a global holding the secret token instead of directly entering the token so that the token is not accidentally compromised when exporting the flow definition.
 
 4. If contact synchronisation is disabled (see `sync.rapidpro.contacts` in [Configuration](#configuration)), then create a custom contact field named _DHIS2 Organisation Unit ID_:
 
@@ -285,9 +290,9 @@ Reminders for overdue reports are sent for each DHIS2 data set specified in the 
 
 <img src="static/images/create-group.png" width="50%" height="50%"/>
 
->CAUTION: Do not forget to assign auto-reminder contacts to the `DHIS2` group
+>CAUTION: do not forget to assign auto-reminder contacts to the `DHIS2` group
 
-The interval rate at which contacts are reminded is expressed as a cron expression with the config key `reminder.schedule.expression`. Alternatively, hit DHIS-to-RapidPro's URL path `/rapidProConnector/reminders`to broadcast the reminders for overdue reports.
+The interval rate at which contacts are reminded is expressed as a cron expression with the config key `reminder.schedule.expression`. Alternatively, hit DHIS-to-RapidPro's URL path `/dhis2rapidpro/reminders`to broadcast the reminders for overdue reports.
 
 ## Configuration
 
@@ -315,10 +320,13 @@ By order of precedence, a config property can be specified:
 | `report.delivery.schedule.expression` | Cron expression specifying when queued reports are delivered to DHIS2.                                                                                                                                                                                                                                  |                                                                                | `0 0 0 * * ?`                                                                                                                        |
 | `org.unit.id.scheme`                  | By which field organisation units are identified.                                                                                                                                                                                                                                                       | `ID`                                                                           | `CODE`                                                                                                                               |
 | `report.destination.endpoint`         | Advanced setting to transmit aggregate reports to systems other than DHIS2: useful for integrating with legacy systems or intercepting the reports. Consult the [Apache Camel documentation](https://camel.apache.org/components/3.18.x/index.html) to find which transports and options are supported. | `dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client` | `https://legacy.example/dhis2?authenticationPreemptive=true&authMethod=Basic&authUsername=alice&authPassword=secret&httpMethod=POST` |
+| `webhook.security.auth`               | Authentication scheme protecting the webhook HTTP(S) endpoint. Supported values are `none` and `token`.                                                                                                                                                                                                 | `none`                                                                         | `token`                                                                                                                              |
+| `spring.datasource.username`          | Username to access the JDBC data source.                                                                                                                                                                                                                                                                | `dhis2rapidpro`                                                                | `admin`                                                                                                                              |
+| `spring.datasource.password`          | Password to access the JDBC data source.                                                                                                                                                                                                                                                                | `dhis2rapidpro dhis2rapidpro`                                                  | `secret`                                                                                                                             |
 | `spring.security.user.name`           | Login username for non-webhook services like the Hawtio and H2 web consoles.                                                                                                                                                                                                                            | `dhis2rapidpro`                                                                | `admin`                                                                                                                              |
 | `spring.security.user.password`       | Login password for non-webhook services like the Hawtio and H2 web consoles.                                                                                                                                                                                                                            | `dhis2rapidpro`                                                                | `secret`                                                                                                                             |
 | `spring.h2.console.enabled`           | Whether to enable the H2 web console.                                                                                                                                                                                                                                                                   | `true`                                                                         | `false`                                                                                                                              |
-| `spring.datasource.url`               | JDBC URL for persisting undeliverable reports and JMS queues.                                                                                                                                                                                                                                           | `jdbc:h2:./dhis2rapidpro;AUTO_SERVER=TRUE`                                     | `jdbc:postgresql://localhost:5432/dhis2rapidpro`                                                                                     |
+| `spring.datasource.url`               | JDBC URL for persisting undeliverable reports and JMS queues.                                                                                                                                                                                                                                           | `jdbc:h2:./dhis2rapidpro;CIPHER=AES;AUTO_SERVER=TRUE`                          | `jdbc:postgresql://localhost:5432/dhis2rapidpro`                                                                                     |
 | `spring.datasource.driver-class-name` | Class name of the JDBC driver used to connect to the database. Changing this property requires that you add the database vendor's JDBC driver to the Java classpath.                                                                                                                                    | `org.h2.Driver`                                                                | `org.postgresql.Driver`                                                                                                              |
 | `spring.jmx.enabled`                  | Whether to expose the JMX metrics.                                                                                                                                                                                                                                                                      | `true`                                                                         | `false`                                                                                                                              |
 
@@ -333,7 +341,7 @@ From the Hawtio web console, apart from browsing application logs, the system op
 
 You can log into the Hawtio console locally from [https://localhost:8443/management/hawtio](https://localhost:8443/management/hawtio) using the username and password `dhis2rapidpro`. You can set the parameter `management.endpoints.web.exposure.include` (i.e., `--management.endpoints.web.exposure.include=`) to an empty value to deny HTTP access to the Hawtio web console.
 
->***IMPORTANT***: immediately change the login credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
+>***SECURITY***: immediately change the login credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
 
 ## Recovering Failed Reports
 
@@ -363,7 +371,7 @@ UPDATE DEAD_LETTER_CHANNEL SET status = 'RETRY' WHERE status = 'ERROR'
 
 The H2 console is pre-configured to be available locally at [https://localhost:8443/management/h2-console](https://localhost:8443/management/h2-console). The default username and password are both `dhis2rapidpro`. The console's relative URL path can be changed with the config property `spring.h2.console.path`.
 
->***IMPORTANT***: immediately change the credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
+>***SECURITY***: immediately change the credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
 
 For security reasons, the console only permits local access but this behaviour can be overridden by setting `spring.h2.console.settings.web-allow-others` to `true`. To completely disable access to the web console, set the parameter `spring.h2.console.enabled` to `false` though you still can connect to the data store with an SQL client.
 
@@ -405,7 +413,7 @@ WHERE id = '1023'
 
 Deeper technical problems might not manifest themselves up as failed reports but as exceptions in the application logs. The logs can be analysed from the [Hawtio web console](#monitoring--management) or directly from the log file `dhis2rapidpro.log`, situated in DHIS-to-RapidPro's working directory. Keep an eye out for exceptions while combing through the logs. Any exception messages, including their stack traces, should be collected from the logs and further analysed. You may want to reach out to the [DHIS2 Community of Practice](https://community.dhis2.org/) for troubleshooting support. If all else fails, you can try increasing the log verbosity to zone in on the root cause. Setting the config property `logging.level.org.hisp.dhis.integration.rapidpro` to `DEBUG` will lead to the application printing more detail in the logs. As a last resort, though not recommended, you can have the application print even more detail by setting `logging.level.root` to `DEBUG`.
 
->***CAUTION:*** be careful about increasing log verbosity since it may quickly eat up the server's disk space if the application is logging to a file, the default behaviour.
+>CAUTION: be careful about increasing log verbosity since it may quickly eat up the server's disk space if the application is logging to a file, the default behaviour.
 
 
 ## Acknowledgments

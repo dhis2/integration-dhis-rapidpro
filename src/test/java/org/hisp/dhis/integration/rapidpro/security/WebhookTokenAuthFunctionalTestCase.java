@@ -25,30 +25,40 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro;
+package org.hisp.dhis.integration.rapidpro.security;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.CamelExecutionException;
+import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
+import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
+@TestPropertySource( properties = { "webhook.security.auth=token" } )
+public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCase
 {
-    @Test
-    public void testWebhook()
-        throws
-        Exception
-    {
-        AdviceWith.adviceWith( camelContext, "dhis2Route", r -> r.weaveAddLast().to( "mock:spy" ) );
-        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
-        spyEndpoint.setExpectedCount( 1 );
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
+    @Override
+    public void doBeforeEach()
+    {
+        jdbcTemplate.execute( "TRUNCATE TABLE token" );
+        jdbcTemplate.execute( "INSERT INTO TOKEN (value_) VALUES ('secret')" );
+    }
+
+    @Test
+    public void testWebhookGivenCorrectToken()
+        throws
+        IOException
+    {
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
@@ -57,16 +67,30 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
 
-        producerTemplate.setDefaultEndpoint( camelContext.getEndpoint( dhis2RapidProHttpEndpointUri ) );
-        Exchange responseExchange = producerTemplate.send(
+        producerTemplate.sendBodyAndHeader(
             dhis2RapidProHttpEndpointUri
                 + "/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
-            exchange -> exchange.getMessage().setBody( String.format(  webhookMessage, contactUuid ) ) );
+            String.format( webhookMessage, contactUuid ), "Authorization",
+            "Token secret" );
+    }
 
-        assertEquals( "", responseExchange.getMessage().getBody( String.class ) );
-        assertEquals( 202, responseExchange.getMessage().getHeaders().get( "CamelHttpResponseCode" ) );
+    @Test
+    public void testWebhookGivenWrongToken()
+        throws
+        IOException
+    {
+        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
+        camelContext.start();
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
 
-        spyEndpoint.await( 10, TimeUnit.SECONDS );
-        assertEquals( 1, spyEndpoint.getReceivedCounter() );
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+
+        assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBodyAndHeader(
+            dhis2RapidProHttpEndpointUri
+                + "/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+            String.format( webhookMessage, contactUuid ), "Authorization",
+            "Token wrong" ) );
     }
 }

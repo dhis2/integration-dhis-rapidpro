@@ -48,7 +48,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 @SpringBootApplication
-@PropertySource("classpath:sql.properties")
+@PropertySource( "classpath:sql.properties" )
 public class Application extends SpringBootServletInitializer
 {
     @Value( "${dhis2.api.url}" )
@@ -68,6 +68,12 @@ public class Application extends SpringBootServletInitializer
 
     @Value( "${spring.datasource.driver-class-name}" )
     private String dataSourceDriverClassName;
+
+    @Value( "${spring.datasource.username}" )
+    private String dataSourceUsername;
+
+    @Value( "${spring.datasource.password}" )
+    private String dataSourcePassword;
 
     @Autowired
     private ArtemisProperties artemisProperties;
@@ -131,8 +137,11 @@ public class Application extends SpringBootServletInitializer
             try
             {
                 DatabaseStorageConfiguration databaseStorageConfiguration = new DatabaseStorageConfiguration();
+
                 databaseStorageConfiguration.setJdbcConnectionUrl( dataSourceUrl );
                 databaseStorageConfiguration.setJdbcDriverClassName( dataSourceDriverClassName );
+                databaseStorageConfiguration.setJdbcUser( dataSourceUsername );
+                databaseStorageConfiguration.setJdbcPassword( dataSourcePassword );
                 configuration.setStoreConfiguration( databaseStorageConfiguration );
                 configuration.setPersistenceEnabled( true );
             }
