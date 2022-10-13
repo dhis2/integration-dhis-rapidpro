@@ -57,6 +57,7 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
             .to( "direct:reminders" );
 
         from( "direct:reminders" )
+            .routeId( "Broadcast Reminders" )
             .log( LoggingLevel.INFO, LOGGER, "Reminding RapidPro contacts of overdue reports..." )
             .setProperty( "orgUnitIdScheme", simple( "{{org.unit.id.scheme}}" ) )
             .choice().when( simple( "{{sync.rapidpro.contacts}} == true" ) )

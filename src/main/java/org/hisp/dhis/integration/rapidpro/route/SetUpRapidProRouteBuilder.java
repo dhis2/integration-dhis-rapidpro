@@ -32,16 +32,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-import static org.apache.camel.component.http.HttpMethods.GET;
-import static org.apache.camel.component.http.HttpMethods.POST;
-
 @Component
-public class ConfigureRapidProRouteBuilder extends AbstractRouteBuilder
+public class SetUpRapidProRouteBuilder extends AbstractRouteBuilder
 {
     @Override
     protected void doConfigure()
     {
-        from( "direct:prepareRapidPro" ).routeId( "prepareRapidProRoute" ).to( "direct:createFieldsRoute" )
+        from( "direct:prepareRapidPro" ).routeId( "Set up RapidPro" ).to( "direct:createFieldsRoute" )
             .to( "direct:createGroupRoute" );
 
         setUpCreateFieldsRoute();
@@ -50,7 +47,7 @@ public class ConfigureRapidProRouteBuilder extends AbstractRouteBuilder
 
     private void setUpCreateFieldsRoute()
     {
-        from( "direct:createFieldsRoute" ).routeId( "createRapidProFieldsRoute" )
+        from( "direct:createFieldsRoute" ).routeId( "Create RapidPro Fields" )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .toD( "{{rapidpro.api.url}}/fields.json?key=dhis2_organisation_unit_id&httpMethod=GET" )
             .setProperty( "fieldCount", jsonpath( "$.results.length()" ) )
@@ -70,7 +67,7 @@ public class ConfigureRapidProRouteBuilder extends AbstractRouteBuilder
 
     private void setUpCreateGroupRoute()
     {
-        from( "direct:createGroupRoute" ).routeId( "createRapidProGroupRoute" )
+        from( "direct:createGroupRoute" ).routeId( "Create RapidPro Group" )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .toD( "{{rapidpro.api.url}}/groups.json?name=DHIS2&httpMethod=GET" )
             .setProperty( "groupCount", jsonpath( "$.results.length()" ) )

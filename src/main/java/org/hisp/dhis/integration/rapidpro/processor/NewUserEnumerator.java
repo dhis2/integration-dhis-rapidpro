@@ -36,6 +36,7 @@ import java.util.Set;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.hisp.dhis.api.model.v2_36_11.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.datasonnet.document.DefaultDocument;
@@ -47,7 +48,8 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 @Component
 public class NewUserEnumerator implements Processor
 {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule( new Jdk8Module() );
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public void process( Exchange exchange )
@@ -67,7 +69,7 @@ public class NewUserEnumerator implements Processor
 
             if ( rapidProContact.isEmpty() )
             {
-                newDhis2Users.add( new DefaultDocument<>( OBJECT_MAPPER.convertValue( dhis2User, Map.class ),
+                newDhis2Users.add( new DefaultDocument<>( objectMapper.convertValue( dhis2User, Map.class ),
                     new MediaType( "application", "x-java-object" ) ) );
             }
         }

@@ -69,7 +69,7 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
 
         from( "direct:sync" )
             .precondition( "{{sync.rapidpro.contacts}}" )
-            .routeId( "syncRoute" )
+            .routeId( "Sync RapidPro Contacts" )
             .log( LoggingLevel.INFO, LOGGER, "Synchronising RapidPro contacts..." )
             .to( "direct:prepareRapidPro" )
             .setProperty( "orgUnitIdScheme", simple( "{{org.unit.id.scheme}}" ) )

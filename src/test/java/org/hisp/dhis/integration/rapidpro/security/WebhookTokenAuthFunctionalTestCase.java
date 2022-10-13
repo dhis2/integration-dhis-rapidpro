@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro.security;
 
+import com.google.common.hash.Hashing;
 import org.apache.camel.CamelExecutionException;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
@@ -38,6 +39,7 @@ import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -51,7 +53,8 @@ public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCa
     public void doBeforeEach()
     {
         jdbcTemplate.execute( "TRUNCATE TABLE token" );
-        jdbcTemplate.execute( "INSERT INTO TOKEN (value_) VALUES ('secret')" );
+        jdbcTemplate.execute( String.format( "INSERT INTO TOKEN (value_) VALUES ('%s')",
+            Hashing.sha256().hashString( "secret", StandardCharsets.UTF_8 ).toString() ) );
     }
 
     @Test

@@ -53,6 +53,7 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
     protected void doConfigure()
     {
         from( "timer://retry?fixedRate=true&period=5000" )
+            .routeId( "Retry Reports" )
             .setBody( simple( "${properties:retry.dlc.select.{{spring.datasource.platform}}}" ) )
             .to( "jdbc:dataSource" )
             .split().body()
@@ -77,7 +78,7 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
             .to( "direct:dhis2" );
 
         from( "direct:dhis2" )
-            .id( "dhis2Route" )
+            .routeId( "Deliver Report" )
             .setHeader( "originalPayload", simple( "${body}" ) )
             .onException( Exception.class )
                 .to( "direct:dlq" )

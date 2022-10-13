@@ -38,6 +38,7 @@ public class WebHookRouteBuilder extends AbstractRouteBuilder
     protected void doConfigure()
     {
         from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
+            .routeId( "RapidPro Webhook" )
             .removeHeader( Exchange.HTTP_URI )
             .to( "jms:queue:dhis2?exchangePattern=InOnly" )
             .log( LoggingLevel.DEBUG, LOGGER, "Enqueued webhook message [data set code = ${header.dataSetCode},report period offset = ${header.reportPeriodOffset},orgUnitId = ${header.orgUnitId},content = ${body}]" )

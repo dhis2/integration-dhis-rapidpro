@@ -27,6 +27,8 @@
  */
 package org.hisp.dhis.integration.rapidpro.security;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,8 @@ import org.springframework.security.crypto.keygen.Base64StringKeyGenerator;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
 
@@ -69,21 +73,23 @@ public class WebhookTokenAuthSecurityConfig
     protected String getOrGenerateToken()
     {
         List<Map<String, Object>> token = jdbcTemplate.queryForList( "SELECT * FROM TOKEN" );
-        String value;
+        String digest;
         if ( token.isEmpty() )
         {
-            value = new Base64StringKeyGenerator().generateKey();
-            jdbcTemplate.execute( String.format( "INSERT INTO TOKEN (value_) VALUES ('%s')", value ) );
+            String value = new Base64StringKeyGenerator().generateKey();
+            digest = Hashing.sha256().hashString( value, StandardCharsets.UTF_8 ).toString();
+
+            jdbcTemplate.execute( String.format( "INSERT INTO TOKEN (value_) VALUES ('%s')", digest ) );
             LOGGER.warn( String.format(
-                "%n%nUsing generated token for authenticating webhook messages from RapidPro: %s%n%nThis token should be kept safe and secure. "
-                    + "This message will not appear again unless you truncate the table 'TOKEN' to generate a new token.%n",
+                "%n%nUsing generated token for authenticating webhook messages from RapidPro: %s%n%nThis token cannot be recovered so it should be kept safe and secure. "
+                    + "This message will NOT appear again unless you truncate the table 'TOKEN' to generate a new token.%n",
                 value ) );
         }
         else
         {
-            value = (String) token.get( 0 ).get( "VALUE_" );
+            digest = (String) token.get( 0 ).get( "VALUE_" );
         }
 
-        return value;
+        return digest;
     }
 }

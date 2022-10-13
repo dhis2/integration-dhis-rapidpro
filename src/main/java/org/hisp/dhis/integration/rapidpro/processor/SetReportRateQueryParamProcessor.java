@@ -34,6 +34,7 @@ import org.apache.camel.Processor;
 import org.hisp.dhis.api.model.v2_36_11.DataSet;
 import org.hisp.dhis.api.model.v2_36_11.OrganisationUnit;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -46,13 +47,14 @@ import java.util.stream.Collectors;
 @Component
 public class SetReportRateQueryParamProcessor implements Processor
 {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule( new Jdk8Module() );
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public void process( Exchange exchange )
     {
         Map dataSetAsMap = exchange.getProperty( "dataSet", Map.class );
-        DataSet dataSet = OBJECT_MAPPER.convertValue( dataSetAsMap, DataSet.class );
+        DataSet dataSet = objectMapper.convertValue( dataSetAsMap, DataSet.class );
 
         Map<String, Object> contacts = (Map<String, Object>) exchange.getProperty( "contacts" );
         Set<String> contactOrgUnitIds = reduceOrgUnitIds( (List<Map<String, Object>>) contacts.get( "results" ) );

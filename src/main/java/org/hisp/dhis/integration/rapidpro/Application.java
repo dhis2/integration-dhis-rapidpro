@@ -27,6 +27,8 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
 import org.apache.camel.CamelContext;
 import org.hisp.dhis.integration.rapidpro.security.KeyStoreGenerator;
@@ -128,6 +130,12 @@ public class Application extends SpringBootServletInitializer
         {
             throw new Dhis2RapidProException( "Bad DHIS2 configuration: missing authentication details" );
         }
+    }
+
+    @Bean
+    public ObjectMapper objectMapper()
+    {
+        return new ObjectMapper().registerModule( new Jdk8Module() );
     }
 
     @Bean
