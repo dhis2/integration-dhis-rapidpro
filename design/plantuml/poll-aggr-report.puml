@@ -1,0 +1,23 @@
+@startuml
+title Poll Aggregate Report
+participant Dhis2RapidPro as Dhis2RapidPro
+database DB
+participant RapidPro as RapidPro
+queue Queue
+autonumber
+skinparam responseMessageBelowArrow true
+loop scan.reports.schedule.expression
+    loop rapidpro.flow.uuids
+        Dhis2RapidPro -> DB: Read last run timestamp where flow_uuid = flow definition UUID
+        DB --> Dhis2RapidPro: Last run timestamp
+        Dhis2RapidPro -> RapidPro: Fetch flow runs following last run timestamp for flow definition UUID
+        loop flow runs
+            alt exited_on != null & exit_type = 'completed'
+                Dhis2RapidPro -> Queue: Enqueue flow run
+            end
+        end
+        note over Dhis2RapidPro: Compute new last run timestamp
+        Dhis2RapidPro -> DB: Record last time flow definition UUID was processed
+    end
+end
+@enduml

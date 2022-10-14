@@ -1,7 +1,7 @@
 @startuml
 left to right direction
 
-"Health Manager" as HealthManager
+"Health Manager" as :HealthManager:/
 "System Operator" as Operator
 "Implementer" as Implementer
 
@@ -10,17 +10,24 @@ rectangle "DHIS to RapidPro Integration" {
       usecase ReplayAggrReport as "Replay aggregate report transfer"
       usecase EditAggrReport as "Edit aggregate report transfer"
       usecase ScheduleAggrReport as "Schedule aggregate report transfer"
+      usecase PauseAggregateReportTransfer as "Pause aggregate report transfer"
     }
     package "Implementation" {
       usecase IdentityOrgUnitsByCode as "Identify org units by code instead of ID"
       usecase TransferAggrReportToNonDhis2 as "Transfer aggregate report to non-DHIS2 system"
       usecase RegisterHealthWorkers as "Register HMIS health workers in RapidPro"
+      usecase Webhook as "Webhook mode"
+      usecase Polling as "Polling mode"
+      usecase Authentication as Authentication
+      usecase Configure
+      usecase ReferenceDhisDataSets as "Reference DHIS data sets"
+      usecase ReferenceRapidProFlowDefinitions as "Reference RapidPro flow definitions"
     }
     package "Health Care" {
-      usecase AnalyseAggrReport as "Analyse aggregated data from HMIS"
-      usecase NotifyHealthWorkers as "Notify health workers when their reports are overdue"
-      usecase AnalyseDisaggrData as "Analyse disaggregated data from HMIS"
-      usecase TraceHmisReport as "Trace HMIS report to health worker"
+      usecase (AnalyseAggrReport)/ as "Analyse aggregated data from HMIS"
+      usecase (NotifyHealthWorkers)/  as "Notify health workers when their reports are overdue"
+      usecase (AnalyseDisaggrData)/ as "Analyse disaggregated data from HMIS"
+      usecase (TraceHmisReport)/ as "Trace HMIS report to health worker"
     }
     package "Integration" {
       usecase SyncContacts as "Synchronise RapidPro contacts with DHIS2 users"
@@ -38,16 +45,28 @@ HealthManager - TraceHmisReport
 NotifyHealthWorkers --> TransferAggrReport
 Operator -- ScheduleAggrReport
 Operator -- ReplayAggrReport
+Operator -- PauseAggregateReportTransfer
+PauseAggregateReportTransfer --> TransferAggrReport
 ReplayAggrReport --> TransferAggrReport
 Operator -- EditAggrReport
 EditAggrReport --> ReplayAggrReport
 ScheduleAggrReport --> TransferAggrReport
-Implementer -- TransferAggrReportToNonDhis2
 TransferAggrReportToNonDhis2 --> TransferAggrReport
-Implementer -- IdentityOrgUnitsByCode
 IdentityOrgUnitsByCode --> TransferAggrReport
 IdentityOrgUnitsByCode --> SyncContacts
 HealthManager -- AnalyseDisaggrData
-Implementer -- RegisterHealthWorkers
 RegisterHealthWorkers --> SyncContacts
+Implementer -- Configure
+Configure --> IdentityOrgUnitsByCode
+Configure --> TransferAggrReportToNonDhis2
+Configure --> RegisterHealthWorkers
+Configure --> Webhook
+Configure --> Authentication
+Configure --> ReferenceDhisDataSets
+Configure --> ReferenceRapidProFlowDefinitions
+ReferenceRapidProFlowDefinitions -> Polling
+ReferenceDhisDataSets --> SendReminders
+Webhook --> TransferAggrReport
+Authentication --> Webhook
+Polling --> TransferAggrReport
 @enduml

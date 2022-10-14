@@ -16,7 +16,7 @@
            2. [Webhook](#webhook)
     3. [Auto-Reminders](#auto-reminders)
 5. [Configuration](#configuration)
-6. [Monitoring & Management](#monitoring--management)
+6. [Management & Monitoring](#management--monitoring)
 7. [Recovering Failed Reports](#recovering-failed-reports)
 8. [Troubleshooting Guide](#troubleshooting-guide)
 9. [Acknowledgments](#acknowledgments)
@@ -331,7 +331,7 @@ By order of precedence, a config property can be specified:
 | `spring.jmx.enabled`                  | Whether to expose the JMX metrics.                                                                                                                                                                                                                                                                      | `true`                                                                         | `false`                                                                                                                              |
 
 
-##  Monitoring & Management
+##  Management & Monitoring
 
 DHIS-to-RapidPro exposes its metrics through JMX. A JMX client like [VisualVM](https://visualvm.github.io/) can be used to observe these metrics, however, DHIS-to-RapidPro comes bundled with [Hawtio](https://hawt.io/) so that the system operator can easily monitor and manage runtime operations of the application without prior setup
 
@@ -369,9 +369,9 @@ UPDATE DEAD_LETTER_CHANNEL SET status = 'RETRY' WHERE status = 'ERROR'
 
 ![H2 Web Console](static/images/h2-web-console.png)
 
-The H2 console is pre-configured to be available locally at [https://localhost:8443/management/h2-console](https://localhost:8443/management/h2-console). The default username and password are both `dhis2rapidpro`. The console's relative URL path can be changed with the config property `spring.h2.console.path`.
+The H2 console is pre-configured to be available locally at [https://localhost:8443/management/h2-console](https://localhost:8443/management/h2-console). The console's relative URL path can be changed with the config property `spring.h2.console.path`. You will be greeted by the database's login page after logging into the monitoring & management system using the default login username and password `dhis2rapidpro`. Both the default database login username and password are `dhis2rapidpro`.
 
->***SECURITY***: immediately change the credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
+>***SECURITY***: immediately change the management and database credentials during setup (see `spring.security.user.name` and `spring.security.user.password` together with `spring.datasource.username` and `spring.datasource.password` in [Configuration](#configuration)).
 
 For security reasons, the console only permits local access but this behaviour can be overridden by setting `spring.h2.console.settings.web-allow-others` to `true`. To completely disable access to the web console, set the parameter `spring.h2.console.enabled` to `false` though you still can connect to the data store with an SQL client.
 
