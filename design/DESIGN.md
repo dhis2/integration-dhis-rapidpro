@@ -13,6 +13,7 @@
 ![Contact synchronisation](../static/images/contact-sync.png)
 ![Auto-reminders](../static/images/auto-reminders.png)
 ![Receive aggregate report](../static/images/receive-aggr-report.png)
+![Poll aggregate report](../static/images/poll-aggr-report.png)
 ![Transfer aggregate report](../static/images/transfer-aggr-report.png)
 ![Replay aggregate report](../static/images/replay-aggr-report.png)
 
