@@ -193,13 +193,15 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
 1. Open a RapidPro flow definition that processes the contact's report or create a new flow definition.
 
-2. At an arbitrary point within the flow definition, save a result containing the DHIS code of the data set representing the report:
+2. Identify the root of each happy flow path, that is, the root of each successful execution path. You should apply the proceeding steps to these root paths. 
+
+3. Save a result containing the DHIS code of the data set representing the report:
  
     <img src="static/images/data-set-code-poll.png" width="50%" height="50%"/>
 
    Type the result name `data_set_code` and give it as a value the code of the data set as retrieved from DHIS2's maintenance app.
 
-3. Save each incoming report value to a result as per the example shown next:
+4. Save each incoming report value to a result as per the example shown next:
 
     <img src="static/images/opd-attendance.png" width="50%" height="50%"/>
 
@@ -207,22 +209,22 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
     <img src="static/images/opd-attendance-category.png" width="50%" height="50%"/>
 
-4. Optionally, at an arbitrary point within the flow definition, save a result which contains the report period offset:
+5. Optionally, save a result which contains the report period offset:
 
     <img src="static/images/report-period-offset-poll.png" width="50%" height="50%"/>
 
     Type the result name `report_period_offset` and give it as a value the relative period to add or subtract from the current reporting period sent to DHIS2. If omitted, the report period offset defaults to -1.
 
-5. If contact synchronisation is disabled (see `sync.rapidpro.contacts` in [Configuration](#configuration)), then create a custom contact field named _DHIS2 Organisation Unit ID_:
+6. If contact synchronisation is disabled (see `sync.rapidpro.contacts` in [Configuration](#configuration)), then create a custom contact field named _DHIS2 Organisation Unit ID_:
 
     <img src="static/images/custom-fields.png" width="50%" height="50%"/>
 
     You must populate this field, either manually or automatically, for each contact belonging to a DHIS2 organisation unit. The field should hold the contact's DHIS2 organisation unit identifier. By default, DHIS-to-RapidPro expects the organisation unit identifier to be the ID (see `org.unit.id.scheme` in [Configuration](#configuration)).
 
-6. Copy the UUID of the flow definition from your browser's address bar:
+7. Copy the UUID of the flow definition from your browser's address bar:
    ![browser address bar](static/images/flow-uuid-poll.png)
 
-7. Paste the copied flow definition UUID into DHIS-to-RapidPro's `rapidpro.flow.uuids` config property:
+8. Paste the copied flow definition UUID into DHIS-to-RapidPro's `rapidpro.flow.uuids` config property:
 
     ```shell
     java -jar dhis2rapidpro.jar \ 
@@ -250,7 +252,9 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
 1. Open a RapidPro flow definition that processes the contact's report or create a new flow definition.
 
-2. Save each incoming aggregate value in the RapidPro flow to a result like what is shown next:
+2. Identify the root of each happy flow path, that is, the root of each successful execution path. You should apply the proceeding steps to these root paths.
+
+3. Save each incoming aggregate value in the RapidPro flow to a result like what is shown next:
 
     <img src="static/images/opd-attendance.png" width="50%" height="50%"/>
 
@@ -258,7 +262,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
     <img src="static/images/opd-attendance-category.png" width="50%" height="50%"/>
 
-3. Create a webhook call node in the RapidPro flow to dispatch the results to DHIS-to-RapidPro:
+4. Create a webhook call node in the RapidPro flow to dispatch the results to DHIS-to-RapidPro:
 
     <img src="static/images/webhook.png" width="50%" height="50%"/>
 
@@ -278,7 +282,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
     
      >***SECURITY***: inside the _Authorization_ header value text field, you should reference a global holding the secret token instead of directly entering the token so that the token is not accidentally compromised when exporting the flow definition.
 
-4. If contact synchronisation is disabled (see `sync.rapidpro.contacts` in [Configuration](#configuration)), then create a custom contact field named _DHIS2 Organisation Unit ID_:
+5. If contact synchronisation is disabled (see `sync.rapidpro.contacts` in [Configuration](#configuration)), then create a custom contact field named _DHIS2 Organisation Unit ID_:
 
     <img src="static/images/custom-fields.png" width="50%" height="50%"/>
 
