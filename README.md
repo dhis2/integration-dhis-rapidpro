@@ -205,7 +205,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
     <img src="static/images/opd-attendance.png" width="50%" height="50%"/>
 
-   The result name must match the code of the corresponding data element in DHIS2. Upper case letters in the data element code can be entered as lower case letters in the result name field while whitespaces and hyphens can be entered as underscores. A category option combination code for the value is specified in the `categorize as` text field:
+   The result name must match the code of the corresponding data element in DHIS2. Upper case letters in the data element code can be entered as lower case letters in the result name field while whitespaces and hyphens can be entered as underscores If a category option combination is required, suffix the result name with two underscores and append the category option combination code to the suffix:
 
     <img src="static/images/opd-attendance-category.png" width="50%" height="50%"/>
 
@@ -258,7 +258,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
     <img src="static/images/opd-attendance.png" width="50%" height="50%"/>
 
-    The result name must match the code of the corresponding data element in DHIS2. Upper case letters in the data element code can be entered as lower case letters in the result name field while whitespaces and hyphens can be entered as underscores. A category option combination code for the value is specified in the `categorize as` text field:
+    The result name must match the code of the corresponding data element in DHIS2. Upper case letters in the data element code can be entered as lower case letters in the result name field while whitespaces and hyphens can be entered as underscores. If a category option combination is required, suffix the result name with two underscores and append the category option combination code to the suffix:
 
     <img src="static/images/opd-attendance-category.png" width="50%" height="50%"/>
 
@@ -268,7 +268,9 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
    The webhook call node must be configured as follows:
    - Select the HTTP method to be `POST`:
+   
      <img src="static/images/post-webhook.png" width="50%" height="50%"/>
+   
    - Set the URL field to the HTTP(S) address that DHIS-to-RapidPro is listening on. The default HTTPS port number is _8443_ (see `server.port` in [Configuration](#configuration)): the path in the URL field is required to end with `/dhis2rapidpro/webhook`:
      ![URL webhook](static/images/url-webhook.png)
    - Append to the URL the `dataSetCode` query parameter which identifies by code the data set that the contact is reporting. You need to look up the data set from the DHIS2 maintenance app and hard-code its code as shown below:
