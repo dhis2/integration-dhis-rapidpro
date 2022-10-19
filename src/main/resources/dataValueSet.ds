@@ -2,12 +2,14 @@ local normaliseDeCodeFn(dataElementCode) = ds.replace(ds.replace(ds.lower(dataEl
 
 local normaliseDeCodesFn(dataElementCodes) = ds.map(dataElementCodes, function(v, i) normaliseDeCodeFn(v));
 
+local getResultName(result) = if std.objectHas(result.value, 'name') then result.value.name else result.key;
+
 local dataValueFn(result) = [
     {
-      dataElement: ds.filter(cml.header('dataElementCodes'), function(v, i) normaliseDeCodeFn(v) == native.truncateCatOptComboSuffix(result.key))[0],
+      dataElement: ds.filter(cml.header('dataElementCodes'), function(v, i) normaliseDeCodeFn(v) == native.truncateCatOptComboSuffix(getResultName(result)))[0],
       value: result.value.value,
       comment: 'RapidPro contact details: %s' % std.escapeStringJson(std.manifestJsonEx(payload.contact, ' ')),
-      [if native.isCatOptCombo(result.key) then 'categoryOptionCombo']: native.getCatOptComboCode(result.key)
+      [if native.isCatOptCombo(getResultName(result)) then 'categoryOptionCombo']: native.getCatOptComboCode(getResultName(result))
     }
 ];
 
@@ -16,5 +18,5 @@ local dataValueFn(result) = [
     orgUnit: cml.header('orgUnitId'),
     dataSet: cml.header('dataSetCode'),
     period: cml.header('period'),
-    dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) if ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), native.truncateCatOptComboSuffix(v.key)) then true else native.logWarning("Ignoring data value because of unknown DHIS2 data element code '" + v.key + "'. Hint: ensure that the RapidPro result name matches the corresponding DHIS2 data element code")))
+    dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) if ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), native.truncateCatOptComboSuffix(getResultName(v))) then true else native.logWarning("Ignoring data value because of unknown DHIS2 data element code '" + getResultName(v) + "'. Hint: ensure that the RapidPro result name matches the corresponding DHIS2 data element code")))
 }

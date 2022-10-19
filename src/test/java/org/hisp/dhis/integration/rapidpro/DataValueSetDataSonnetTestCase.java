@@ -81,7 +81,7 @@ public class DataValueSetDataSonnetTestCase
         dsExpression.setOutputMediaType( "application/x-java-object" );
 
         List<String> dataElementCodes = List.of( "GEN_EXT_FUND", "MAL-POP-TOTAL", "MAL_LLIN_DISTR_PW",
-            "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL_PEOPLE_PROT_BY_IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT",
+            "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL-PEOPLE-PROT-BY-IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT",
             "GEN_FUND_NEED" );
 
         logCountDownLatch = new CountDownLatch( 1 );
@@ -234,6 +234,42 @@ public class DataValueSetDataSonnetTestCase
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
 
         assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 2 ).get( "categoryOptionCombo" ) );
+        assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
+
+        assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 3 ).get( "categoryOptionCombo" ) );
+        assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
+
+        assertEquals( 0, logCountDownLatch.getCount() );
+    }
+
+    @Test
+    public void testMappingGivenResultName()
+        throws
+        IOException
+    {
+        Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() ), Map.class );
+
+        ((Map<String, Object>) ((Map<String, Object>) payload.get( "results" )).get( "mal_llin_distr_pw" )).put(
+            "name", "mal_people_prot_by_irs" );
+
+        exchange.getMessage().setBody( payload );
+
+        Map dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
+
+        List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );
+
+        assertEquals( "GEN_EXT_FUND", dataValues.get( 0 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 0 ).get( "categoryOptionCombo" ) );
+        assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
+
+        assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
+
+        assertEquals( "MAL-PEOPLE-PROT-BY-IRS", dataValues.get( 2 ).get( "dataElement" ) );
         assertNull( dataValues.get( 2 ).get( "categoryOptionCombo" ) );
         assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
 
