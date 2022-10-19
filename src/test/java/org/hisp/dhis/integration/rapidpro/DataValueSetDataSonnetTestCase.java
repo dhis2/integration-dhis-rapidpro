@@ -219,9 +219,6 @@ public class DataValueSetDataSonnetTestCase
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() ), Map.class );
 
-        //        ((Map<String, Object>) payload.get( "results" )).remove( "mal_llin_distr_pw" );
-        //        ((Map<String, Object>) payload.get( "results" )).put( "mal_llin_distr_pw__male", Map.of( "value", "14" ) );
-
         exchange.getMessage().setBody( payload );
 
         Map dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
