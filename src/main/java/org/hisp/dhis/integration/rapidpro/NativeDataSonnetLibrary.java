@@ -133,7 +133,7 @@ public class NativeDataSonnetLibrary extends Library
 
     protected String fetchDhis2CatOptComboCode( String resultName )
     {
-        String catOptComboCode = resultName.substring( resultName.indexOf( "__" ) + 2 );
+        String catOptComboCode = extractCatOptComboCode( resultName );
         Iterable<CategoryOptionCombo> categoryOptionCombos = dhis2Client.get( "categoryOptionCombos" )
             .withFilter( "code:$ilike:" + catOptComboCode ).withFields( "code" ).withoutPaging()
             .transfer().returnAs( CategoryOptionCombo.class, "categoryOptionCombos" );
@@ -148,6 +148,11 @@ public class NativeDataSonnetLibrary extends Library
         return dhis2CatOptComboCode;
     }
 
+    protected String extractCatOptComboCode( String resultName )
+    {
+        return resultName.substring( resultName.indexOf( "__" ) + 2 );
+    }
+
     protected Val.Func isCatOptComboFn( DataFormatService dataFormats )
     {
         return makeSimpleFunc(
@@ -160,7 +165,8 @@ public class NativeDataSonnetLibrary extends Library
                     if ( catOptOptionComboCode == null )
                     {
                         LOGGER.warn(
-                            "Ignoring category option combination because of unknown category option combination code '" + catOptOptionComboCode + "'. Hint: ensure the RapidPro result name suffix starts with '__'  and that the trailing code matches the corresponding DHIS2 category option combination code" );
+                            "Ignoring category option combination because of unknown category option combination code '" + extractCatOptComboCode(
+                                resultName ) + "'. Hint: ensure the RapidPro result name suffix starts with '__'  and that the trailing code matches the corresponding DHIS2 category option combination code" );
                     }
                 }
                 return Materializer.reverse( dataFormats.mandatoryRead(
