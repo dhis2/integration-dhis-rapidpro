@@ -69,14 +69,36 @@ public class NativeDataSonnetLibrary extends Library
     public Map<String, Val.Func> functions( DataFormatService dataFormats, Header header )
     {
         Map<String, Val.Func> answer = new HashMap<>();
-        answer.put( "logWarning", logWarningFn() );
-        answer.put( "isCategoryOptionCombo", isCategoryOptionComboFn( dataFormats ) );
-        answer.put( "formatResource", formatResource( dataFormats ) );
+        answer.put( "logWarning", logWarning() );
+        answer.put( "isCatOptCombo", isCatOptComboFn( dataFormats ) );
+        answer.put( "getCatOptComboCode", getCatOptComboCodeFn( dataFormats ) );
+        answer.put( "truncateCatOptComboSuffix", truncateCatOptComboSuffixFn( dataFormats ) );
+        answer.put( "formatResource", formatResourceFn( dataFormats ) );
 
         return answer;
     }
 
-    protected Val.Func formatResource( DataFormatService dataFormats )
+    protected Val.Func truncateCatOptComboSuffixFn( DataFormatService dataFormats )
+    {
+        return makeSimpleFunc(
+            Collections.singletonList( "resultName" ), vals -> {
+                String resultName = ((Val.Str) vals.get( 0 )).value();
+                String dataElementCode;
+                if ( resultName.contains( "__" ) )
+                {
+                    dataElementCode = resultName.substring( 0, resultName.indexOf( "__" ) );
+                }
+                else
+                {
+                    dataElementCode = resultName;
+                }
+                return Materializer.reverse( dataFormats.mandatoryRead(
+                    new DefaultDocument<>( dataElementCode, MediaTypes.APPLICATION_JAVA ) ) );
+
+            } );
+    }
+
+    protected Val.Func formatResourceFn( DataFormatService dataFormats )
     {
         return makeSimpleFunc(
             List.of( "key", "dataSetName" ), vals -> {
@@ -89,7 +111,7 @@ public class NativeDataSonnetLibrary extends Library
             } );
     }
 
-    protected Val.Func logWarningFn()
+    protected Val.Func logWarning()
     {
         return makeSimpleFunc(
             Collections.singletonList( "msg" ), vals -> {
@@ -98,19 +120,54 @@ public class NativeDataSonnetLibrary extends Library
             } );
     }
 
-    protected Val.Func isCategoryOptionComboFn( DataFormatService dataFormats )
+    protected Val.Func getCatOptComboCodeFn( DataFormatService dataFormats )
     {
         return makeSimpleFunc(
-            Collections.singletonList( "categoryComboOptionCode" ), vals -> {
-                Iterable<CategoryOptionCombo> categoryOptionCombos = dhis2Client.get( "categoryOptionCombos" )
-                    .withFilter( "code:eq:" + ((Val.Str) vals.get( 0 )).value() ).withoutPaging()
-                    .transfer().returnAs( CategoryOptionCombo.class, "categoryOptionCombos" );
-                boolean categoryOptionComboExists = categoryOptionCombos.iterator().hasNext();
-                if ( !categoryOptionComboExists )
+            Collections.singletonList( "resultName" ), vals -> {
+                String resultName = ((Val.Str) vals.get( 0 )).value();
+                return Materializer.reverse( dataFormats.mandatoryRead(
+                    new DefaultDocument<>( fetchDhis2CatOptComboCode( resultName ),
+                        MediaTypes.APPLICATION_JAVA ) ) );
+            } );
+    }
+
+    protected String fetchDhis2CatOptComboCode( String resultName )
+    {
+        String catOptComboCode = extractCatOptComboCode( resultName );
+        Iterable<CategoryOptionCombo> categoryOptionCombos = dhis2Client.get( "categoryOptionCombos" )
+            .withFilter( "code:$ilike:" + catOptComboCode ).withFields( "code" ).withoutPaging()
+            .transfer().returnAs( CategoryOptionCombo.class, "categoryOptionCombos" );
+        String dhis2CatOptComboCode = null;
+        for ( CategoryOptionCombo categoryOptionCombo : categoryOptionCombos )
+        {
+            if ( categoryOptionCombo.getCode().get().toLowerCase().equals( catOptComboCode ) )
+            {
+                dhis2CatOptComboCode = categoryOptionCombo.getCode().get();
+            }
+        }
+        return dhis2CatOptComboCode;
+    }
+
+    protected String extractCatOptComboCode( String resultName )
+    {
+        return resultName.substring( resultName.indexOf( "__" ) + 2 );
+    }
+
+    protected Val.Func isCatOptComboFn( DataFormatService dataFormats )
+    {
+        return makeSimpleFunc(
+            Collections.singletonList( "resultName" ), vals -> {
+                String resultName = ((Val.Str) vals.get( 0 )).value();
+                boolean categoryOptionComboExists = false;
+                if ( resultName.contains( "__" ) )
                 {
-                    LOGGER.warn(
-                        "Ignoring category option combination because of unknown category option combination code '" + ((Val.Str) vals.get(
-                            0 )).value() + "'. Hint: ensure that the RapidPro category matches the corresponding DHIS2 category option combination code" );
+                    String catOptOptionComboCode = fetchDhis2CatOptComboCode( resultName );
+                    if ( catOptOptionComboCode == null )
+                    {
+                        LOGGER.warn(
+                            "Ignoring category option combination because of unknown category option combination code '" + extractCatOptComboCode(
+                                resultName ) + "'. Hint: ensure the RapidPro result name suffix starts with '__'  and that the trailing code matches the corresponding DHIS2 category option combination code" );
+                    }
                 }
                 return Materializer.reverse( dataFormats.mandatoryRead(
                     new DefaultDocument<>( categoryOptionComboExists, MediaTypes.APPLICATION_JAVA ) ) );

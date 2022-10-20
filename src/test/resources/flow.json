@@ -129,7 +129,7 @@
           "actions": [
             {
               "category": "",
-              "name": "gen_domestic_fund",
+              "name": "gen_ext_fund",
               "type": "set_run_result",
               "uuid": "776a0ea9-43c0-4edd-999c-43afb88f57b5",
               "value": "2"
@@ -147,7 +147,7 @@
           "actions": [
             {
               "category": "",
-              "name": "mal_pop_total",
+              "name": "mal_pop_total--mal-0514y",
               "type": "set_run_result",
               "uuid": "ef2eb210-d0a3-41d6-b825-26d6282534ab",
               "value": "10"

@@ -81,12 +81,12 @@ public class DataValueSetDataSonnetTestCase
         dsExpression.setOutputMediaType( "application/x-java-object" );
 
         List<String> dataElementCodes = List.of( "GEN_EXT_FUND", "MAL-POP-TOTAL", "MAL_LLIN_DISTR_PW",
-            "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL_PEOPLE_PROT_BY_IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT",
+            "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL-PEOPLE-PROT-BY-IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT",
             "GEN_FUND_NEED" );
 
         logCountDownLatch = new CountDownLatch( 1 );
         CamelContext camelContext = new DefaultCamelContext();
-        camelContext.getRegistry().bind( "native", new Library()
+        camelContext.getRegistry().bind( "native", new NativeDataSonnetLibrary()
         {
             @Override
             public String namespace()
@@ -97,22 +97,35 @@ public class DataValueSetDataSonnetTestCase
             @Override
             public Map<String, Val.Func> functions( DataFormatService dataFormats, Header header )
             {
-                Map<String, Val.Func> answer = new HashMap<>();
+                Map<String, Val.Func> answer = super.functions( dataFormats, header );
+                answer.put( "getCatOptComboCode", makeSimpleFunc(
+                    Collections.singletonList( "resultName" ), vals -> {
+                        String resultName = ((Val.Str) vals.get( 0 )).value();
+                        return Materializer.reverse( dataFormats.mandatoryRead(
+                            new DefaultDocument( resultName.substring( resultName.indexOf( "__" ) + 2 ).toUpperCase(),
+                                MediaTypes.APPLICATION_JAVA ) ) );
+                    } ) );
                 answer.put( "logWarning", makeSimpleFunc(
-                    Collections.singletonList( "key" ), vals -> {
+                    Collections.singletonList( "msg" ), vals -> {
                         logCountDownLatch.countDown();
                         return null;
                     } ) );
-                answer.put( "isCategoryOptionCombo", makeSimpleFunc(
-                    Collections.singletonList( "key" ), vals -> {
-                        if ( ((Val.Str) vals.get( 0 )).value().equals( "Male" ))
+                answer.put( "isCatOptCombo", makeSimpleFunc(
+                    Collections.singletonList( "resultName" ), vals -> {
+                        String resultName = ((Val.Str) vals.get( 0 )).value();
+                        if ( resultName.contains( "__" ) && resultName.substring( resultName.indexOf( "__" ) + 2 )
+                            .equals( "mal-0514y" ) )
                         {
                             return Materializer.reverse( dataFormats.mandatoryRead(
                                 new DefaultDocument( true, MediaTypes.APPLICATION_JAVA ) ) );
-                        } else {
+
+                        }
+                        else
+                        {
                             return Materializer.reverse( dataFormats.mandatoryRead(
                                 new DefaultDocument( false, MediaTypes.APPLICATION_JAVA ) ) );
                         }
+
                     } ) );
 
                 return answer;
@@ -147,7 +160,8 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMappingOmitsWarningWhenAllDataElementCodesAreKnown()
-        throws IOException
+        throws
+        IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
@@ -163,7 +177,8 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMapping()
-        throws IOException
+        throws
+        IOException
     {
         exchange.getMessage().setBody( OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
@@ -197,14 +212,12 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMappingGivenValidCategoryOptionComboCode()
-        throws IOException
+        throws
+        IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() ), Map.class );
-
-        ((Map<String, Object>) ((Map<String, Object>) payload.get( "results" )).get( "mal_llin_distr_pw" )).put(
-            "category", "Male" );
 
         exchange.getMessage().setBody( payload );
 
@@ -217,11 +230,47 @@ public class DataValueSetDataSonnetTestCase
         assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
 
         assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
-        assertNull( dataValues.get( 1 ).get( "categoryOptionCombo" ) );
+        assertEquals( "MAL-0514Y", dataValues.get( 1 ).get( "categoryOptionCombo" ) );
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
 
         assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
-        assertEquals( "Male", dataValues.get( 2 ).get( "categoryOptionCombo" ) );
+        assertNull( dataValues.get( 2 ).get( "categoryOptionCombo" ) );
+        assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
+
+        assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 3 ).get( "categoryOptionCombo" ) );
+        assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
+
+        assertEquals( 0, logCountDownLatch.getCount() );
+    }
+
+    @Test
+    public void testMappingGivenResultName()
+        throws
+        IOException
+    {
+        Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() ), Map.class );
+
+        ((Map<String, Object>) ((Map<String, Object>) payload.get( "results" )).get( "mal_llin_distr_pw" )).put(
+            "name", "mal_people_prot_by_irs" );
+
+        exchange.getMessage().setBody( payload );
+
+        Map dataValueSet = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
+
+        List<Map<String, Object>> dataValues = (List<Map<String, Object>>) dataValueSet.get( "dataValues" );
+
+        assertEquals( "GEN_EXT_FUND", dataValues.get( 0 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 0 ).get( "categoryOptionCombo" ) );
+        assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
+
+        assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
+
+        assertEquals( "MAL-PEOPLE-PROT-BY-IRS", dataValues.get( 2 ).get( "dataElement" ) );
+        assertNull( dataValues.get( 2 ).get( "categoryOptionCombo" ) );
         assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
 
         assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
@@ -233,14 +282,15 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMappingGivenInvalidCategoryOptionComboCode()
-        throws IOException
+        throws
+        IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() ), Map.class );
 
-        ((Map<String, Object>) ((Map<String, Object>) payload.get( "results" )).get( "mal_llin_distr_pw" )).put(
-            "category", "M" );
+        ((Map<String, Object>) payload.get( "results" )).remove( "mal_llin_distr_pw" );
+        ((Map<String, Object>) payload.get( "results" )).put( "mal_llin_distr_pw__male", Map.of( "value", "3" ) );
 
         exchange.getMessage().setBody( payload );
 
@@ -253,16 +303,15 @@ public class DataValueSetDataSonnetTestCase
         assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
 
         assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
-        assertNull( dataValues.get( 1 ).get( "categoryOptionCombo" ) );
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
 
-        assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
+        assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 2 ).get( "dataElement" ) );
         assertNull( dataValues.get( 2 ).get( "categoryOptionCombo" ) );
-        assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
+        assertEquals( "5", dataValues.get( 2 ).get( "value" ) );
 
-        assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 3 ).get( "dataElement" ) );
+        assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 3 ).get( "dataElement" ) );
         assertNull( dataValues.get( 3 ).get( "categoryOptionCombo" ) );
-        assertEquals( "5", dataValues.get( 3 ).get( "value" ) );
+        assertEquals( "3", dataValues.get( 3 ).get( "value" ) );
 
         assertEquals( 0, logCountDownLatch.getCount() );
     }

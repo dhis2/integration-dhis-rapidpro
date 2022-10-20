@@ -15,15 +15,14 @@
     "gen_ext_fund": {
       "value": "2"
     },
-    "mal_pop_total": {
+    "mal_pop_total__mal-0514y": {
       "value": "10"
     },
     "mal_llin_distr_pw": {
       "value": "3"
     },
     "gen_domestic_fund": {
-      "value": "5",
-      "category": "Domestic funding"
+      "value": "5"
     }
   }
 }
