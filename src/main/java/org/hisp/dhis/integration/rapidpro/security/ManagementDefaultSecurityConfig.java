@@ -40,12 +40,17 @@ public class ManagementDefaultSecurityConfig
     @Bean
     @ConditionalOnProperty( value = "management.auth", havingValue = "basic", matchIfMissing = true )
     protected SecurityFilterChain managementFilterChain( HttpSecurity http )
-        throws Exception
+        throws
+        Exception
     {
-        return http.requestMatchers().antMatchers( "/management/**", "/dhis2rapidpro/sync", "/login", "/logout" )
+        return http.requestMatchers()
+            .antMatchers( "/management/**", "/dhis2rapidpro/sync", "/dhis2rapidpro/scan", "/dhis2rapidpro/reminders",
+                "/login", "/logout" )
             .and().authorizeRequests()
             .anyRequest().authenticated()
-            .and().csrf().ignoringAntMatchers( "/management/h2-console/**", "/dhis2rapidpro/sync" )
+            .and().csrf()
+            .ignoringAntMatchers( "/management/h2-console/**", "/dhis2rapidpro/sync", "/dhis2rapidpro/scan",
+                "/dhis2rapidpro/reminders" )
             .and()
             .formLogin()
             .and()

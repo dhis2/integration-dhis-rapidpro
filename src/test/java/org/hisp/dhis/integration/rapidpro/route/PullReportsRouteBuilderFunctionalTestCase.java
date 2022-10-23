@@ -33,7 +33,11 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
+import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
+import org.hisp.dhis.integration.rapidpro.Environment;
+import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -46,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
@@ -92,6 +97,19 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
 
         spyEndpoint.await( 15, TimeUnit.SECONDS );
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
+
+        DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
+                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+            .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
+            .transfer()
+            .returnAs(
+                DataValueSet.class );
+
+        assertEquals("5", dataValueSet.getDataValues().get().get( 0 ).getValue().get());
+        assertEquals("2", dataValueSet.getDataValues().get().get( 1 ).getValue().get());
+        assertEquals("3", dataValueSet.getDataValues().get().get( 2 ).getValue().get());
+        assertEquals("10", dataValueSet.getDataValues().get().get( 3 ).getValue().get());
+        assertEquals("rtfSaMjPyq6", dataValueSet.getDataValues().get().get( 3 ).getCategoryOptionCombo().get());
     }
 
     @Test

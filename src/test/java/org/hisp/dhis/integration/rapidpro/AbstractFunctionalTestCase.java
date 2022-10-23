@@ -28,7 +28,12 @@
 package org.hisp.dhis.integration.rapidpro;
 
 import static io.restassured.RestAssured.given;
+import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +41,9 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.camel.test.spring.junit5.UseAdviceWith;
+import org.hisp.dhis.api.model.v2_36_11.DataValueSet;
+import org.hisp.dhis.api.model.v2_36_11.DataValue__1;
+import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +55,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import io.restassured.specification.RequestSpecification;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest( webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT )
 @CamelSpringBootTest
 @UseAdviceWith
 @ActiveProfiles( "test" )
@@ -94,13 +102,29 @@ public class AbstractFunctionalTestCase
         for ( Map<String, Object> contact : fetchRapidProContacts() )
         {
             given( RAPIDPRO_API_REQUEST_SPEC ).delete( "/contacts.json?uuid={uuid}",
-                contact.get( "uuid" ) )
+                    contact.get( "uuid" ) )
                 .then()
                 .statusCode( 204 );
         }
 
         dhis2RapidProHttpEndpointUri = String.format( "https://0.0.0.0:%s/dhis2rapidpro",
-            serverPort);
+            serverPort );
+
+        DHIS2_CLIENT.post( "dataValueSets" ).withResource(
+                new DataValueSet().withCompleteDate(
+                        ZonedDateTime.now( ZoneOffset.UTC ).format( DateTimeFormatter.ISO_INSTANT ) )
+                    .withOrgUnit( Environment.ORG_UNIT_ID )
+                    .withDataSet( "VEM58nY22sO" ).withPeriod( PeriodBuilder.monthOf( new Date(), -1 ) )
+                    .withDataValues(
+                        List.of(
+                            new DataValue__1().withDataElement( "MAL_POP_TOTAL" ).withCategoryOptionCombo( "MAL-0514Y" )
+                                .withValue( "0" ),
+                            new DataValue__1().withDataElement( "MAL_LLIN_DISTR_PW" ).withValue( "0" ),
+                            new DataValue__1().withDataElement( "GEN_DOMESTIC_FUND" ).withValue( "0" ),
+                            new DataValue__1().withDataElement( "GEN_EXT_FUND" ).withValue( "0" ) ) ) )
+            .withParameter( "dataElementIdScheme", "CODE" )
+            .withParameter( "categoryOptionComboIdScheme", "CODE" )
+            .transfer().close();
 
         doBeforeEach();
     }

@@ -73,7 +73,8 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
+            Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
                 "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
@@ -229,7 +230,8 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
+            Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
                 "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )

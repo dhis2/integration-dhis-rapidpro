@@ -35,14 +35,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
-import com.datasonnet.document.DefaultDocument;
-import com.datasonnet.document.MediaTypes;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ValueBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -57,9 +54,10 @@ import org.springframework.util.StreamUtils;
 import sjsonnet.Materializer;
 import sjsonnet.Val;
 
+import com.datasonnet.document.DefaultDocument;
+import com.datasonnet.document.MediaTypes;
 import com.datasonnet.header.Header;
 import com.datasonnet.spi.DataFormatService;
-import com.datasonnet.spi.Library;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class DataValueSetDataSonnetTestCase
@@ -80,7 +78,7 @@ public class DataValueSetDataSonnetTestCase
         dsExpression.setBodyMediaType( "application/x-java-object" );
         dsExpression.setOutputMediaType( "application/x-java-object" );
 
-        List<String> dataElementCodes = List.of( "GEN_EXT_FUND", "MAL-POP-TOTAL", "MAL_LLIN_DISTR_PW",
+        List<String> dataElementCodes = List.of( "GEN_EXT_FUND", "MAL_POP_TOTAL", "MAL_LLIN_DISTR_PW",
             "GEN_DOMESTIC FUND", "MAL_LLIN_DISTR_NB", "MAL-PEOPLE-PROT-BY-IRS", "MAL_POP_AT_RISK", "GEN_PREG_EXPECT",
             "GEN_FUND_NEED" );
 
@@ -160,8 +158,7 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMappingOmitsWarningWhenAllDataElementCodesAreKnown()
-        throws
-        IOException
+        throws IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
@@ -177,8 +174,7 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMapping()
-        throws
-        IOException
+        throws IOException
     {
         exchange.getMessage().setBody( OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
@@ -196,7 +192,7 @@ public class DataValueSetDataSonnetTestCase
         assertEquals( 4, dataValues.size() );
         assertEquals( "GEN_EXT_FUND", dataValues.get( 0 ).get( "dataElement" ) );
         assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
-        assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertEquals( "MAL_POP_TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
         assertEquals( "MAL_LLIN_DISTR_PW", dataValues.get( 2 ).get( "dataElement" ) );
         assertEquals( "3", dataValues.get( 2 ).get( "value" ) );
@@ -212,8 +208,7 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMappingGivenValidCategoryOptionComboCode()
-        throws
-        IOException
+        throws IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
@@ -229,7 +224,7 @@ public class DataValueSetDataSonnetTestCase
         assertNull( dataValues.get( 0 ).get( "categoryOptionCombo" ) );
         assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
 
-        assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertEquals( "MAL_POP_TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
         assertEquals( "MAL-0514Y", dataValues.get( 1 ).get( "categoryOptionCombo" ) );
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
 
@@ -246,15 +241,14 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMappingGivenResultName()
-        throws
-        IOException
+        throws IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() ), Map.class );
 
         ((Map<String, Object>) ((Map<String, Object>) payload.get( "results" )).get( "mal_llin_distr_pw" )).put(
-            "name", "mal_people_prot_by_irs" );
+            "name", "mal-people-prot-by-irs" );
 
         exchange.getMessage().setBody( payload );
 
@@ -266,7 +260,7 @@ public class DataValueSetDataSonnetTestCase
         assertNull( dataValues.get( 0 ).get( "categoryOptionCombo" ) );
         assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
 
-        assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertEquals( "MAL_POP_TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
 
         assertEquals( "MAL-PEOPLE-PROT-BY-IRS", dataValues.get( 2 ).get( "dataElement" ) );
@@ -282,8 +276,7 @@ public class DataValueSetDataSonnetTestCase
 
     @Test
     public void testMappingGivenInvalidCategoryOptionComboCode()
-        throws
-        IOException
+        throws IOException
     {
         Map<String, Object> payload = OBJECT_MAPPER.readValue( StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
@@ -302,7 +295,7 @@ public class DataValueSetDataSonnetTestCase
         assertNull( dataValues.get( 0 ).get( "categoryOptionCombo" ) );
         assertEquals( "2", dataValues.get( 0 ).get( "value" ) );
 
-        assertEquals( "MAL-POP-TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
+        assertEquals( "MAL_POP_TOTAL", dataValues.get( 1 ).get( "dataElement" ) );
         assertEquals( "10", dataValues.get( 1 ).get( "value" ) );
 
         assertEquals( "GEN_DOMESTIC FUND", dataValues.get( 2 ).get( "dataElement" ) );
