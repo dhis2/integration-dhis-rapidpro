@@ -1,4 +1,4 @@
-local normaliseDeCodeFn(dataElementCode) = ds.replace(ds.replace(ds.lower(dataElementCode), ' ', '_'), '-', '_');
+local normaliseDeCodeFn(dataElementCode) = ds.replace(ds.lower(dataElementCode), ' ', '_');
 
 local normaliseDeCodesFn(dataElementCodes) = ds.map(dataElementCodes, function(v, i) normaliseDeCodeFn(v));
 
@@ -6,7 +6,7 @@ local getResultName(result) = if std.objectHas(result.value, 'name') then result
 
 local dataValueFn(result) = [
     {
-      dataElement: ds.filter(cml.header('dataElementCodes'), function(v, i) normaliseDeCodeFn(v) == native.truncateCatOptComboSuffix(getResultName(result)))[0],
+      dataElement: ds.filter(cml.header('dataElementCodes'), function(v, i) normaliseDeCodeFn(v) == ds.lower(native.truncateCatOptComboSuffix(getResultName(result))))[0],
       value: result.value.value,
       comment: 'RapidPro contact details: %s' % std.escapeStringJson(std.manifestJsonEx(payload.contact, ' ')),
       [if native.isCatOptCombo(getResultName(result)) then 'categoryOptionCombo']: native.getCatOptComboCode(getResultName(result))
@@ -14,9 +14,9 @@ local dataValueFn(result) = [
 ];
 
 {
-    completedDate: ds.datetime.now(),
+    completedDate: ds.datetime.format(ds.datetime.now(), 'yyyy-MM-dd'),
     orgUnit: cml.header('orgUnitId'),
     dataSet: cml.header('dataSetCode'),
     period: cml.header('period'),
-    dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) if ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), native.truncateCatOptComboSuffix(getResultName(v))) then true else native.logWarning("Ignoring data value because of unknown DHIS2 data element code '" + getResultName(v) + "'. Hint: ensure that the RapidPro result name matches the corresponding DHIS2 data element code")))
+    dataValues: std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) if ds.contains(normaliseDeCodesFn(cml.header('dataElementCodes')), ds.lower(native.truncateCatOptComboSuffix(getResultName(v)))) then true else native.logWarning("Ignoring data value because of unknown DHIS2 data element code '" + native.truncateCatOptComboSuffix(getResultName(v)) + "'. Hint: ensure that the RapidPro result name matches the corresponding DHIS2 data element code")))
 }

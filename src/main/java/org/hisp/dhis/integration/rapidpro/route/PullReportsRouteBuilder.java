@@ -45,6 +45,12 @@ public class PullReportsRouteBuilder extends AbstractRouteBuilder
     @Override
     protected void doConfigure()
     {
+        from( "servlet:scan?muteException=true" )
+            .removeHeaders( "*" )
+            .to( "direct:pull" )
+            .setHeader( "Content-Type", constant( "text/html" ) )
+            .setBody( constant( "<html><body>Scanned RapidPro flow runs</body></html>" ) );
+
         from( "quartz://pull?cron={{scan.reports.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
             .to( "direct:pull" );
 

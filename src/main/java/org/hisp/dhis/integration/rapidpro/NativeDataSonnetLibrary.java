@@ -27,21 +27,6 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import com.datasonnet.document.DefaultDocument;
-import com.datasonnet.document.MediaTypes;
-import com.datasonnet.header.Header;
-import com.datasonnet.spi.DataFormatService;
-import com.datasonnet.spi.Library;
-import org.hisp.dhis.api.model.v2_36_11.CategoryOptionCombo;
-import org.hisp.dhis.integration.sdk.api.Dhis2Client;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
-import sjsonnet.Materializer;
-import sjsonnet.Val;
-
 import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,6 +34,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
+
+import org.hisp.dhis.api.model.v2_36_11.CategoryOptionCombo;
+import org.hisp.dhis.integration.sdk.api.Dhis2Client;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+import sjsonnet.Materializer;
+import sjsonnet.Val;
+
+import com.datasonnet.document.DefaultDocument;
+import com.datasonnet.document.MediaTypes;
+import com.datasonnet.header.Header;
+import com.datasonnet.spi.DataFormatService;
+import com.datasonnet.spi.Library;
 
 @Component
 public class NativeDataSonnetLibrary extends Library
@@ -140,7 +142,7 @@ public class NativeDataSonnetLibrary extends Library
         String dhis2CatOptComboCode = null;
         for ( CategoryOptionCombo categoryOptionCombo : categoryOptionCombos )
         {
-            if ( categoryOptionCombo.getCode().get().toLowerCase().equals( catOptComboCode ) )
+            if ( categoryOptionCombo.getCode().get().equalsIgnoreCase( catOptComboCode ) )
             {
                 dhis2CatOptComboCode = categoryOptionCombo.getCode().get();
             }
@@ -165,8 +167,14 @@ public class NativeDataSonnetLibrary extends Library
                     if ( catOptOptionComboCode == null )
                     {
                         LOGGER.warn(
-                            "Ignoring category option combination because of unknown category option combination code '" + extractCatOptComboCode(
-                                resultName ) + "'. Hint: ensure the RapidPro result name suffix starts with '__'  and that the trailing code matches the corresponding DHIS2 category option combination code" );
+                            "Ignoring category option combination because of unknown category option combination code '"
+                                + extractCatOptComboCode(
+                                    resultName )
+                                + "'. Hint: ensure the RapidPro result name suffix starts with '__'  and that the trailing code matches the corresponding DHIS2 category option combination code" );
+                    }
+                    else
+                    {
+                        categoryOptionComboExists = true;
                     }
                 }
                 return Materializer.reverse( dataFormats.mandatoryRead(
