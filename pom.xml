@@ -17,6 +17,7 @@
         <camel.version>3.19.0</camel.version>
         <surefire.plugin.version>3.0.0-M4</surefire.plugin.version>
         <spring.boot-version>2.7.4</spring.boot-version>
+        <hawtio.version>2.16.0</hawtio.version>
     </properties>
 
     <dependencyManagement>
@@ -236,7 +237,12 @@
         <dependency>
             <groupId>io.hawt</groupId>
             <artifactId>hawtio-springboot</artifactId>
-            <version>2.16.0</version>
+            <version>${hawtio.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.hawt</groupId>
+            <artifactId>hawtio-log-logback</artifactId>
+            <version>${hawtio.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
