@@ -71,14 +71,15 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
         from( "quartz://dhis2?cron={{report.delivery.schedule.expression}}" )
             .precondition( "'{{report.delivery.schedule.expression:}}' != ''" )
             .pollEnrich("jms:queue:dhis2")
-            .to( "direct:dhis2" );
+            .to( "direct:transformReport" );
 
         from( "jms:queue:dhis2" )
+            .routeId( "Consume Report" )
             .precondition( "'{{report.delivery.schedule.expression:}}' == ''" )
-            .to( "direct:dhis2" );
+            .to( "direct:transformReport" );
 
-        from( "direct:dhis2" )
-            .routeId( "Deliver Report" )
+        from( "direct:transformReport" )
+            .routeId( "Transform Report" )
             .setHeader( "originalPayload", simple( "${body}" ) )
             .onException( Exception.class )
                 .to( "direct:dlq" )
@@ -117,7 +118,11 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
             .process( idSchemeQueryParamSetter )
             .marshal().json().transform().body(String.class)
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
-            .toD( "{{report.destination.endpoint}}" );
+            .to( "direct:deliverReport" );
+
+        from( "direct:deliverReport" )
+            .routeId( "Deliver Report" )
+            .toD( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
 
         from( "direct:dlq" )
             .setHeader( "errorMessage", rootCauseExpr )
