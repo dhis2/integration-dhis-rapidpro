@@ -385,7 +385,7 @@ The H2 DBMS is embedded with DHIS-to-RapidPro but the DBMS can be easily substit
 
 ## Extending DHIS-to-RapidPro
 
-In addition to being highly configurable, just about any piece of DHIS-to-RapidPro's functionality can be extended during configuration to suit your particular needs. A prerequisite to extending the behaviour is having knowledge of [Apache Camel](https://camel.apache.org/manual/faq/what-is-camel.html): the routing engine powering DHIS-to-RapidPro. In particular, you should be knowledgeable in Apache Camel's [YAML or XML DSL](https://camel.apache.org/manual/routes.html) in order to be able to define integration flows that override or complement the existing flows.
+In addition to being highly configurable, just about any piece of DHIS-to-RapidPro's functionality can be extended during configuration to suit your particular needs. A prerequisite to extending the behaviour is having knowledge of [Apache Camel](https://camel.apache.org/manual/faq/what-is-camel.html): the routing engine powering DHIS-to-RapidPro. In particular, you should be knowledgeable in Apache Camel's [YAML or XML DSL]([https://camel.apache.org/manual/routes.html](https://camel.apache.org/manual/dsl.html) in order to be able to define integration flows that override or complement the existing flows.
 
 Integration flows in DHIS-to-RapidPro, known as [routes](https://camel.apache.org/manual/routes.html) in Apache Camel, are named according to their purpose. You can override any route if you know its name. The following is a list of the important routes that you may want to override:
 
