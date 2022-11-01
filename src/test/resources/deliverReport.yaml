@@ -1,0 +1,31 @@
+- route:
+    id: "Deliver Report"
+    from:
+      uri: "direct:deliverReport"
+      steps:
+        - setProperty:
+            name: month
+            simple: "${date:now:MM}"
+        - setProperty:
+            name: year
+            simple: "${date:now:yyyy}"
+        - setProperty:
+            name: week
+            ognl: "@org.hisp.dhis.integration.sdk.support.period.PeriodBuilder@weekOf(new java.util.Date()).substring(5)"
+        - setProperty:
+            name: msisdn
+            jsonpath:
+              headerName: originalPayload
+              expression: "$.contact.urn"
+        - setProperty:
+            name: raw_msg
+            jsonpath:
+              headerName: originalPayload
+              expression: "$.results.msg.value"
+        - setProperty:
+            name: report_type
+            jsonpath:
+              headerName: originalPayload
+              expression: "$.flow.name"
+        - toD:
+            uri: "{{report.destination.endpoint}}?skipRequestHeaders=true&httpClientConfigurer=#selfSignedHttpClientConfigurer&authenticationPreemptive=true&authMethod=Basic&authUsername=alice&authPassword=secret&httpMethod=POST&month=${exchangeProperty.month}&year=${exchangeProperty.year}&week=${exchangeProperty.week}&msisdn=${exchangeProperty.msisdn}&raw_msg=${exchangeProperty.raw_msg}&facility=${header.orgUnitId}&report_type=${exchangeProperty.report_type}&aParam=${header.aParam}"

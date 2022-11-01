@@ -18,8 +18,9 @@
 5. [Configuration](#configuration)
 6. [Management & Monitoring](#management--monitoring)
 7. [Recovering Failed Reports](#recovering-failed-reports)
-8. [Troubleshooting Guide](#troubleshooting-guide)
-9. [Acknowledgments](#acknowledgments)
+8. [Extending DHIS-to-RapidPro](#extending-dhis-to-rapidpro)
+9. [Troubleshooting Guide](#troubleshooting-guide)
+10. [Acknowledgments](#acknowledgments)
 
 ## Introduction
 
@@ -325,7 +326,6 @@ By order of precedence, a config property can be specified:
 | `scan.reports.schedule.expression`    | Cron expression specifying how often RapidPro is queried for flow executions. By default, RapidPro is queried every thirty minutes.                                                                                                                                                                     | `0 0/30 * * * ?`                                                               | `0 0 0 * * ?`                                                                                                                        |
 | `report.delivery.schedule.expression` | Cron expression specifying when queued reports are delivered to DHIS2.                                                                                                                                                                                                                                  |                                                                                | `0 0 0 * * ?`                                                                                                                        |
 | `org.unit.id.scheme`                  | By which field organisation units are identified.                                                                                                                                                                                                                                                       | `ID`                                                                           | `CODE`                                                                                                                               |
-| `report.destination.endpoint`         | Advanced setting to transmit aggregate reports to systems other than DHIS2: useful for integrating with legacy systems or intercepting the reports. Consult the [Apache Camel documentation](https://camel.apache.org/components/3.18.x/index.html) to find which transports and options are supported. | `dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client` | `https://legacy.example/dhis2?authenticationPreemptive=true&authMethod=Basic&authUsername=alice&authPassword=secret&httpMethod=POST` |
 | `webhook.security.auth`               | Authentication scheme protecting the webhook HTTP(S) endpoint. Supported values are `none` and `token`.                                                                                                                                                                                                 | `none`                                                                         | `token`                                                                                                                              |
 | `spring.security.user.name`           | Login username for non-webhook services like the Hawtio and H2 web consoles.                                                                                                                                                                                                                            | `dhis2rapidpro`                                                                | `admin`                                                                                                                              |
 | `spring.security.user.password`       | Login password for non-webhook services like the Hawtio and H2 web consoles.                                                                                                                                                                                                                            | `dhis2rapidpro`                                                                | `secret`                                                                                                                             |
@@ -382,6 +382,57 @@ The H2 console is pre-configured to be available locally at [https://localhost:8
 For security reasons, the console only permits local access but this behaviour can be overridden by setting `spring.h2.console.settings.web-allow-others` to `true`. To completely disable access to the web console, set the parameter `spring.h2.console.enabled` to `false` though you still can connect to the data store with an SQL client.
 
 The H2 DBMS is embedded with DHIS-to-RapidPro but the DBMS can be easily substituted with a more scalable JDBC-compliant DBMS such as PostgreSQL. You would need to change `spring.datasource.url` to a JDBC URL that references the new data store. Note: for a non-H2 data store, the data store vendor's JDBC driver needs to be added to the DHIS-to-RapidPro's Java classpath.
+
+## Extending DHIS-to-RapidPro
+
+In addition to being highly configurable, just about any piece of DHIS-to-RapidPro's functionality can be extended during configuration to suit your particular needs. A prerequisite to extending the behaviour is having knowledge of [Apache Camel](https://camel.apache.org/manual/faq/what-is-camel.html): the routing engine powering DHIS-to-RapidPro. In particular, you should be knowledgeable in Apache Camel's [YAML or XML DSL](https://camel.apache.org/manual/routes.html) in order to be able to define integration flows that override or complement the existing flows.
+
+Integration flows in DHIS-to-RapidPro, known as [routes](https://camel.apache.org/manual/routes.html) in Apache Camel, are named according to their purpose. You can override any route if you know its name. The following is a list of the important routes that you may want to override:
+
+| Route name             | Description                                                                            |
+|------------------------|----------------------------------------------------------------------------------------|
+| RapidPro Webhook       | Accepts and queues RapidPro webhook messages                                           |
+| Consume Report         | De-queues the report for delivery to DHIS2                                             |
+| Transform Report       | Maps and enriches the report as received by RapidPro prior to transmitting it to DHIS2 |
+| Deliver Report         | Transmits the report the DHIS2                                                         |
+| Retry Reports          | Re-queues reports marked for replay                                                    |
+| Scan RapidPro Flows    | Polls RapidPro for flow runs and queues them                                           |
+| Broadcast Reminders    | Queries DHIS2 for overdue reports and sends any reminders to RapidPro                  |
+| Set up RapidPro        | Configures RapidPro for integration with DHIS2                                         |
+| Create RapidPro Fields | Creates contact fields on RapidPro                                                     |
+| Create RapidPro Group  | Creates contact group on RapidPro                                                      |
+| Sync RapidPro Contacts | Synchronises RapidPro contacts with DHIS2 users                                        |
+
+You should place the file or files containing the custom routes in a directory named `camel` within DHIS-to-RapidPro's current directory. The custom route will override the inbuilt route if the routes match by name. DHIS-to-RapidPro can reload the routes while its running therefore you have the option to extend the application at runtime. What follows is an example of a custom YAML route that overrides the inbuilt `Deliver Report` route:
+
+```yaml
+- route:
+    id: "Deliver Report"
+    from:
+      uri: "direct:deliverReport"
+      steps:
+        - setProperty:
+            name: msisdn
+            jsonpath:
+              headerName: originalPayload
+              expression: "$.contact.urn"
+        - setProperty:
+            name: raw_msg
+            jsonpath:
+              headerName: originalPayload
+              expression: "$.results.msg.value"
+        - setProperty:
+            name: report_type
+            jsonpath:
+              headerName: originalPayload
+              expression: "$.flow.name"
+        - toD:
+            uri: "https://legacy.example/dhis2?authenticationPreemptive=true&authMethod=Basic&authUsername=alice&authPassword=secret&httpMethod=POST&msisdn=${exchangeProperty.msisdn}&raw_msg=${exchangeProperty.raw_msg}&facility=${header.orgUnitId}&report_type=${exchangeProperty.report_type}&aParam=${header.aParam}"
+```
+
+The above custom route overrides the original route so that aggregate report is delivered to a non-DHIS2 system. It extracts a number of values from the report payload with the `setProperty` key and adds them to destination URL as HTTP query parameters. Consult the [Set Property](https://camel.apache.org/components/3.18.x/eips/setProperty-eip.html) and [JSONPath](https://camel.apache.org/components/3.18.x/languages/jsonpath-language.html) Apache Camel documentation for further information about setting properties and extracting values from within a route.
+
+Besides adding query parameters, the route also configures the HTTP client for basic authentication using the reserved query parameters `authenticationPreemptive`, `authMethod`, `authUsername`, and `authPassword`. Consult the [HTTP component Apache Camel documentation](https://camel.apache.org/components/3.18.x/http-component.html) for further information about configuring the HTTP client.
 
 ## Troubleshooting Guide
 
