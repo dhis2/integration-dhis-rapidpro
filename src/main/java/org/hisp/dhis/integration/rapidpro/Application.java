@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
 import org.apache.camel.CamelContext;
+import org.apache.commons.io.FileUtils;
 import org.hisp.dhis.integration.rapidpro.security.KeyStoreGenerator;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
@@ -46,6 +47,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -94,6 +96,7 @@ public class Application extends SpringBootServletInitializer
         throws
         IOException
     {
+        FileUtils.forceMkdir( new File( "routes" ) );
         keyStoreGenerator.generate();
         camelContext.getRegistry().bind( "native", nativeDataSonnetLibrary );
     }

@@ -39,3 +39,4 @@ build/
 *.log
 *.gz
 *.jks
+routes/

@@ -119,60 +119,6 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
     }
 
     @Test
-    public void testOverrideRoute()
-        throws
-        Exception
-    {
-        System.setProperty( "sync.rapidpro.contacts", "true" );
-        System.setProperty( "report.destination.endpoint",
-            "https://localhost:" + serverPort + "/dhis2rapidpro/legacy" );
-
-        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
-        camelContext.addRoutes( new RouteBuilder()
-        {
-            @Override
-            public void configure()
-            {
-                from( "servlet:legacy?httpMethodRestrict=POST" ).to( "mock:destination" ).removeHeaders( "*" );
-            }
-        } );
-        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:destination", MockEndpoint.class );
-        spyEndpoint.setExpectedCount( 1 );
-
-        camelContext.start();
-
-        FileUtils.copyFile( new File( this.getClass().getResource( "/deliverReport.yaml" ).getFile() ),
-            new File( "target/test-classes/camel/deliverReport.yaml" ) );
-
-        while ( true )
-        {
-            Thread.sleep( 5000 );
-            Route deliverReportRoute = camelContext.getRoute( "Deliver Report" );
-            if ( deliverReportRoute.getSourceLocationShort() != null && deliverReportRoute.getSourceLocationShort()
-                .equals( "deliverReport.yaml:4" ) )
-            {
-                break;
-            }
-        }
-
-        String contactUuid = syncContactsAndFetchFirstContactUuid();
-        String webhookMessage = StreamUtils.copyToString(
-            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
-            Charset.defaultCharset() );
-        producerTemplate.requestBody(
-            dhis2RapidProHttpEndpointUri
-                + "/webhook?aParam=aValue&dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
-            String.format( webhookMessage, contactUuid ), String.class );
-
-        spyEndpoint.await( 5000, TimeUnit.MILLISECONDS );
-
-        assertEquals( 1, spyEndpoint.getReceivedCounter() );
-        Map<String, Object> headers = spyEndpoint.getReceivedExchanges().get( 0 ).getMessage().getHeaders();
-        assertEquals( "aValue", headers.get( "aParam" ) );
-        assertEquals( "Basic YWxpY2U6c2VjcmV0", headers.get( "Authorization" ) );
-    }
-
-    @Test
     public void testRecordInDeadLetterChannelIsCreatedGivenErrorWhileCreatingDataValueSet()
         throws
         IOException
