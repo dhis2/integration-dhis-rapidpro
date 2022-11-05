@@ -57,6 +57,7 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
     @Test
     public void testReportIsOverdue()
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "reminder.data.set.codes", "MAL_YEARLY" );
         camelContext.start();
         producerTemplate.sendBody( "direct:reminders", null );
@@ -90,6 +91,7 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
     public void testReportIsNotOverdue()
         throws IOException, InterruptedException
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "reminder.data.set.codes", "MAL_EL" );
         camelContext.start();
 

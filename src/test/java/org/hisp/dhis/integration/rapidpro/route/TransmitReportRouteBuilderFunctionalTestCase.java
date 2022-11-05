@@ -69,6 +69,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         throws
         IOException
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
 
@@ -96,6 +97,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         throws
         Exception
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "report.delivery.schedule.expression", "0 0/3 * * * ?" );
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
@@ -121,6 +123,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         throws
         Exception
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "report.destination.endpoint",
             "https://localhost:" + serverPort + "/dhis2rapidpro/legacy" );
 
@@ -201,6 +204,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         throws
         Exception
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
@@ -239,6 +243,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         throws
         IOException
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "org.unit.id.scheme", "CODE" );
         camelContext.start();
 
