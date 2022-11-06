@@ -69,6 +69,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         throws
         Exception
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
@@ -85,6 +86,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         throws
         Exception
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
@@ -117,6 +119,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         throws
         Exception
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
@@ -138,6 +141,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         throws
         Exception
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
             r -> r.weaveByToUri( "${exchangeProperty.nextRunsPageUrl}" ).replace().to( "mock:rapidPro" ) );
         MockEndpoint rapidProMockEndpoint = camelContext.getEndpoint( "mock:rapidPro", MockEndpoint.class );

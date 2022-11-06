@@ -67,7 +67,6 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     @Test
     public void testContactSynchronisationFailsGivenThatSyncPropertyIsFalse()
     {
-        System.setProperty( "sync.rapidpro.contacts", "false" );
         camelContext.start();
         CamelExecutionException e = assertThrows(
             CamelExecutionException.class, () -> producerTemplate.sendBody( "direct:sync", null ) );
@@ -77,6 +76,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     @Test
     public void testFirstSynchronisationCreatesContacts()
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         camelContext.start();
         assertPreCondition();
         producerTemplate.sendBody( "direct:sync", null );
@@ -89,6 +89,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     @Test
     public void testNewContactSynchronisationGivenInvalidPhoneNumber()
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         String invalidPhoneNoUserId = Environment.createDhis2User( Environment.ORG_UNIT_ID, "Invalid" );
         CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
         ((SpringBootCamelContext) camelContext)
@@ -118,6 +119,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     @Test
     public void testManualContactSynchronisation()
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         camelContext.start();
 
@@ -137,6 +139,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     @Test
     public void testContactSynchronisationGivenOrgUnitIdSchemeIsCode()
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "org.unit.id.scheme", "CODE" );
         camelContext.start();
 
@@ -151,6 +154,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     @Test
     public void testNextSynchronisationUpdatesRapidProContactGivenUpdatedDhis2User()
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         camelContext.start();
         assertPreCondition();
 
@@ -176,6 +180,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     @Test
     public void testUpdateContactSynchronisationGivenInvalidPhoneNumber()
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         assertPreCondition();
 
         CountDownLatch expectedLogMessage = new CountDownLatch( 2 );

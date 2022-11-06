@@ -45,6 +45,7 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
         throws
         Exception
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );

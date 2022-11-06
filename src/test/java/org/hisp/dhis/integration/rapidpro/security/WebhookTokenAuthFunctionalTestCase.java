@@ -62,6 +62,7 @@ public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCa
         throws
         IOException
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
@@ -82,6 +83,7 @@ public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCa
         throws
         IOException
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
