@@ -30,22 +30,18 @@ package org.hisp.dhis.integration.rapidpro.route;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.ExchangePattern;
-import org.apache.camel.Route;
 import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.commons.io.FileUtils;
 import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
 import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
-import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StreamUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
@@ -93,6 +89,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
     }
 
     @Test
+    @Timeout( value = 5, unit = TimeUnit.MINUTES )
     public void testScheduledReportDelivery()
         throws
         Exception
@@ -114,7 +111,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
 
         spyEndpoint.await( 1, TimeUnit.MINUTES );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
-        spyEndpoint.await( 2, TimeUnit.MINUTES );
+        spyEndpoint.await();
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
     }
 
@@ -174,7 +171,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
             String.format( "UPDATE DEAD_LETTER_CHANNEL SET STATUS = 'RETRY', PAYLOAD = '%s' WHERE STATUS = 'ERROR'",
                 payload.replace( wrongContactUuid, contactUuid ) ) );
 
-        spyEndpoint.await( 10, TimeUnit.SECONDS );
+        spyEndpoint.await( 1, TimeUnit.MINUTES );
 
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
         List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );

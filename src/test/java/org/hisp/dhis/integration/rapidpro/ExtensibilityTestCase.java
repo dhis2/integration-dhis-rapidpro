@@ -91,7 +91,7 @@ public class ExtensibilityTestCase extends AbstractFunctionalTestCase
                 + "/webhook?aParam=aValue&dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
             String.format( webhookMessage, contactUuid ), String.class );
 
-        spyEndpoint.await( 5000, TimeUnit.MILLISECONDS );
+        spyEndpoint.await( 10, TimeUnit.SECONDS );
 
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
         Map<String, Object> headers = spyEndpoint.getReceivedExchanges().get( 0 ).getMessage().getHeaders();

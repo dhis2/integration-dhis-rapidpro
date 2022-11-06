@@ -52,7 +52,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @UseAdviceWith
 @ActiveProfiles( "test" )
 @DirtiesContext( classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD )
-@TestPropertySource( properties = { "dhis2.api.url=", "rapidpro.api.url=mock:rapidpro", "rapidpro.api.token=" } )
+@TestPropertySource( properties = { "dhis2.api.url=https://dhis2.test/api", "rapidpro.api.url=mock:rapidpro", "skip.connection.test=true",
+    "rapidpro.api.token=" } )
 public class ConfigureRapidProRouteTestCase
 {
     @Autowired
@@ -66,7 +67,8 @@ public class ConfigureRapidProRouteTestCase
 
     @Test
     public void testDhis2OrgUnitIdAndDhis2UserIdFieldsAreCreatedWhenTheyDoNotExistOnRapidPro()
-        throws Exception
+        throws
+        Exception
     {
         AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint(
@@ -109,7 +111,8 @@ public class ConfigureRapidProRouteTestCase
 
     @Test
     public void testDhis2OrgUnitIdFieldIsCreatedWhenItDoesNotExistOnRapidPro()
-        throws Exception
+        throws
+        Exception
     {
         AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint(
@@ -149,7 +152,8 @@ public class ConfigureRapidProRouteTestCase
 
     @Test
     public void testDhis2UserIdFieldIsCreatedWhenItDoesNotExistOnRapidPro()
-        throws Exception
+        throws
+        Exception
     {
         AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint(

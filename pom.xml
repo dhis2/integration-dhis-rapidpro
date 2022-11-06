@@ -164,6 +164,7 @@
                                     <DHIS2_API_PASSWORD>district</DHIS2_API_PASSWORD>
                                     <RAPIDPRO_API_URL>https://rapidpro.test/api/v2</RAPIDPRO_API_URL>
                                     <RAPIDPRO_API_TOKEN>98f3fe494b94742cf577f442e2cc175ae4f635a5</RAPIDPRO_API_TOKEN>
+                                    <SKIP_CONNECTION_TEST>true</SKIP_CONNECTION_TEST>
                                 </env>
                                 <volumes>
                                     <bind>
@@ -304,12 +305,12 @@
         <dependency>
             <groupId>org.hisp.dhis.integration.camel</groupId>
             <artifactId>camel-dhis2</artifactId>
-            <version>1.0.1-SNAPSHOT</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.71</version>
+            <version>1.72</version>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
