@@ -31,6 +31,7 @@ import static io.restassured.RestAssured.given;
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -46,6 +47,7 @@ import org.apache.commons.io.FileUtils;
 import org.hisp.dhis.api.model.v2_36_11.DataValueSet;
 import org.hisp.dhis.api.model.v2_36_11.DataValue__1;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,8 +93,7 @@ public class AbstractFunctionalTestCase
         throws
         Exception
     {
-        FileUtils.deleteDirectory( new File( "target/test-classes/camel" ) );
-        new File( "target/test-classes/camel" ).mkdir();
+        FileUtils.deleteDirectory( new File( "routes" ) );
 
         System.clearProperty( "sync.rapidpro.contacts" );
         System.clearProperty( "org.unit.id.scheme" );
@@ -137,7 +138,14 @@ public class AbstractFunctionalTestCase
         throws
         Exception
     {
+    }
 
+    @AfterEach
+    public void afterEach()
+        throws
+        IOException
+    {
+        FileUtils.deleteDirectory( new File( "routes" ) );
     }
 
     protected List<Map<String, Object>> fetchRapidProContacts()

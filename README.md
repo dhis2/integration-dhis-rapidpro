@@ -405,7 +405,11 @@ Integration flows in DHIS-to-RapidPro, known as [routes](https://camel.apache.or
 | Create RapidPro Group  | Creates contact group on RapidPro                                                      |
 | Sync RapidPro Contacts | Synchronises RapidPro contacts with DHIS2 users                                        |
 
-You should place the file or files containing the custom routes in a directory named `camel` within DHIS-to-RapidPro's current directory. The custom route will override the inbuilt route if the routes match by name. DHIS-to-RapidPro can reload the routes while its running therefore you have the option to extend the application at runtime. What follows is an example of a custom YAML route that overrides the inbuilt `Deliver Report` route:
+You should place the file or files containing the custom routes in a directory named `routes` within DHIS-to-RapidPro's current directory. The custom route will override the inbuilt route if the routes match by name. DHIS-to-RapidPro can reload the routes while its running therefore you have the option to extend the application at runtime.
+
+>**IMPORTANT:** Hot reloading is only recommended for non-production environments. 
+
+What follows is an example of a custom YAML route that overrides the inbuilt `Deliver Report` route:
 
 ```yaml
 - route:
@@ -434,7 +438,7 @@ You should place the file or files containing the custom routes in a directory n
 
 The above custom route overrides the original route such that aggregate reports are delivered to a non-DHIS2 system. It extracts a number of values from the report payload with the `setProperty` key and adds them to destination URL as HTTP query parameters. Consult the [Set Property](https://camel.apache.org/components/3.18.x/eips/setProperty-eip.html) and [JSONPath](https://camel.apache.org/components/3.18.x/languages/jsonpath-language.html) Apache Camel documentation for further information about setting properties and extracting values from within a route.
 
-Besides adding query parameters, the route also configures the HTTP client for basic authentication using the reserved query parameters `authenticationPreemptive`, `authMethod`, `authUsername`, and `authPassword`. Consult the [HTTP component Apache Camel documentation](https://camel.apache.org/components/3.18.x/http-component.html) for further information about configuring the HTTP client.
+Besides adding query parameters, the route also configures the HTTP client for basic authentication using the reserved query parameters `authenticationPreemptive`, `authMethod`, `authUsername`, and `authPassword`. Consult the [HTTP component](https://camel.apache.org/components/3.18.x/http-component.html) Apache Camel documentation for further information about configuring the HTTP client.
 
 ## Troubleshooting Guide
 
