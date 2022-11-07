@@ -166,7 +166,7 @@ Follow the subsequent DHIS2 and RapidPro setup instructions to be able to transf
     3. Search for the data set
     4. Enter a suitable code in the _Code_ field as shown next:
        ![Data set form](static/images/dhis2-data-set.png)
-       >**IMPORTANT:** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
+       >**IMPORTANT:** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro. Special characters should NOT be used within the code other than hyphens, underscores, and whitespaces.
 
 2. Configure a code in each data element that will capture an aggregate value from RapidPro. To configure the data element code:
    1. Go to the maintenance app
@@ -174,7 +174,7 @@ Follow the subsequent DHIS2 and RapidPro setup instructions to be able to transf
    3. Search for the data element
    4. Enter a suitable code in the _Code_ field as shown next:
       ![Data element form](static/images/dhis2-data-element.png)
-      >**IMPORTANT:** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
+      >**IMPORTANT:** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro. Special characters should NOT be used within the code other than hyphens, underscores, and whitespaces.
 
 3. Configure a code in each category option combination that will be used to dissagregate captured values. To configure the category option combination code:
     1. Go to the maintenance app
@@ -182,7 +182,7 @@ Follow the subsequent DHIS2 and RapidPro setup instructions to be able to transf
     3. Search for the category option combination
     4. Enter a suitable code in the _Code_ field as shown next:
        ![Category option combination form](static/images/cat-option-combo.png)
-       >**IMPORTANT:** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro.
+       >**IMPORTANT:** you need to enter a code that starts with a letter, a hyphen, an underscore, or a whitespace to achieve successful interoperability between DHIS2 and RapidPro. Special characters should NOT be used within the code other than hyphens, underscores, and whitespaces.
       
 #### RapidPro Instructions
 
