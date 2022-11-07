@@ -42,7 +42,7 @@ DHIS-to-RapidPro provides:
 
 ### Shell
 
-The JAR distribution of DHIS-to-RapidPro allows you to run it a stand-alone program. On *nix operating systems, you can execute DHIS-to-RapidPro from your terminal like so:
+The JAR distribution of DHIS-to-RapidPro allows you to run the application as a stand-alone process. On *nix operating systems, you can execute DHIS-to-RapidPro from your terminal like so:
 
 ```shell
 ./dhis2rapidpro.jar
