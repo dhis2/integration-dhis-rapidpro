@@ -99,8 +99,11 @@ public class Application extends SpringBootServletInitializer
     @Value( "${spring.datasource.password}" )
     private String dataSourcePassword;
 
-    @Value( "${skip.connection.test:false}" )
-    private Boolean skipConnectionTest;
+    @Value( "${test.connection.startup:true}" )
+    private Boolean testConnectionOnStartUp;
+
+    @Value( "${server.ssl.enabled}" )
+    private Boolean serverSslEnabled;
 
     @Autowired
     private ArtemisProperties artemisProperties;
@@ -122,12 +125,15 @@ public class Application extends SpringBootServletInitializer
         throws
         IOException
     {
-        if ( !skipConnectionTest )
+        if ( testConnectionOnStartUp )
         {
             testRapidProConnection();
         }
         FileUtils.forceMkdir( new File( "routes" ) );
-        keyStoreGenerator.generate();
+        if ( serverSslEnabled )
+        {
+            keyStoreGenerator.generate();
+        }
         camelContext.getRegistry().bind( "native", nativeDataSonnetLibrary );
     }
 
@@ -171,7 +177,7 @@ public class Application extends SpringBootServletInitializer
                 "Missing DHIS2 authentication details. Are you sure that you set `dhis2.api.pat` or both `dhis2.api.username` and `dhis2.api.password`?" );
         }
 
-        if ( !skipConnectionTest )
+        if ( testConnectionOnStartUp )
         {
             testDhis2Connection( dhis2Client );
         }

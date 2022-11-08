@@ -41,8 +41,8 @@ import static io.restassured.RestAssured.given;
 
 @SpringBootTest( webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT )
 @ActiveProfiles( "test" )
-@TestPropertySource( properties = { "dhis2.api.url=https://dhis2.test/api", "rapidpro.api.token=", "rapidpro.api.url=",
-    "skip.connection.test=true", "camel.springboot.auto-startup=false" } )
+@TestPropertySource( properties = { "dhis2.api.url=http://dhis2.test/api", "rapidpro.api.token=", "rapidpro.api.url=",
+    "test.connection.startup=false", "camel.springboot.auto-startup=false" } )
 @DirtiesContext( classMode = DirtiesContext.ClassMode.AFTER_CLASS )
 public class ManagementLoginPageTestCase
 {
@@ -55,7 +55,7 @@ public class ManagementLoginPageTestCase
     public void doBeforeEach()
     {
         loginPageRequestSpec = new RequestSpecBuilder().setBaseUri(
-            String.format( "https://localhost:%s/login", serverPort ) ).setRelaxedHTTPSValidation().build();
+            String.format( "http://localhost:%s/login", serverPort ) ).setRelaxedHTTPSValidation().build();
     }
 
     @Test
