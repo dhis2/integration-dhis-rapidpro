@@ -69,14 +69,17 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
             .end();
 
         from( "quartz://dhis2?cron={{report.delivery.schedule.expression}}" )
+            .routeId( "Schedule Report Delivery" )
             .precondition( "'{{report.delivery.schedule.expression:}}' != ''" )
             .pollEnrich("jms:queue:dhis2")
-            .to( "direct:transformReport" );
+            .to( "direct:transformReport" )
+            .to( "direct:deliverReport" );
 
         from( "jms:queue:dhis2" )
             .routeId( "Consume Report" )
             .precondition( "'{{report.delivery.schedule.expression:}}' == ''" )
-            .to( "direct:transformReport" );
+            .to( "direct:transformReport" )
+            .to( "direct:deliverReport" );
 
         from( "direct:transformReport" )
             .routeId( "Transform Report" )
@@ -116,15 +119,15 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
             .process( idSchemeQueryParamSetter )
-            .marshal().json().transform().body(String.class)
-            .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
-            .to( "direct:deliverReport" );
+            .marshal().json().transform().body(String.class);
 
         from( "direct:deliverReport" )
             .routeId( "Deliver Report" )
+            .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
             .toD( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
 
         from( "direct:dlq" )
+            .routeId( "Save Failed Report" )
             .setHeader( "errorMessage", rootCauseExpr )
             .setHeader( "payload", header( "originalPayload" ) )
             .setHeader( "orgUnitId" ).ognl( "request.headers.orgUnitId == null ? null : header(orgUnitId)" )
@@ -132,6 +135,7 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
 
         from( "direct:computePeriod" )
+            .routeId( "Compute Period" )
             .toD( "dhis2://get/collection?path=dataSets&filter=code:eq:${headers['dataSetCode']}&fields=periodType&itemType=org.hisp.dhis.api.model.v2_36_11.DataSet&paging=false&client=#dhis2Client" )
             .process( currentPeriodCalculator );
     }

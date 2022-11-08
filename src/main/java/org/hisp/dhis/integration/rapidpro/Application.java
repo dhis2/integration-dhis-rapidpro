@@ -27,14 +27,22 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
 import org.apache.camel.CamelContext;
 import org.apache.commons.io.FileUtils;
 import org.hisp.dhis.integration.rapidpro.security.KeyStoreGenerator;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
+import org.hisp.dhis.integration.sdk.api.Dhis2ClientException;
+import org.hisp.dhis.integration.sdk.api.Dhis2Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
@@ -43,20 +51,26 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.NestedExceptionUtils;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Map;
 
 @SpringBootApplication
 @PropertySource( "classpath:sql.properties" )
 public class Application extends SpringBootServletInitializer
 {
+    protected static final Logger LOGGER = LoggerFactory.getLogger( Application.class );
+
     @Value( "${dhis2.api.url}" )
-    private String baseApiUrl;
+    private String dhis2ApiUrl;
 
     @Value( "${dhis2.api.username:#{null}}" )
     private String username;
@@ -66,6 +80,12 @@ public class Application extends SpringBootServletInitializer
 
     @Value( "${dhis2.api.pat:#{null}}" )
     private String pat;
+
+    @Value( "${rapidpro.api.url:#{null}}" )
+    private String rapidProApiUrl;
+
+    @Value( "${rapidpro.api.token:#{null}}" )
+    private String rapidProApiToken;
 
     @Value( "${spring.datasource.url}" )
     private String dataSourceUrl;
@@ -79,6 +99,9 @@ public class Application extends SpringBootServletInitializer
     @Value( "${spring.datasource.password}" )
     private String dataSourcePassword;
 
+    @Value( "${skip.connection.test:false}" )
+    private Boolean skipConnectionTest;
+
     @Autowired
     private ArtemisProperties artemisProperties;
 
@@ -91,11 +114,18 @@ public class Application extends SpringBootServletInitializer
     @Autowired
     private NativeDataSonnetLibrary nativeDataSonnetLibrary;
 
+    @Autowired
+    private ConfigurableApplicationContext applicationContext;
+
     @PostConstruct
     public void postConstruct()
         throws
         IOException
     {
+        if ( !skipConnectionTest )
+        {
+            testRapidProConnection();
+        }
         FileUtils.forceMkdir( new File( "routes" ) );
         keyStoreGenerator.generate();
         camelContext.getRegistry().bind( "native", nativeDataSonnetLibrary );
@@ -115,24 +145,199 @@ public class Application extends SpringBootServletInitializer
         throws
         Dhis2RapidProException
     {
-        if ( pat != null && (username != null || password != null) )
+        if ( !StringUtils.hasText( dhis2ApiUrl ) )
         {
-            throw new Dhis2RapidProException(
-                "Bad DHIS2 configuration: PAT authentication and basic authentication are mutually exclusive" );
+            terminate( "Missing DHIS2 API URL. Are you sure that you set `dhis2.api.url`?" );
         }
 
-        if ( pat != null )
+        if ( pat != null && (username != null || password != null) )
         {
-            return Dhis2ClientBuilder.newClient( baseApiUrl, pat ).build();
+            terminate(
+                "Bad DHIS2 authentication configuration: PAT authentication and basic authentication are mutually exclusive. Either set `dhis2.api.pat` or both `dhis2.api.username` and `dhis2.api.password`" );
         }
-        else if ( username != null && password != null )
+
+        Dhis2Client dhis2Client = null;
+        if ( StringUtils.hasText( pat ) )
         {
-            return Dhis2ClientBuilder.newClient( baseApiUrl, username, password ).build();
+            dhis2Client = Dhis2ClientBuilder.newClient( dhis2ApiUrl, pat ).build();
+        }
+        else if ( StringUtils.hasText( username ) && StringUtils.hasText( password ) )
+        {
+            dhis2Client = Dhis2ClientBuilder.newClient( dhis2ApiUrl, username, password ).build();
         }
         else
         {
-            throw new Dhis2RapidProException( "Bad DHIS2 configuration: missing authentication details" );
+            terminate(
+                "Missing DHIS2 authentication details. Are you sure that you set `dhis2.api.pat` or both `dhis2.api.username` and `dhis2.api.password`?" );
         }
+
+        if ( !skipConnectionTest )
+        {
+            testDhis2Connection( dhis2Client );
+        }
+        return dhis2Client;
+    }
+
+    protected void testRapidProConnection()
+        throws
+        IOException
+    {
+        if ( !StringUtils.hasText( rapidProApiUrl ) )
+        {
+            terminate( "Missing RapidPro API URL. Are you sure that you set `rapidpro.api.url`?" );
+        }
+
+        if ( !StringUtils.hasText( rapidProApiToken ) )
+        {
+            terminate( "Missing RapidPro API token. Are you sure that you set `rapidpro.api.token`?" );
+        }
+
+        OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
+        HttpUrl httpUrl = HttpUrl.parse( rapidProApiUrl + "/workspace.json" );
+        HttpUrl.Builder httpUrlBuilder = httpUrl.newBuilder();
+
+        Request request = new Request.Builder().url( httpUrlBuilder.build() )
+            .addHeader( "Authorization", "Token " + rapidProApiToken ).get().build();
+        okhttp3.Response response = null;
+        try
+        {
+            try
+            {
+                response = okHttpClient.newCall( request ).execute();
+            }
+            catch ( IOException e )
+            {
+                terminate( String.format(
+                    "Connection error during RapidPro connection test. Are you sure that `rapidpro.api.url` is set correctly? Hint: check your firewall settings. Error message => %s",
+                    e.getMessage() ) );
+            }
+
+            if ( response.isSuccessful() )
+            {
+                String workspaceAsJson = null;
+                Map<String, Object> workspace = null;
+                try
+                {
+                    workspaceAsJson = response.body().string();
+                    workspace = new ObjectMapper().readValue( workspaceAsJson, Map.class );
+                }
+                catch ( Exception e )
+                {
+                    Throwable t = NestedExceptionUtils.getRootCause( e );
+                    if ( t instanceof JsonParseException )
+                    {
+                        terminate( String.format(
+                            "Bad JSON in response during RapidPro connection test. Are you sure that `rapidpro.api.url` is set correctly? Error message => %s",
+                            t.getMessage() ) );
+                    }
+                    else
+                    {
+                        throw new Dhis2RapidProException( e );
+                    }
+                }
+                if ( workspace != null && workspace.get( "uuid" ) != null )
+                {
+                    LOGGER.info( "Successfully tested connection to RapidPro" );
+                }
+                else
+                {
+                    terminate( String.format(
+                        "Unexpected JSON response during RapidPro connection test: expecting workspace UUID. Are you sure that `rapidpro.api.url` is set correctly and the right version of RapidPro is installed? JSON response => %s",
+                        workspaceAsJson ) );
+                }
+            }
+            else
+            {
+                terminate( String.format(
+                    "Unexpected HTTP response code during RapidPro connection test. Are you sure that `rapidpro.api.url` is set correctly and the credentials are valid? Response code: %s. Response body: %s",
+                    response.code(), response.body() != null ? response.body().string() : "" ) );
+            }
+        }
+        finally
+        {
+            if ( response != null )
+            {
+                response.close();
+            }
+        }
+    }
+
+    protected void testDhis2Connection( Dhis2Client dhis2Client )
+    {
+        Dhis2Response dhis2Response = null;
+        try
+        {
+            dhis2Response = dhis2Client.get( "system/info" ).transfer();
+        }
+        catch ( Dhis2ClientException e )
+        {
+            Throwable t = NestedExceptionUtils.getRootCause( e );
+            if ( t instanceof Dhis2ClientException )
+            {
+                terminate( String.format(
+                    "Unexpected HTTP response code during DHIS2 connection test. Are you sure that `dhis2.api.url` is set correctly and the credentials are valid? Hint: check your firewall settings. Error message => %s",
+                    t.getMessage() ) );
+            }
+            else if ( t instanceof IOException )
+            {
+                terminate( String.format(
+                    "Connection error during DHIS2 connection test. Are you sure that `dhis2.api.url` is set correctly? Hint: check your firewall settings. Error message => %s",
+                    e.getMessage() ) );
+            }
+            else
+            {
+                throw new Dhis2RapidProException( e );
+            }
+        }
+        if ( dhis2Response != null )
+        {
+            String systemInfoAsJson = null;
+            Map<String, Object> systemInfo = null;
+            try
+            {
+                systemInfoAsJson = new String( dhis2Response.read().readAllBytes() );
+                systemInfo = new ObjectMapper().readValue( systemInfoAsJson, Map.class );
+            }
+            catch ( Exception e )
+            {
+                Throwable t = NestedExceptionUtils.getRootCause( e );
+                if ( t instanceof JsonParseException )
+                {
+                    terminate( String.format(
+                        "Bad JSON in response during DHIS2 connection test. Are you sure that `dhis2.api.url` is set correctly? Error message => %s",
+                        t.getMessage() ) );
+                }
+                else
+                {
+                    throw new Dhis2RapidProException( e );
+                }
+            }
+            if ( systemInfo != null && systemInfo.get( "version" ) != null )
+            {
+                LOGGER.info( "Successfully tested connection to DHIS " + systemInfo.get( "version" ) );
+            }
+            else
+            {
+                terminate( String.format(
+                    "Unexpected JSON response during DHIS2 connection test: expecting system info version. Are you sure that `dhis2.api.url` is set correctly and the right version of DHIS is installed? JSON response => %s",
+                    systemInfoAsJson ) );
+            }
+        }
+        try
+        {
+            dhis2Response.close();
+        }
+        catch ( IOException e )
+        {
+            throw new Dhis2RapidProException( e );
+        }
+    }
+
+    protected void terminate( String shutdownMessage )
+    {
+        LOGGER.error( "TERMINATING!!! " + shutdownMessage );
+        applicationContext.close();
+        System.exit( 1 );
     }
 
     @Bean
@@ -161,5 +366,25 @@ public class Application extends SpringBootServletInitializer
                 throw new RuntimeException( e );
             }
         };
+    }
+
+    public String getRapidProApiUrl()
+    {
+        return rapidProApiUrl;
+    }
+
+    public void setRapidProApiUrl( String rapidProApiUrl )
+    {
+        this.rapidProApiUrl = rapidProApiUrl;
+    }
+
+    public String getRapidProApiToken()
+    {
+        return rapidProApiToken;
+    }
+
+    public void setRapidProApiToken( String rapidProApiToken )
+    {
+        this.rapidProApiToken = rapidProApiToken;
     }
 }

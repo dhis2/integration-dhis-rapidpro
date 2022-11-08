@@ -82,17 +82,21 @@ public final class Environment
 
     public static GenericContainer<?> DHIS2_CONTAINER;
 
+    public static String RAPIDPRO_API_URL;
+
+    public static String RAPIDPRO_API_TOKEN;
+
     private static final Logger LOGGER = LoggerFactory.getLogger( Environment.class );
 
     private static final Network RAPIDPRO_NETWORK = Network.builder().build();
 
     private static final Network DHIS2_NETWORK = Network.builder().build();
 
+    private static GenericContainer<?> RAPIDPRO_CONTAINER;
+
     private static GenericContainer<?> REDIS_CONTAINER;
 
     private static GenericContainer<?> ELASTICSEARCH_CONTAINER;
-
-    private static GenericContainer<?> RAPIDPRO_CONTAINER;
 
     private static GenericContainer<?> MAILROOM_CONTAINER;
 
@@ -162,9 +166,9 @@ public final class Environment
         String rapidProBaseUri = String.format( "http://%s:%s", RAPIDPRO_CONTAINER.getHost(),
             RAPIDPRO_CONTAINER.getFirstMappedPort() );
 
-        String rapidProApiUrl = rapidProBaseUri + "/api/v2";
+        RAPIDPRO_API_URL = rapidProBaseUri + "/api/v2";
 
-        System.setProperty( "rapidpro.api.url", rapidProApiUrl );
+        System.setProperty( "rapidpro.api.url", RAPIDPRO_API_URL );
 
         RAPIDPRO_REQUEST_SPEC = new RequestSpecBuilder().setBaseUri( rapidProBaseUri ).build();
 
@@ -176,10 +180,10 @@ public final class Environment
 
         importFlowUnderTest();
 
-        String apiToken = generateRapidProApiToken();
-        RAPIDPRO_API_REQUEST_SPEC = new RequestSpecBuilder().setBaseUri( rapidProApiUrl )
-            .addHeader( "Authorization", "Token " + apiToken ).build();
-        System.setProperty( "rapidpro.api.token", apiToken );
+        RAPIDPRO_API_TOKEN = generateRapidProApiToken();
+        RAPIDPRO_API_REQUEST_SPEC = new RequestSpecBuilder().setBaseUri( RAPIDPRO_API_URL )
+            .addHeader( "Authorization", "Token " + RAPIDPRO_API_TOKEN ).build();
+        System.setProperty( "rapidpro.api.token", RAPIDPRO_API_TOKEN );
     }
 
     private Environment()
@@ -216,7 +220,7 @@ public final class Environment
     private static void startContainers()
     {
         Stream.of( REDIS_CONTAINER, ELASTICSEARCH_CONTAINER, RAPIDPRO_CONTAINER,
-            MAILROOM_CONTAINER, DHIS2_DB_CONTAINER, DHIS2_CONTAINER ).parallel().forEach( GenericContainer::start );
+            MAILROOM_CONTAINER, DHIS2_CONTAINER ).parallel().forEach( GenericContainer::start );
     }
 
     private static void composeDhis2Containers()
@@ -227,6 +231,7 @@ public final class Environment
             "dhis2/core:2.36.11.1-tomcat-8.5.34-jre8-alpine" )
             .withClasspathResourceMapping( "dhis.conf", "/DHIS2_home/dhis.conf", BindMode.READ_WRITE )
             .withNetwork( DHIS2_NETWORK ).withExposedPorts( 8080 )
+            .dependsOn( DHIS2_DB_CONTAINER )
             .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
             .withEnv( "WAIT_FOR_DB_CONTAINER", "db" + ":" + 5432 + " -t 0" );
     }
