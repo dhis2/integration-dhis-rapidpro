@@ -112,7 +112,7 @@ public class AbstractFunctionalTestCase
                 .statusCode( 204 );
         }
 
-        dhis2RapidProHttpEndpointUri = String.format( "https://0.0.0.0:%s/dhis2rapidpro",
+        dhis2RapidProHttpEndpointUri = String.format( "http://0.0.0.0:%s/dhis2rapidpro",
             serverPort );
 
         DHIS2_CLIENT.post( "dataValueSets" ).withResource(

@@ -64,7 +64,7 @@ public class ApplicationTestCase
             }
         };
         assertThrows( TerminateException.class, () -> application.testDhis2Connection(
-            Dhis2ClientBuilder.newClient( "https://dhis2.test/api", "admin", "district" ).build() ) );
+            Dhis2ClientBuilder.newClient( "http://dhis2.test/api", "admin", "district" ).build() ) );
     }
 
     @Test
@@ -179,7 +179,7 @@ public class ApplicationTestCase
                 throw new TerminateException();
             }
         };
-        application.setRapidProApiUrl( "https://rapidpro.test/api/v2" );
+        application.setRapidProApiUrl( "http://rapidpro.test/api/v2" );
         application.setRapidProApiToken( Environment.RAPIDPRO_API_TOKEN );
         assertThrows( TerminateException.class, application::testRapidProConnection );
     }

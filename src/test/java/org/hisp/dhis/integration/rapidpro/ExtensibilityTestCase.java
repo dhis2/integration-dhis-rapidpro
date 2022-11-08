@@ -50,7 +50,7 @@ public class ExtensibilityTestCase extends AbstractFunctionalTestCase
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "report.destination.endpoint",
-            "https://localhost:" + serverPort + "/dhis2rapidpro/legacy" );
+            "http://localhost:" + serverPort + "/dhis2rapidpro/legacy" );
 
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         camelContext.addRoutes( new RouteBuilder()

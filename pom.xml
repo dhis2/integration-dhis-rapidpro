@@ -164,7 +164,7 @@
                                     <DHIS2_API_PASSWORD>district</DHIS2_API_PASSWORD>
                                     <RAPIDPRO_API_URL>https://rapidpro.test/api/v2</RAPIDPRO_API_URL>
                                     <RAPIDPRO_API_TOKEN>98f3fe494b94742cf577f442e2cc175ae4f635a5</RAPIDPRO_API_TOKEN>
-                                    <SKIP_CONNECTION_TEST>true</SKIP_CONNECTION_TEST>
+                                    <TEST_CONNECTION_STARTUP>false</TEST_CONNECTION_STARTUP>
                                 </env>
                                 <volumes>
                                     <bind>
@@ -310,7 +310,7 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.72</version>
+            <version>1.71</version>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
