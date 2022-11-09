@@ -53,9 +53,7 @@ The above command will give an error since no parameters are provided. The next 
 ##### Basic usage
 ```shell
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
---rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+--dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
 ```
 
 ##### Auto-reminders
@@ -71,6 +69,8 @@ The above command will give an error since no parameters are provided. The next 
 ```shell
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
 --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
+--rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
+--rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --sync.rapidpro.contacts=true
 ```
 
@@ -95,9 +95,7 @@ The above command will give an error since no parameters are provided. The next 
 ```shell
 java -jar dhis2rapidpro.jar \
 --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
---rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+--dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
 ```
 
 ##### Auto-reminders
@@ -115,6 +113,8 @@ java -jar dhis2rapidpro.jar \
 java -jar dhis2rapidpro.jar \
 --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
 --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
+--rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
+--rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --sync.rapidpro.contacts=true
 ```
 
