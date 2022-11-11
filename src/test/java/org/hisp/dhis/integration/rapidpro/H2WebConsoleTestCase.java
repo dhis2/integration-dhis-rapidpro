@@ -55,7 +55,7 @@ public class H2WebConsoleTestCase
     public void beforeEach()
     {
         h2RequestSpec = new RequestSpecBuilder().setBaseUri(
-                String.format( "http://localhost:%s/management/h2-console", serverPort ) ).setRelaxedHTTPSValidation()
+                String.format( "http://localhost:%s/dhis2rapidpro/management/h2-console", serverPort ) ).setRelaxedHTTPSValidation()
             .build();
     }
 

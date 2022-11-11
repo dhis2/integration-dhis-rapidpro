@@ -55,7 +55,7 @@ public class ManagementLoginPageTestCase
     public void doBeforeEach()
     {
         loginPageRequestSpec = new RequestSpecBuilder().setBaseUri(
-            String.format( "http://localhost:%s/login", serverPort ) ).setRelaxedHTTPSValidation().build();
+            String.format( "http://localhost:%s/dhis2rapidpro/login", serverPort ) ).setRelaxedHTTPSValidation().build();
     }
 
     @Test

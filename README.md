@@ -150,7 +150,7 @@ Prior to synchronisation, DHIS-to-RapidPro automatically creates in RapidPro:
 
 DHIS-to-RapidPro will re-create this group and these fields should they be deleted. During synchronisation, each contact is assigned to the `DHIS2` group and has its fields populated accordingly. Application errors during the syncing of a contact will lead to warnings in the log but the error will not abort the synchronisation process. In other words, synchronisation may be partially successful.
 
-Contact synchronisation is disabled by default. Setting `sync.rapidpro.contacts` to `true` enables synchronisation. The interval rate at which contacts are synchronised is expressed as a cron expression with the config key `sync.schedule.expression`. Alternatively, hit DHIS-to-RapidPro's URL path `/dhis2rapidpro/sync`to manually kickoff syncing.
+Contact synchronisation is disabled by default. Setting `sync.rapidpro.contacts` to `true` enables synchronisation. The interval rate at which contacts are synchronised is expressed as a cron expression with the config key `sync.schedule.expression`. Alternatively, hit DHIS-to-RapidPro's URL path `/dhis2rapidpro/services/tasks/sync`to manually kickoff syncing.
 
 >***SECURITY***: contact synchronisation copies personal data from DHIS to RapidPro. Ensure that the data provider agrees to sharing DHIS user details with the data receiver before activating synchronisation.
 
@@ -274,7 +274,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
    
      <img src="static/images/post-webhook.png" width="50%" height="50%"/>
    
-   - Set the URL field to the HTTP(S) address that DHIS-to-RapidPro is listening on. The default HTTPS port number is _8443_ (see `server.port` in [Configuration](#configuration)): the path in the URL field is required to end with `/dhis2rapidpro/webhook`:
+   - Set the URL field to the HTTP(S) address that DHIS-to-RapidPro is listening on. The default HTTPS port number is _8443_ (see `server.port` in [Configuration](#configuration)): the path in the URL field is required to end with `/dhis2rapidpro/services/webhook`:
      ![URL webhook](static/images/url-webhook.png)
    - Append to the URL the `dataSetCode` query parameter which identifies by code the data set that the contact is reporting. You need to look up the data set from the DHIS2 maintenance app and hard-code its code as shown below:
      ![Data set ID code parameter](static/images/data-set-code-query-param.png)
@@ -301,7 +301,7 @@ Reminders for overdue reports are sent for each DHIS2 data set specified in the 
 
 >CAUTION: do not forget to assign auto-reminder contacts to the `DHIS2` group
 
-The interval rate at which contacts are reminded is expressed as a cron expression with the config key `reminder.schedule.expression`. Alternatively, hit DHIS-to-RapidPro's URL path `/dhis2rapidpro/reminders`to broadcast the reminders for overdue reports.
+The interval rate at which contacts are reminded is expressed as a cron expression with the config key `reminder.schedule.expression`. Alternatively, hit DHIS-to-RapidPro's URL path `/dhis2rapidpro/services/tasks/reminders`to broadcast the reminders for overdue reports.
 
 ## Configuration
 
@@ -329,7 +329,7 @@ By order of precedence, a config property can be specified:
 | `report.delivery.schedule.expression` | Cron expression specifying when queued reports are delivered to DHIS2.                                                                                               |                                            | `0 0 0 * * ?`                                      |
 | `org.unit.id.scheme`                  | By which field organisation units are identified.                                                                                                                    | `ID`                                       | `CODE`                                             |
 | `webhook.security.auth`               | Authentication scheme protecting the webhook HTTP(S) endpoint. Supported values are `none` and `token`.                                                              | `none`                                     | `token`                                            |
-| `server.ssl.enabled`                  | Enable TLS support.                                                                                                                                                  | `true`                                     | `false`                                            |
+| `server.ssl.enabled`                  | Whether to enable TLS support.                                                                                                                                       | `true`                                     | `false`                                            |
 | `test.connection.startup`             | Test connectivity with DHIS2 and RapidPro during start-up. In case of connection failure, the application wil print an error and terminate.                          | `true`                                     | `false`                                            |
 | `spring.security.user.name`           | Login username for non-webhook services like the Hawtio and H2 web consoles.                                                                                         | `dhis2rapidpro`                            | `admin`                                            |
 | `spring.security.user.password`       | Login password for non-webhook services like the Hawtio and H2 web consoles.                                                                                         | `dhis2rapidpro`                            | `secret`                                           |
@@ -348,7 +348,7 @@ From the Hawtio web console, apart from browsing application logs, the system op
 
 ![Hawtio Management Console](static/images/hawtio-management-console.png)
 
-You can log into the Hawtio console locally from [https://localhost:8443/management/hawtio](https://localhost:8443/management/hawtio) using the username and password `dhis2rapidpro`. You can set the parameter `management.endpoints.web.exposure.include` (i.e., `--management.endpoints.web.exposure.include=`) to an empty value to deny HTTP access to the Hawtio web console.
+You can log into the Hawtio console locally from [https://localhost:8443/dhis2rapidpro/management/hawtio](https://localhost:8443/dhis2rapidpro/management/hawtio) using the username and password `dhis2rapidpro`. You can set the parameter `management.endpoints.web.exposure.include` (i.e., `--management.endpoints.web.exposure.include=`) to an empty value to deny HTTP access to the Hawtio web console.
 
 >***SECURITY***: immediately change the login credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
 
@@ -378,7 +378,7 @@ UPDATE DEAD_LETTER_CHANNEL SET status = 'RETRY' WHERE status = 'ERROR'
 
 ![H2 Web Console](static/images/h2-web-console.png)
 
-The H2 console is pre-configured to be available locally at [https://localhost:8443/management/h2-console](https://localhost:8443/management/h2-console). The console's relative URL path can be changed with the config property `spring.h2.console.path`. You will be greeted by the database's login page after logging into the monitoring & management system using the default login username and password `dhis2rapidpro`. Both the default database login username and password are `dhis2rapidpro`.
+The H2 console is pre-configured to be available locally at [https://localhost:8443/dhis2rapidpro/management/h2-console](https://localhost:8443/dhis2rapidpro/management/h2-console). The console's relative URL path can be changed with the config property `spring.h2.console.path`. You will be greeted by the database's login page after logging into the monitoring & management system using the default login username and password `dhis2rapidpro`. Both the default database login username and password are `dhis2rapidpro`.
 
 >***SECURITY***: immediately change the management and database credentials during setup (see `spring.security.user.name` and `spring.security.user.password` together with `spring.datasource.username` and `spring.datasource.password` in [Configuration](#configuration)).
 

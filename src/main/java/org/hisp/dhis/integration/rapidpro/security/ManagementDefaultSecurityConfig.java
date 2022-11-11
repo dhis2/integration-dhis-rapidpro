@@ -44,13 +44,11 @@ public class ManagementDefaultSecurityConfig
         Exception
     {
         return http.requestMatchers()
-            .antMatchers( "/management/**", "/dhis2rapidpro/sync", "/dhis2rapidpro/scan", "/dhis2rapidpro/reminders",
-                "/login", "/logout" )
+            .antMatchers( "/management/**", "/services/tasks/**", "/login", "/logout" )
             .and().authorizeRequests()
             .anyRequest().authenticated()
             .and().csrf()
-            .ignoringAntMatchers( "/management/h2-console/**", "/dhis2rapidpro/sync", "/dhis2rapidpro/scan",
-                "/dhis2rapidpro/reminders" )
+            .ignoringAntMatchers( "/management/h2-console/**", "/services/tasks/**" )
             .and()
             .formLogin()
             .and()

@@ -45,7 +45,7 @@ public class PullReportsRouteBuilder extends AbstractRouteBuilder
     @Override
     protected void doConfigure()
     {
-        from( "servlet:scan?muteException=true" )
+        from( "servlet:tasks/scan?muteException=true" )
             .removeHeaders( "*" )
             .to( "direct:pull" )
             .setHeader( "Content-Type", constant( "text/html" ) )

@@ -73,7 +73,7 @@ public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCa
 
         producerTemplate.sendBodyAndHeader(
             dhis2RapidProHttpEndpointUri
-                + "/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+                + "/services/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
             String.format( webhookMessage, contactUuid ), "Authorization",
             "Token secret" );
     }
@@ -94,7 +94,7 @@ public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCa
 
         assertThrows( CamelExecutionException.class, () -> producerTemplate.sendBodyAndHeader(
             dhis2RapidProHttpEndpointUri
-                + "/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+                + "/services/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
             String.format( webhookMessage, contactUuid ), "Authorization",
             "Token wrong" ) );
     }

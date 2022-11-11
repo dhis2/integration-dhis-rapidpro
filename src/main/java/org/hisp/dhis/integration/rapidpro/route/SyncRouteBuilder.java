@@ -56,7 +56,7 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
     @Override
     public void doConfigure()
     {
-        from( "servlet:sync?muteException=true" )
+        from( "servlet:tasks/sync?muteException=true" )
             .precondition( "{{sync.rapidpro.contacts}}" )
             .removeHeaders( "*" )
             .to( "direct:sync" )

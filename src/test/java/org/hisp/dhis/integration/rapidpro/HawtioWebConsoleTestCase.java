@@ -55,7 +55,7 @@ public class HawtioWebConsoleTestCase
     public void beforeEach()
     {
         hawtioRequestSpec = new RequestSpecBuilder().setBaseUri(
-            String.format( "http://localhost:%s/management/hawtio", serverPort ) ).setRelaxedHTTPSValidation().build();
+            String.format( "http://localhost:%s/dhis2rapidpro/management/hawtio", serverPort ) ).setRelaxedHTTPSValidation().build();
     }
 
     @Test
