@@ -55,7 +55,7 @@ public class ManagementLogoutPageTestCase
     public void beforeEach()
     {
         logoutPageRequestSpec = new RequestSpecBuilder().setBaseUri(
-            String.format( "http://localhost:%s/logout", serverPort ) ).setRelaxedHTTPSValidation().build();
+            String.format( "http://localhost:%s/dhis2rapidpro/logout", serverPort ) ).setRelaxedHTTPSValidation().build();
     }
 
     @Test

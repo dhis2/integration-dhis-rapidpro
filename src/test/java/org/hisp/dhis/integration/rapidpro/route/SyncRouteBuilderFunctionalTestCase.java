@@ -125,7 +125,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
 
         assertPreCondition();
         String response = producerTemplate.requestBodyAndHeader(
-            dhis2RapidProHttpEndpointUri + "/sync?httpClientConfigurer=#selfSignedHttpClientConfigurer",
+            dhis2RapidProHttpEndpointUri + "/services/tasks/sync?httpClientConfigurer=#selfSignedHttpClientConfigurer",
             null,
             "Authorization",
             "Basic " + Base64.getEncoder().encodeToString( "dhis2rapidpro:dhis2rapidpro".getBytes() ), String.class );

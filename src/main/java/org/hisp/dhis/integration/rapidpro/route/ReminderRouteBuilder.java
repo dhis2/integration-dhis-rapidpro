@@ -47,7 +47,7 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
     @Override
     protected void doConfigure()
     {
-        from( "servlet:reminders?muteException=true" )
+        from( "servlet:tasks/reminders?muteException=true" )
             .removeHeaders( "*" )
             .to( "direct:reminders" )
             .setHeader( Exchange.CONTENT_TYPE, constant( "text/html" ) )

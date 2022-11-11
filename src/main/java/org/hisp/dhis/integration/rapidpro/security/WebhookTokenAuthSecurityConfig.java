@@ -60,7 +60,7 @@ public class WebhookTokenAuthSecurityConfig
         throws
         Exception
     {
-        return http.antMatcher( "/dhis2rapidpro/webhook" )
+        return http.antMatcher( "/services/webhook" )
             .csrf().disable()
             .formLogin().disable()
             .httpBasic().disable()

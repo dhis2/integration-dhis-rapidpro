@@ -61,7 +61,7 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
         producerTemplate.setDefaultEndpoint( camelContext.getEndpoint( dhis2RapidProHttpEndpointUri ) );
         Exchange responseExchange = producerTemplate.request(
             dhis2RapidProHttpEndpointUri
-                + "/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+                + "/services/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
             exchange -> exchange.getMessage().setBody( String.format(  webhookMessage, contactUuid ) ) );
 
         assertEquals( "", responseExchange.getMessage().getBody( String.class ) );

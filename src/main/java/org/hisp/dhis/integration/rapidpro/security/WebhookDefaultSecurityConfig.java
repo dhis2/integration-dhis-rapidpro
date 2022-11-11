@@ -41,7 +41,7 @@ public class WebhookDefaultSecurityConfig
     protected SecurityFilterChain webhookFilterChain( HttpSecurity http )
         throws Exception
     {
-        return http.antMatcher( "/dhis2rapidpro/webhook" ).csrf()
+        return http.antMatcher( "/services/webhook" ).csrf()
             .disable().build();
     }
 }

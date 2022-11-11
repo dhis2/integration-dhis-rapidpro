@@ -50,7 +50,7 @@ public class ExtensibilityTestCase extends AbstractFunctionalTestCase
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "report.destination.endpoint",
-            "http://localhost:" + serverPort + "/dhis2rapidpro/legacy" );
+            "http://localhost:" + serverPort + "/dhis2rapidpro/services/legacy" );
 
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         camelContext.addRoutes( new RouteBuilder()
@@ -88,7 +88,7 @@ public class ExtensibilityTestCase extends AbstractFunctionalTestCase
             Charset.defaultCharset() );
         producerTemplate.requestBody(
             dhis2RapidProHttpEndpointUri
-                + "/webhook?aParam=aValue&dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+                + "/services/webhook?aParam=aValue&dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
             String.format( webhookMessage, contactUuid ), String.class );
 
         spyEndpoint.await( 10, TimeUnit.SECONDS );
