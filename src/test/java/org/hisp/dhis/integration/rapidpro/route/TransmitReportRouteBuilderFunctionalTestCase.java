@@ -89,13 +89,13 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
     }
 
     @Test
-    @Timeout( value = 5, unit = TimeUnit.MINUTES )
+    @Timeout( value = 6, unit = TimeUnit.MINUTES )
     public void testScheduledReportDelivery()
         throws
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        System.setProperty( "report.delivery.schedule.expression", "0 0/3 * * * ?" );
+        System.setProperty( "report.delivery.schedule.expression", "0 0/4 * * * ?" );
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
