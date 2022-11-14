@@ -93,7 +93,7 @@ public class AbstractFunctionalTestCase
         throws
         Exception
     {
-        FileUtils.deleteDirectory( new File( "routes" ) );
+        FileUtils.deleteDirectory( new File( "target/routes" ) );
 
         System.clearProperty( "sync.rapidpro.contacts" );
         System.clearProperty( "org.unit.id.scheme" );
@@ -145,7 +145,7 @@ public class AbstractFunctionalTestCase
         throws
         IOException
     {
-        FileUtils.deleteDirectory( new File( "routes" ) );
+        FileUtils.deleteDirectory( new File( "target/routes" ) );
     }
 
     protected List<Map<String, Object>> fetchRapidProContacts()

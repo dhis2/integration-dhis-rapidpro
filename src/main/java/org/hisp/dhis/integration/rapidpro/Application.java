@@ -105,6 +105,9 @@ public class Application extends SpringBootServletInitializer
     @Value( "${server.ssl.enabled}" )
     private Boolean serverSslEnabled;
 
+    @Value( "${camel.springboot.routes-reload-directory}" )
+    private String routesReloadDirectory;
+
     @Autowired
     private ArtemisProperties artemisProperties;
 
@@ -129,7 +132,7 @@ public class Application extends SpringBootServletInitializer
         {
             testRapidProConnection();
         }
-        FileUtils.forceMkdir( new File( "routes" ) );
+        FileUtils.forceMkdir( new File( routesReloadDirectory ) );
         if ( serverSslEnabled )
         {
             keyStoreGenerator.generate();

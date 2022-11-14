@@ -28,24 +28,21 @@
 package org.hisp.dhis.integration.rapidpro.route;
 
 import io.restassured.http.ContentType;
-import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.model.TransformDefinition;
 import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
-import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import static io.restassured.RestAssured.given;
@@ -107,11 +104,11 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
             .returnAs(
                 DataValueSet.class );
 
-        assertEquals("5", dataValueSet.getDataValues().get().get( 0 ).getValue().get());
-        assertEquals("2", dataValueSet.getDataValues().get().get( 1 ).getValue().get());
-        assertEquals("3", dataValueSet.getDataValues().get().get( 2 ).getValue().get());
-        assertEquals("10", dataValueSet.getDataValues().get().get( 3 ).getValue().get());
-        assertEquals("rtfSaMjPyq6", dataValueSet.getDataValues().get().get( 3 ).getCategoryOptionCombo().get());
+        assertEquals( "5", dataValueSet.getDataValues().get().get( 0 ).getValue().get() );
+        assertEquals( "2", dataValueSet.getDataValues().get().get( 1 ).getValue().get() );
+        assertEquals( "3", dataValueSet.getDataValues().get().get( 2 ).getValue().get() );
+        assertEquals( "10", dataValueSet.getDataValues().get().get( 3 ).getValue().get() );
+        assertEquals( "rtfSaMjPyq6", dataValueSet.getDataValues().get().get( 3 ).getCategoryOptionCombo().get() );
     }
 
     @Test
@@ -126,6 +123,42 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         camelContext.start();
         syncContactsAndFetchFirstContactUuid();
 
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        Thread.sleep( 5000 );
+        assertEquals( 0, spyEndpoint.getReceivedCounter() );
+
+        spyEndpoint.setExpectedCount( 1 );
+        runFlowAndWaitUntilCompleted( flowUuid );
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        spyEndpoint.await( 5, TimeUnit.SECONDS );
+        assertEquals( 1, spyEndpoint.getReceivedCounter() );
+
+        spyEndpoint.setExpectedCount( 2 );
+        runFlowAndWaitUntilCompleted( flowUuid );
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        spyEndpoint.await( 5, TimeUnit.SECONDS );
+        assertEquals( 2, spyEndpoint.getReceivedCounter() );
+
+        spyEndpoint.setExpectedCount( 3 );
+        runFlowAndWaitUntilCompleted( flowUuid );
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        spyEndpoint.await( 5, TimeUnit.SECONDS );
+        assertEquals( 3, spyEndpoint.getReceivedCounter() );
+    }
+
+    @Test
+    public void testPullFetchesFlowRunsByModifiedAtInAscendingOrder()
+        throws
+        Exception
+    {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
+        AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
+            r -> r.weaveByType( TransformDefinition.class ).before().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+
+        camelContext.start();
+        syncContactsAndFetchFirstContactUuid();
+
         runFlowAndWaitUntilCompleted( flowUuid );
         runFlowAndWaitUntilCompleted( flowUuid );
         runFlowAndWaitUntilCompleted( flowUuid );
@@ -133,7 +166,30 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         spyEndpoint.setExpectedCount( 3 );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
         spyEndpoint.await( 15, TimeUnit.SECONDS );
-        assertEquals( 3, spyEndpoint.getReceivedCounter() );
+
+        String firstModifiedOnAsString = (String) spyEndpoint.getReceivedExchanges().get( 0 ).getMessage()
+            .getBody( Map.class )
+            .get( "modified_on" );
+        Instant firstModifiedOn = Instant.parse( firstModifiedOnAsString );
+
+        String secondModifiedOnAsString = (String) spyEndpoint.getReceivedExchanges().get( 1 ).getMessage()
+            .getBody( Map.class )
+            .get( "modified_on" );
+        Instant secondModifiedOn = Instant.parse( secondModifiedOnAsString );
+
+        String thirdModifiedOnAsString = (String) spyEndpoint.getReceivedExchanges().get( 2 ).getMessage()
+            .getBody( Map.class )
+            .get( "modified_on" );
+        Instant thirdModifiedOn = Instant.parse( thirdModifiedOnAsString );
+
+        assertTrue( firstModifiedOn.isBefore( secondModifiedOn ),
+            String.format( "Flow run modified_on is %s (%s) while next immediate flow run modified_on is %s (%s)",
+                firstModifiedOnAsString, firstModifiedOn,
+                secondModifiedOnAsString, secondModifiedOn ) );
+        assertTrue( secondModifiedOn.isBefore( thirdModifiedOn ),
+            String.format( "Flow run modified_on is %s (%s) while next immediate flow run modified_on is %s (%s)",
+                secondModifiedOnAsString, secondModifiedOn,
+                thirdModifiedOnAsString, thirdModifiedOn ) );
     }
 
     @Test
@@ -189,26 +245,19 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         throws
         InterruptedException
     {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss.SSS" );
-        simpleDateFormat.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
-        Date now = new Date();
         runFlow( flowUuid );
-        waitUntilFlowRunIsCompleted( flowUuid, now );
+        waitUntilFlowRunIsCompleted( flowUuid, Instant.now() );
     }
 
-    private void waitUntilFlowRunIsCompleted( String flowUuid, Date after )
+    private void waitUntilFlowRunIsCompleted( String flowUuid, Instant after )
         throws
         InterruptedException
     {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss.SSS" );
-        simpleDateFormat.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
-        String afterAsString = simpleDateFormat.format( after );
-
         String exitType = "";
         while ( exitType == null || !exitType.equals( "completed" ) )
         {
             exitType = given( RAPIDPRO_API_REQUEST_SPEC )
-                .queryParam( "flow", flowUuid ).queryParam( "after", afterAsString ).when()
+                .queryParam( "flow", flowUuid ).queryParam( "after", after.toString() ).when()
                 .get( "runs.json" ).then().statusCode( 200 ).extract().path( "results[0].exit_type" );
             Thread.sleep( 1000 );
         }

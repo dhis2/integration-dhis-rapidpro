@@ -29,11 +29,9 @@ package org.hisp.dhis.integration.rapidpro.expression;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
-import org.hisp.dhis.integration.rapidpro.Dhis2RapidProException;
 import org.springframework.stereotype.Component;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -52,20 +50,11 @@ public class LastRunCalculator implements Expression
             String exitedOn = (String) result.get( "exited_on" );
             if ( exitedOn == null )
             {
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat( "yyyy-MM-dd'T'hh:mm:ss.SSSXX" );
                 String modifiedOn = (String) result.get( "modified_on" );
-                Date modifiedOnAsDate;
-                try
-                {
-                    modifiedOnAsDate = simpleDateFormat.parse( modifiedOn );
-                }
-                catch ( ParseException e )
-                {
-                    throw new Dhis2RapidProException( e );
-                }
+                Date modifiedOnAsDate = Date.from( Instant.parse( modifiedOn ) );
                 if ( modifiedOnAsDate.before( newLastRunAt ) )
                 {
-                    newLastRunAt = new Date( modifiedOnAsDate.getTime() );
+                    newLastRunAt = modifiedOnAsDate;
                 }
             }
         }
