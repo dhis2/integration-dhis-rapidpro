@@ -27,15 +27,16 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
-import java.util.List;
-import java.util.Map;
-
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.integration.rapidpro.processor.CurrentPeriodCalculator;
+import org.hisp.dhis.integration.rapidpro.ContactOrgUnitIdAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.expression.RootCauseExpr;
+import org.hisp.dhis.integration.rapidpro.processor.CurrentPeriodCalculator;
 import org.hisp.dhis.integration.rapidpro.processor.IdSchemeQueryParamSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class TransmitReportRouteBuilder extends AbstractRouteBuilder
@@ -48,6 +49,9 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
 
     @Autowired
     private IdSchemeQueryParamSetter idSchemeQueryParamSetter;
+
+    @Autowired
+    private ContactOrgUnitIdAggrStrategy contactOrgUnitIdAggrStrategy;
 
     @Override
     protected void doConfigure()
@@ -83,6 +87,7 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
 
         from( "direct:transformReport" )
             .routeId( "Transform Report" )
+            .streamCaching()
             .setHeader( "originalPayload", simple( "${body}" ) )
             .onException( Exception.class )
                 .to( "direct:dlq" )
@@ -101,16 +106,9 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
             .choice().when( header( "orgUnitId" ).isNull() )
                 .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
                 .enrich().simple( "{{rapidpro.api.url}}/contacts.json?uuid=${body[contact][uuid]}&httpMethod=GET" )
-                    .aggregationStrategy( ( oldExchange, newExchange ) -> {
-                        LOGGER.debug( String.format(
-                            "Fetched contact %s => %s ", simple( "${body[contact][uuid]}" ).evaluate( oldExchange, String.class ),
-                            newExchange.getMessage().getBody( String.class ) ) );
-                        oldExchange.getMessage().setHeader( "orgUnitId",
-                            jsonpath( "$.results[0].fields.dhis2_organisation_unit_id" ).evaluate( newExchange, String.class ) );
-                        oldExchange.getMessage().removeHeader( "Authorization" );
-                        return oldExchange;
-                    } )
+                    .aggregationStrategy(contactOrgUnitIdAggrStrategy)
                 .end()
+                .removeHeader( "Authorization" )
             .end()
             .enrich( "direct:computePeriod", ( oldExchange, newExchange ) -> {
                 oldExchange.getMessage().setHeader( "period", newExchange.getMessage().getBody() );

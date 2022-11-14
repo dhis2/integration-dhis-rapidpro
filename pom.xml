@@ -78,6 +78,7 @@
                 <configuration>
                     <trimStackTrace>false</trimStackTrace>
                     <failIfNoTests>true</failIfNoTests>
+                    <skipAfterFailureCount>1</skipAfterFailureCount>
                 </configuration>
             </plugin>
             <plugin>

@@ -95,12 +95,13 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        System.setProperty( "report.delivery.schedule.expression", "0 0/3 * * * ?" );
+        System.setProperty( "report.delivery.schedule.expression", "0 0/1 * * * ?" );
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
 
         camelContext.start();
+        camelContext.getRouteController().stopRoute( "Schedule Report Delivery" );
 
         String contactUuid = syncContactsAndFetchFirstContactUuid();
         String webhookMessage = StreamUtils.copyToString(
@@ -109,8 +110,11 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2?exchangePattern=InOnly",
             String.format( webhookMessage, contactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
-        spyEndpoint.await( 1, TimeUnit.MINUTES );
+        spyEndpoint.await( 30, TimeUnit.SECONDS );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
+
+        camelContext.getRouteController().startRoute( "Schedule Report Delivery" );
+
         spyEndpoint.await();
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
     }
