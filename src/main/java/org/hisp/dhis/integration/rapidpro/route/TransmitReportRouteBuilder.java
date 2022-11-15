@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.hisp.dhis.integration.rapidpro.ContactOrgUnitIdAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.expression.RootCauseExpr;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @Component
 public class TransmitReportRouteBuilder extends AbstractRouteBuilder
@@ -122,13 +124,26 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
         from( "direct:deliverReport" )
             .routeId( "Deliver Report" )
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
-            .toD( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" );
+            .setHeader( "dhisRequest", simple( "${body}" ) )
+            .toD( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" )
+            .setBody( (Function<Exchange, Object>) exchange -> exchange.getMessage().getBody( String.class ) )
+            .setHeader( "dhisResponse", simple( "${body}" ) )
+            .unmarshal().json()
+            .choice()
+            .when( simple( "${body['status']} == 'SUCCESS'" ) )
+                .setHeader( "rapidProPayload", header( "originalPayload" ) )
+                .setBody( simple( "${properties:success.log.insert.{{spring.datasource.platform}}}" ) )
+                .to( "jdbc:dataSource?useHeadersAsParameters=true" )
+            .otherwise()
+                .log( LoggingLevel.ERROR, LOGGER, "Failed response from DHIS2 while saving data value set => ${body}" )
+                .to( "direct:dlq" )
+            .end();
 
         from( "direct:dlq" )
             .routeId( "Save Failed Report" )
             .setHeader( "errorMessage", rootCauseExpr )
             .setHeader( "payload", header( "originalPayload" ) )
-            .setHeader( "orgUnitId" ).ognl( "request.headers.orgUnitId == null ? null : header(orgUnitId)" )
+            .setHeader( "orgUnitId" ).ognl( "request.headers.orgUnitId" )
             .setBody( simple( "${properties:error.dlc.insert.{{spring.datasource.platform}}}" ) )
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
 

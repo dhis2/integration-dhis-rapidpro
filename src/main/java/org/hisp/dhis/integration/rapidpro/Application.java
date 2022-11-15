@@ -27,12 +27,19 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
+import java.util.Map;
+
+import javax.annotation.PostConstruct;
+
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
 import org.apache.camel.CamelContext;
 import org.apache.commons.io.FileUtils;
@@ -45,23 +52,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.NestedExceptionUtils;
+import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.Map;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 @SpringBootApplication
 @PropertySource( "classpath:sql.properties" )
@@ -69,7 +76,7 @@ public class Application extends SpringBootServletInitializer
 {
     protected static final Logger LOGGER = LoggerFactory.getLogger( Application.class );
 
-    @Value( "${dhis2.api.url}" )
+    @Value( "${dhis2.api.url:}" )
     private String dhis2ApiUrl;
 
     @Value( "${dhis2.api.username:#{null}}" )
@@ -108,6 +115,18 @@ public class Application extends SpringBootServletInitializer
     @Value( "${camel.springboot.routes-reload-directory}" )
     private String routesReloadDirectory;
 
+    @Value( "${server.port}" )
+    private int serverPort;
+
+    @Value( "${server.servlet.context-path}" )
+    private String serverServletContextPath;
+
+    @Value( "${management.endpoints.web.base-path}" )
+    private String managementEndpointsWebBasePath;
+
+    @Value( "${spring.h2.console.path}" )
+    private String h2ConsolePath;
+
     @Autowired
     private ArtemisProperties artemisProperties;
 
@@ -145,8 +164,30 @@ public class Application extends SpringBootServletInitializer
         SQLException
     {
         SpringApplication springApplication = new SpringApplication( Application.class );
-        springApplication.setBannerMode( Banner.Mode.OFF );
         springApplication.run( args );
+    }
+
+    @EventListener( ApplicationReadyEvent.class )
+    public void onApplicationReadyEvent()
+        throws
+        IOException
+    {
+
+        String baseUrl = String.format( "%s://%s:%s%s", serverSslEnabled ? "https" : "http",
+            InetAddress.getLocalHost().getHostAddress(), serverPort,
+            serverServletContextPath.startsWith( "/" ) ? serverServletContextPath : "/" + serverServletContextPath );
+
+        String hawtioUrl = baseUrl + managementEndpointsWebBasePath + "/hawtio";
+        String h2ConsoleUrl = baseUrl + h2ConsolePath;
+        String rapidProWebhook = baseUrl + "/services/webhook";
+        String flowPollTask = baseUrl + "/services/tasks/scan";
+        String contactSyncTask = baseUrl + "/services/tasks/sync";
+        String reminderSyncTask = baseUrl + "/services/tasks/reminders";
+
+        LOGGER.info(
+            String.format( StreamUtils.copyToString(
+                Thread.currentThread().getContextClassLoader().getResourceAsStream( "online-banner.txt" ),
+                StandardCharsets.UTF_8 ), hawtioUrl, h2ConsoleUrl, rapidProWebhook, flowPollTask, contactSyncTask, reminderSyncTask ) );
     }
 
     @Bean
