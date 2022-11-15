@@ -32,6 +32,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.util.StreamUtils;
 
 import java.io.File;
@@ -44,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ExtensibilityTestCase extends AbstractFunctionalTestCase
 {
     @Test
+    @Timeout( value = 5, unit = TimeUnit.MINUTES)
     public void testOverrideRoute()
         throws
         Exception
@@ -64,12 +66,12 @@ public class ExtensibilityTestCase extends AbstractFunctionalTestCase
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:destination", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
 
-        FileUtils.forceMkdir( new File( "routes" ) );
+        FileUtils.forceMkdir( new File( "target/routes" ) );
 
         camelContext.start();
 
         FileUtils.copyFile( new File( this.getClass().getResource( "/deliverReport.yaml" ).getFile() ),
-            new File( "routes/deliverReport.yaml" ) );
+            new File( "target/routes/deliverReport.yaml" ) );
 
         while ( true )
         {

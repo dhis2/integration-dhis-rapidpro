@@ -166,6 +166,10 @@
                                     <RAPIDPRO_API_URL>https://rapidpro.test/api/v2</RAPIDPRO_API_URL>
                                     <RAPIDPRO_API_TOKEN>98f3fe494b94742cf577f442e2cc175ae4f635a5</RAPIDPRO_API_TOKEN>
                                     <TEST_CONNECTION_STARTUP>false</TEST_CONNECTION_STARTUP>
+                                    <SPRING_DATASOURCE_URL>jdbc:h2:./target/dhis2rapidpro;AUTO_SERVER=TRUE</SPRING_DATASOURCE_URL>
+                                    <LOGGING_FILE_NAME>target/dhis2rapidpro.log</LOGGING_FILE_NAME>
+                                    <CAMEL_SPRINGBOOT_ROUTES-RELOAD-DIRECTORY>target/routes</CAMEL_SPRINGBOOT_ROUTES-RELOAD-DIRECTORY>
+                                    <CAMEL_SPRINGBOOT_ROUTES-INCLUDE-PATTERN>file:target/routes/*</CAMEL_SPRINGBOOT_ROUTES-INCLUDE-PATTERN>
                                 </env>
                                 <volumes>
                                     <bind>
