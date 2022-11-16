@@ -35,6 +35,8 @@ import org.hisp.dhis.integration.rapidpro.processor.SetReportRateQueryParamProce
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Component
 public class ReminderRouteBuilder extends AbstractRouteBuilder
 {
@@ -50,8 +52,9 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
         from( "servlet:tasks/reminders?muteException=true" )
             .removeHeaders( "*" )
             .to( "direct:reminders" )
-            .setHeader( Exchange.CONTENT_TYPE, constant( "text/html" ) )
-            .setBody( constant( "<html><body>Sent reminders of overdue reports</body></html>" ) );
+            .setHeader( Exchange.CONTENT_TYPE, constant( "application/json" ) )
+            .setBody( constant( Map.of("status", "success", "data", "Sent reminders of overdue reports") ) )
+            .marshal().json();
 
         from( "quartz://reminders?cron={{reminder.schedule.expression:0 0 9 ? * *}}" )
             .to( "direct:reminders" );
