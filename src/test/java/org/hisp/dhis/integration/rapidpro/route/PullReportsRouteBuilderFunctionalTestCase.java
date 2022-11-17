@@ -27,17 +27,20 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.http.ContentType;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.TransformDefinition;
+import org.hisp.dhis.api.model.v2_36_11.ImportTypeSummary;
+import org.hisp.dhis.api.model.v2_36_11.WebMessage;
 import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Instant;
 import java.util.Date;
@@ -51,6 +54,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private String flowUuid;
 
     @Override
@@ -193,6 +199,44 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
     }
 
     @Test
+    public void testPullGivenOrgUnitIdInFlowRunResult()
+        throws
+        Exception
+    {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
+        AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
+            r -> r.weaveByToUri( "${exchangeProperty.nextRunsPageUrl}" ).replace().to( "mock:rapidPro" ) );
+        MockEndpoint rapidProMockEndpoint = camelContext.getEndpoint( "mock:rapidPro", MockEndpoint.class );
+        rapidProMockEndpoint.whenAnyExchangeReceived( exchange -> {
+            Map<String, Object> flowRuns = objectMapper.readValue(
+                Thread.currentThread().getContextClassLoader().getResourceAsStream(
+                    "flowRuns.json" ), Map.class );
+
+            List<Map<String, Object>> results = (List<Map<String, Object>>) flowRuns.get( "results" );
+            Map<String, Object> result = results.get( 0 );
+            ((Map<String, Object>) result.get( "values" )).put( "org_unit_id",
+                Map.of( "name", "org_unit_id", "value", "acme" ) );
+
+            exchange.getMessage().setBody( objectMapper.writeValueAsString( flowRuns ) );
+        } );
+
+        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+
+        camelContext.start();
+
+        producerTemplate.sendBody( "direct:pull", null );
+        spyEndpoint.await( 10, TimeUnit.SECONDS );
+        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
+        assertEquals( 1, deadLetterChannel.size() );
+        ImportTypeSummary importTypeSummary = objectMapper.readValue(
+            (String) deadLetterChannel.get( 0 ).get( "error_message" ), ImportTypeSummary.class );
+        assertEquals( "acme", importTypeSummary.getConflicts().get().get( 0 ).getObject().get() );
+        assertEquals( "Org unit not found or not accessible", importTypeSummary.getConflicts().get().get( 0 ).getValue().get() );
+    }
+
+    @Test
     public void testPullGivenNextPage()
         throws
         Exception
@@ -202,7 +246,6 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
             r -> r.weaveByToUri( "${exchangeProperty.nextRunsPageUrl}" ).replace().to( "mock:rapidPro" ) );
         MockEndpoint rapidProMockEndpoint = camelContext.getEndpoint( "mock:rapidPro", MockEndpoint.class );
         rapidProMockEndpoint.whenAnyExchangeReceived( exchange -> {
-            ObjectMapper objectMapper = new ObjectMapper();
             Map<String, Object> flowRuns = objectMapper.readValue(
                 Thread.currentThread().getContextClassLoader().getResourceAsStream(
                     "flowRuns.json" ), Map.class );
@@ -226,7 +269,6 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
-        syncContactsAndFetchFirstContactUuid();
 
         spyEndpoint.setExpectedCount( 500 );
         producerTemplate.sendBody( "direct:pull", null );
