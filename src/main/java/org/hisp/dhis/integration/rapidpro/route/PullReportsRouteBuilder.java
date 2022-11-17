@@ -27,11 +27,14 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.hisp.dhis.integration.rapidpro.expression.LastRunCalculator;
 import org.hisp.dhis.integration.rapidpro.expression.LastRunAtColumnReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component
 public class PullReportsRouteBuilder extends AbstractRouteBuilder
@@ -48,8 +51,9 @@ public class PullReportsRouteBuilder extends AbstractRouteBuilder
         from( "servlet:tasks/scan?muteException=true" )
             .removeHeaders( "*" )
             .to( "direct:pull" )
-            .setHeader( "Content-Type", constant( "text/html" ) )
-            .setBody( constant( "<html><body>Scanned RapidPro flow runs</body></html>" ) );
+            .setHeader( Exchange.CONTENT_TYPE, constant( "application/json" ) )
+            .setBody( constant( Map.of("status", "success", "data", "Scanned RapidPro flow runs") ) )
+            .marshal().json();
 
         from( "quartz://pull?cron={{scan.reports.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
             .to( "direct:pull" );

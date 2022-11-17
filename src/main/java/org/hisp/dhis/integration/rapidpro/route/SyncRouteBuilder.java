@@ -60,8 +60,9 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
             .precondition( "{{sync.rapidpro.contacts}}" )
             .removeHeaders( "*" )
             .to( "direct:sync" )
-            .setHeader( "Content-Type", constant( "text/html" ) )
-            .setBody( constant( "<html><body>Synchronised RapidPro contacts with DHIS2 users</body></html>" ) );
+            .setHeader( Exchange.CONTENT_TYPE, constant( "application/json" ) )
+            .setBody( constant( Map.of("status", "success", "data", "Synchronised RapidPro contacts with DHIS2 users") ) )
+            .marshal().json();
 
         from( "quartz://sync?cron={{sync.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
             .precondition( "{{sync.rapidpro.contacts}}" )

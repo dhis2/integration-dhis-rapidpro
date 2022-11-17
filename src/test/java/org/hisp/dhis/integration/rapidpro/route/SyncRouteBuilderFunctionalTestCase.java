@@ -27,6 +27,8 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
@@ -39,6 +41,7 @@ import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,6 +58,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
+    @Autowired
+    protected ObjectMapper objectMapper;
+
     @Override
     public void doBeforeEach()
         throws
@@ -118,6 +124,8 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
 
     @Test
     public void testManualContactSynchronisation()
+        throws
+        JsonProcessingException
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
@@ -129,7 +137,8 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
             null,
             "Authorization",
             "Basic " + Base64.getEncoder().encodeToString( "dhis2rapidpro:dhis2rapidpro".getBytes() ), String.class );
-        assertEquals( "<html><body>Synchronised RapidPro contacts with DHIS2 users</body></html>", response );
+        assertEquals( "success",
+            objectMapper.readValue( response, Map.class ).get( "status" ) );
 
         assertPostCondition();
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
