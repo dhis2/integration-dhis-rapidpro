@@ -20,3 +20,14 @@ CREATE TABLE IF NOT EXISTS POLLER (
 CREATE TABLE IF NOT EXISTS TOKEN (
     value_  VARCHAR   NOT NULL PRIMARY KEY
 );
+
+CREATE TABLE IF NOT EXISTS SUCCESS_LOG (
+    id                      INTEGER                             NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    dhis_request            VARCHAR                             NOT NULL,
+    dhis_response           VARCHAR                             NOT NULL,
+    rapidpro_payload        VARCHAR                             NOT NULL,
+    data_set_code           VARCHAR                             NOT NULL,
+    report_period_offset    INTEGER                             NOT NULL,
+    organisation_unit_id    VARCHAR,
+    created_at              TIMESTAMP WITH TIME ZONE            NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

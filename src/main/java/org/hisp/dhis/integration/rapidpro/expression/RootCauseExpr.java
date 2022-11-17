@@ -27,26 +27,59 @@
  */
 package org.hisp.dhis.integration.rapidpro.expression;
 
+import java.util.Map;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
+import org.hisp.dhis.integration.rapidpro.Dhis2RapidProException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class RootCauseExpr implements Expression
 {
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Override
     public <T> T evaluate( Exchange exchange, Class<T> type )
     {
         Throwable throwable = (Throwable) exchange.getProperty( Exchange.EXCEPTION_CAUGHT );
-        Throwable rootCause = NestedExceptionUtils.getRootCause( throwable );
-        if ( rootCause != null )
+        if ( throwable == null )
         {
-            return (T) rootCause.getMessage();
+            Map<String, Object> bodyAsMap = exchange.getMessage().getBody( Map.class );
+            if ( bodyAsMap != null )
+            {
+                try
+                {
+                    return (T) objectMapper.writeValueAsString( bodyAsMap );
+                }
+                catch ( JsonProcessingException e )
+                {
+                    throw new Dhis2RapidProException( e );
+                }
+            }
+            else
+            {
+                String bodyAsString = exchange.getMessage().getBody( String.class );
+                return (T) bodyAsString;
+            }
         }
         else
         {
-            return (T) throwable.getMessage();
+            Throwable rootCause = NestedExceptionUtils.getRootCause( throwable );
+            if ( rootCause != null )
+            {
+                return (T) rootCause.getMessage();
+            }
+            else
+            {
+                return (T) throwable.getMessage();
+            }
         }
     }
 }

@@ -27,20 +27,9 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.camel.CamelExecutionException;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
-import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
-import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
-import org.hisp.dhis.integration.rapidpro.Environment;
-import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StreamUtils;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -51,9 +40,22 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.camel.CamelExecutionException;
+import org.apache.camel.ExchangePattern;
+import org.apache.camel.builder.AdviceWith;
+import org.apache.camel.component.mock.MockEndpoint;
+import org.hisp.dhis.api.model.v2_36_11.WebMessage;
+import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
+import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
+import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
+import org.hisp.dhis.integration.rapidpro.Environment;
+import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StreamUtils;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
@@ -62,10 +64,13 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
 
     @Test
     public void testDataValueSetIsCreated()
-        throws
-        IOException
+        throws Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
+        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+
         camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
 
@@ -73,11 +78,13 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
+            ExchangePattern.InOnly, String.format( webhookMessage, contactUuid ),
             Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
+        spyEndpoint.await( 30, TimeUnit.SECONDS );
+
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
-                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+            "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
             .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
             .transfer()
             .returnAs(
@@ -86,13 +93,51 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         DataValue__1 dataValue = dataValueSet.getDataValues().get().get( 0 );
         assertEquals( "2", dataValue.getValue().get() );
         assertTrue( dataValue.getComment().isPresent() );
+
+        Map<String, Object> successLogRow = jdbcTemplate.queryForList( "SELECT * FROM SUCCESS_LOG" ).get( 0 );
+
+        String dhisRequest = (String) successLogRow.get( "DHIS_REQUEST" );
+        String dhisResponse = (String) successLogRow.get( "DHIS_RESPONSE" );
+        String rapidProPayload = (String) successLogRow.get( "RAPIDPRO_PAYLOAD" );
+
+        assertEquals( "MAL_YEARLY", objectMapper.readValue( dhisRequest, Map.class ).get( "dataSet" ) );
+        assertEquals( "SUCCESS", objectMapper.readValue( dhisResponse, Map.class ).get( "status" ) );
+        assertEquals( "John Doe",
+            ((Map) objectMapper.readValue( rapidProPayload, Map.class ).get( "contact" )).get( "name" ) );
+    }
+
+    @Test
+    public void testRecordInDeadLetterChannelIsCreatedGivenWebMessageErrorWhileCreatingDataValueSet()
+        throws Exception
+    {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
+        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+
+        camelContext.start();
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
+
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+            ExchangePattern.InOnly, String.format( webhookMessage, contactUuid ),
+            Map.of( "dataSetCode", "MAL_YEARLY", "orgUnitId", "dsads" ) );
+
+        spyEndpoint.await( 30, TimeUnit.SECONDS );
+
+        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
+        assertEquals( 1, deadLetterChannel.size() );
+        assertEquals( "ERROR",
+            objectMapper.readValue( (String) deadLetterChannel.get( 0 ).get( "error_message" ), WebMessage.class )
+                .getStatus().get().value() );
     }
 
     @Test
     @Timeout( value = 5, unit = TimeUnit.MINUTES )
     public void testScheduledReportDelivery()
-        throws
-        Exception
+        throws Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "report.delivery.schedule.expression", "0 0/1 * * * ?" );
@@ -121,8 +166,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
 
     @Test
     public void testRecordInDeadLetterChannelIsCreatedGivenErrorWhileCreatingDataValueSet()
-        throws
-        IOException
+        throws IOException
     {
         camelContext.start();
 
@@ -148,8 +192,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
 
     @Test
     public void testRetryRecordInDeadLetterChannelIsReProcessed()
-        throws
-        Exception
+        throws Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
@@ -187,8 +230,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
 
     @Test
     public void testDataValueSetIsCreatedGivenOrgUnitIdSchemeIsCode()
-        throws
-        IOException
+        throws IOException
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "org.unit.id.scheme", "CODE" );
@@ -203,7 +245,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
             Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
         DataValueSet dataValueSet = Environment.DHIS2_CLIENT.get(
-                "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
+            "dataValueSets" ).withParameter( "orgUnit", Environment.ORG_UNIT_ID )
             .withParameter( "period", PeriodBuilder.yearOf( new Date(), -1 ) ).withParameter( "dataSet", "qNtxTrp56wV" )
             .transfer()
             .returnAs(
