@@ -44,7 +44,7 @@ import org.apache.camel.CamelExecutionException;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.hisp.dhis.api.model.v2_36_11.WebMessage;
+import org.hisp.dhis.api.model.v2_36_11.ImportTypeSummary;
 import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
 import org.hisp.dhis.api.model.v2_37_7.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
@@ -130,7 +130,7 @@ public class TransmitReportRouteBuilderFunctionalTestCase extends AbstractFuncti
         List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
         assertEquals( "ERROR",
-            objectMapper.readValue( (String) deadLetterChannel.get( 0 ).get( "error_message" ), WebMessage.class )
+            objectMapper.readValue( (String) deadLetterChannel.get( 0 ).get( "error_message" ), ImportTypeSummary.class )
                 .getStatus().get().value() );
     }
 

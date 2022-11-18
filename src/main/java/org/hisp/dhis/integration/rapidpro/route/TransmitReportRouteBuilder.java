@@ -135,7 +135,7 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
                 .setBody( simple( "${properties:success.log.insert.{{spring.datasource.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .otherwise()
-                .log( LoggingLevel.ERROR, LOGGER, "Failed response from DHIS2 while saving data value set => ${body}" )
+                .log( LoggingLevel.ERROR, LOGGER, "Import error from DHIS2 while saving data value set => ${body}" )
                 .to( "direct:dlq" )
             .end();
 
