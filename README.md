@@ -28,6 +28,7 @@
             - [Webhook](#webhook)
     - [Auto-Reminders](#auto-reminders)
 - [Configuration](#configuration)
+    - [Database](#database)
 - [Management & Monitoring](#management--monitoring)
     - [Stopping Routes](#stopping-routes)
 - [Recovering Reports](#recovering-reports)
@@ -170,6 +171,8 @@ To run DHIS-to-RapidPro as a web application inside a web container like Tomcat,
 
 ### Contact Synchronisation
 
+>***SECURITY***: contact synchronisation copies personal data from DHIS to RapidPro. Ensure that the data provider agrees to sharing DHIS user details with the data receiver before activating synchronisation.
+
 During contact synchronisation, DHIS-to-RapidPro fetches the users from your DHIS2 server to either:
 * create RapidPro contacts containing the DHIS2 user's ID, organisation unit ID, name, and mobile phone number, or
 * update existing RapidPro contacts to match any changes in the corresponding DHIS2 users.
@@ -180,9 +183,7 @@ Prior to synchronisation, DHIS-to-RapidPro automatically creates in RapidPro:
 
 DHIS-to-RapidPro will re-create this group and these fields should they be deleted. During synchronisation, each contact is assigned to the `DHIS2` group and has its fields populated accordingly. Application errors during the syncing of a contact will lead to warnings in the log but the error will not abort the synchronisation process. In other words, synchronisation may be partially successful.
 
-Contact synchronisation is disabled by default. Setting `sync.rapidpro.contacts` to `true` enables synchronisation. The interval rate at which contacts are synchronised is expressed as a cron expression with the config key `sync.schedule.expression`. Alternatively, access DHIS-to-RapidPro's URL together with the path `/services/tasks/sync`from your browser to kick off syncing.
-
->***SECURITY***: contact synchronisation copies personal data from DHIS to RapidPro. Ensure that the data provider agrees to sharing DHIS user details with the data receiver before activating synchronisation.
+Contact synchronisation is disabled by default. Setting `sync.rapidpro.contacts` to `true` enables synchronisation. The interval rate at which contacts are synchronised is expressed as a cron expression with the config key `sync.schedule.expression`. Alternatively, from your web browser, enter the DHIS-to-RapidPro's URL (e.g., `https://localhost:8443/dhis2rapidpro`) together with the path `/services/tasks/sync` in the address bar to kick off syncing.
 
 ### Aggregate Report Transfer
 
@@ -258,7 +259,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
    
    Unless the `org_unit_id` result is set, you must populate this field, either manually or automatically, for each contact belonging to a DHIS2 organisation unit. The field should hold the contact's DHIS2 organisation unit identifier. By default, DHIS-to-RapidPro expects the organisation unit identifier to be the ID (see `org.unit.id.scheme` in [Configuration](#configuration)).
 
-8. Copy the UUID of the flow definition from your browser's address bar:
+8. Copy the UUID of the flow definition from your web browser's address bar:
    ![browser address bar](static/images/flow-uuid-poll.png)
 
 9. Paste the copied flow definition UUID into DHIS-to-RapidPro's `rapidpro.flow.uuids` config property:
@@ -287,7 +288,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
 While DHIS-to-RapidPro is running, to manually kick off the scanning of flow runs:
 
-1. Open your browser
+1. Open your web browser
 2. Type the DHIS-to-RapidPro URL together with the path `/services/tasks/scan` inside the browser address bar
 3. Press enter
 
@@ -341,7 +342,7 @@ Reminders for overdue reports are sent for each DHIS2 data set specified in the 
 
 >CAUTION: do not forget to assign auto-reminder contacts to the `DHIS2` group
 
-The interval rate at which contacts are reminded is expressed as a cron expression with the config key `reminder.schedule.expression`. Alternatively, open the browser and enter DHIS-to-RapidPro's URL followed by the path `/services/tasks/reminders` to instantly broadcast the reminders for overdue reports.
+The interval rate at which contacts are reminded is expressed as a cron expression with the config key `reminder.schedule.expression`. Alternatively, open the web browser and enter DHIS-to-RapidPro's URL followed by the path `/services/tasks/reminders` to instantly broadcast the reminders for overdue reports.
 
 ## Configuration
 
@@ -351,52 +352,69 @@ By order of precedence, a config property can be specified:
 2. as an OS environment variable (e.g., `export DHIS2_API_URL=https://play.dhis2.org/2.38.1/api`)
 3. in a key/value property file called `application.properties` or a YAML file named `application.yml`
 
-| Config name                                   | Description                                                                                                                                                          | Default value                              | Example value                                      |
-|-----------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|----------------------------------------------------|
-| `dhis2.api.url`                               | DHIS2 server Web API URL.                                                                                                                                            |                                            | `https://play.dhis2.org/2.38.1/api`                |
-| `dhis2.api.pat`                               | Personal access token to authenticate with on DHIS2. This property is mutually exclusive to `dhis2.api.username` and `dhis2.api.password`.                           |                                            | `d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556` |
-| `dhis2.api.username`                          | Username of the DHIS2 user to operate as.                                                                                                                            |                                            | `admin`                                            |
-| `dhis2.api.password`                          | Password of the DHIS2 user to operate as.                                                                                                                            |                                            |                                                    |
-| `rapidpro.api.url`                            | RapidPro server Web API URL.                                                                                                                                         |                                            | `https://rapidpro.dhis2.org/api/v2`                |
-| `rapidpro.api.token`                          | API token to authenticate with on RapidPro.                                                                                                                          |                                            | `3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0`         |
-| `server.port`                                 | The TCP port number the application will bind to for accepting HTTP requests.                                                                                        | `8443`                                     | `443`                                              |
-| `sync.schedule.expression`                    | Cron expression for synchronising RapidPro contacts with DHIS2 users. By default, synchronisation occurs every half hour.                                            | `0 0/30 * * * ?`                           | `0 0 0 * * ?`                                      |
-| `reminder.schedule.expression`                | Cron expression for broadcasting reminders of overdue reports to RapidPro contacts. By default, overdue report reminders are sent at 9 a.m. every day.               | `0 0 9 ? * *`                              | `0 0 0 * * ?`                                      |
-| `scan.reports.schedule.expression`            | Cron expression specifying how often RapidPro is queried for flow executions. By default, RapidPro is queried every thirty minutes.                                  | `0 0/30 * * * ?`                           | `0 0 0 * * ?`                                      |
-| `report.delivery.schedule.expression`         | Cron expression specifying when queued reports are delivered to DHIS2.                                                                                               |                                            | `0 0 0 * * ?`                                      |
-| `sync.rapidpro.contacts`                      | Whether to routinely create and update RapidPro contacts from DHIS2 users.                                                                                           | `false`                                    | `true`                                             |
-| `reminder.data.set.codes`                     | Comma-delimited list of DHIS2 data set codes for which overdue report reminders are sent.                                                                            |                                            | `DS_359414,HIV_CARE`                               |
-| `rapidpro.flow.uuids`                         | Comma-delimited list of RapidPro flow definition UUIDs to scan for completed flow executions.                                                                        |                                            | `DS_359414,HIV_CARE`                               |
-| `org.unit.id.scheme`                          | By which field organisation units are identified.                                                                                                                    | `ID`                                       | `CODE`                                             |
-| `webhook.security.auth`                       | Authentication scheme protecting the webhook HTTP(S) endpoint. Supported values are `none` and `token`.                                                              | `none`                                     | `token`                                            |
-| `server.ssl.enabled`                          | Whether to enable TLS support.                                                                                                                                       | `true`                                     | `false`                                            |
-| `test.connection.startup`                     | Test connectivity with DHIS2 and RapidPro during start-up. In case of connection failure, the application wil print an error and terminate.                          | `true`                                     | `false`                                            |
-| `spring.security.user.name`                   | Login username for non-webhook services like the Hawtio and H2 web consoles.                                                                                         | `dhis2rapidpro`                            | `admin`                                            |
-| `spring.security.user.password`               | Login password for non-webhook services like the Hawtio and H2 web consoles.                                                                                         | `dhis2rapidpro`                            | `secret`                                           |
-| `spring.h2.console.enabled`                   | Whether to enable the H2 web console.                                                                                                                                | `true`                                     | `false`                                            |
-| `spring.h2.console.settings.web-allow-others` | Whether to enable remote access to the H2 web console.                                                                                                               | `false`                                    | `true`                                             |
-| `spring.datasource.url`                       | JDBC URL for persisting undeliverable reports and JMS queues.                                                                                                        | `jdbc:h2:./dhis2rapidpro;AUTO_SERVER=TRUE` | `jdbc:postgresql://localhost:5432/dhis2rapidpro`   |
-| `spring.datasource.username`                  | Username to access the JDBC data source.                                                                                                                             | `dhis2rapidpro`                            | `spring.h2.console.settings.web-allow-others`      |                                                                                                                | `false`                                    | `true`                                             || `admin`                                            |
-| `spring.datasource.password`                  | Password to access the JDBC data source.                                                                                                                             | `dhis2rapidpro`                            | `secret`                                           |
-| `spring.datasource.driver-class-name`         | Class name of the JDBC driver used to connect to the database. Changing this property requires that you add the database vendor's JDBC driver to the Java classpath. | `org.h2.Driver`                            | `org.postgresql.Driver`                            |
-| `spring.jmx.enabled`                          | Whether to expose the JMX metrics.                                                                                                                                   | `true`                                     | `false`                                            |
-| `management.endpoints.web.exposure.include`   | Management endpoint IDs that should be included or '*' for all.                                                                                                      | `*`                                        |                                                    |
+| Config name                                   | Description                                                                                                                                            | Default value    | Example value                                                                                                    |
+|-----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|------------------|------------------------------------------------------------------------------------------------------------------|
+| `dhis2.api.url`                               | DHIS2 server Web API URL.                                                                                                                              |                  | `https://play.dhis2.org/2.38.1/api`                                                                              |
+| `dhis2.api.pat`                               | Personal access token to authenticate with on DHIS2. This property is mutually exclusive to `dhis2.api.username` and `dhis2.api.password`.             |                  | `d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556`                                                               |
+| `dhis2.api.username`                          | Username of the DHIS2 user to operate as.                                                                                                              |                  | `admin`                                                                                                          |
+| `dhis2.api.password`                          | Password of the DHIS2 user to operate as.                                                                                                              |                  | `district`                                                                                                       |
+| `rapidpro.api.url`                            | RapidPro server Web API URL.                                                                                                                           |                  | `https://rapidpro.dhis2.org/api/v2`                                                                              |
+| `rapidpro.api.token`                          | API token to authenticate with on RapidPro.                                                                                                            |                  | `3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0`                                                                       |
+| `server.port`                                 | The TCP port number the application will bind to for accepting HTTP requests.                                                                          | `8443`           | `443`                                                                                                            |
+| `sync.schedule.expression`                    | Cron expression for synchronising RapidPro contacts with DHIS2 users. By default, synchronisation occurs every half hour.                              | `0 0/30 * * * ?` | `0 0 0 * * ?`                                                                                                    |
+| `reminder.schedule.expression`                | Cron expression for broadcasting reminders of overdue reports to RapidPro contacts. By default, overdue report reminders are sent at 9 a.m. every day. | `0 0 9 ? * *`    | `0 0 0 * * ?`                                                                                                    |
+| `scan.reports.schedule.expression`            | Cron expression specifying how often RapidPro is queried for flow executions. By default, RapidPro is queried every thirty minutes.                    | `0 0/30 * * * ?` | `0 0 0 * * ?`                                                                                                    |
+| `report.delivery.schedule.expression`         | Cron expression specifying when queued reports are delivered to DHIS2.                                                                                 |                  | `0 0 0 * * ?`                                                                                                    |
+| `sync.rapidpro.contacts`                      | Whether to routinely create and update RapidPro contacts from DHIS2 users.                                                                             | `false`          | `true`                                                                                                           |
+| `reminder.data.set.codes`                     | Comma-delimited list of DHIS2 data set codes for which overdue report reminders are sent.                                                              |                  | `DS_359414,HIV_CARE`                                                                                             |
+| `rapidpro.flow.uuids`                         | Comma-delimited list of RapidPro flow definition UUIDs to scan for completed flow executions.                                                          |                  | `2db0f7fa-be5d-486f-bda5-096d0f68db3e,51d660b5-5137-4d92-b874-0a6b7cf5c02c,ceef94f4-e0ae-4e10-9dd5-9afe51c110c5` |
+| `org.unit.id.scheme`                          | By which field organisation units are identified.                                                                                                      | `ID`             | `CODE`                                                                                                           |
+| `webhook.security.auth`                       | Authentication scheme protecting the webhook HTTP(S) endpoint. Supported values are `none` and `token`.                                                | `none`           | `token`                                                                                                          |
+| `server.ssl.enabled`                          | Whether to enable TLS support.                                                                                                                         | `true`           | `false`                                                                                                          |
+| `test.connection.startup`                     | Test connectivity with DHIS2 and RapidPro during start-up. In case of connection failure, the application wil print an error and terminate.            | `true`           | `false`                                                                                                          |
+| `spring.security.user.name`                   | Login username for non-webhook services like the Hawtio and H2 web consoles.                                                                           | `dhis2rapidpro`  | `admin`                                                                                                          |
+| `spring.security.user.password`               | Login password for non-webhook services like the Hawtio and H2 web consoles.                                                                           | `dhis2rapidpro`  | `secret`                                                                                                         |
+| `spring.h2.console.enabled`                   | Whether to enable the H2 web console.                                                                                                                  | `true`           | `false`                                                                                                          |
+| `spring.h2.console.settings.web-allow-others` | Whether to enable remote access to the H2 web console.                                                                                                 | `false`          | `true`                                                                                                           |
+| `spring.jmx.enabled`                          | Whether to expose the JMX metrics.                                                                                                                     | `true`           | `false`                                                                                                          |
+| `management.endpoints.web.exposure.include`   | Management endpoint IDs that should be included or '*' for all.                                                                                        | `*`              |                                                                                                                  |
+
+### Database
+
+DHIS-to-RapidPro requires a relational database to store:
+
+* [delivered](#success-log) as well as [undelivered reports](#recovering-reports), 
+* the context between successive [flow polls](#polling)
+* the security token generated at start-up for [webhook authentication](#webhook)
+ 
+  >***SECURITY***: the token is a 32-byte key that is hashed using SHA-256 before it is written to the database. A data breach could result the hashed token being leaked though it would be very hard to recover the clear token from the hash. Nonetheless, the hashed token is still vulnerable to bruteforce attacks, therefore, it is imperative that the table `TOKEN` is truncated after a suspected data breach in order to generate a new security token.
+
+[H2](https://www.h2database.com/html/main.html) is the embedded database that DHIS-to-RapidPro offers out-of-the-box. H2 is production-ready but may be lacking features that are available from your favourite database. You might even want to persist DHIS-to-RapidPro's state in your organisation's central database. The following configuration properties should be considered when persisting to a different database:
+
+| Config name                           | Description                                                    | Default value                              | Example value                                    |
+|---------------------------------------|----------------------------------------------------------------|--------------------------------------------|--------------------------------------------------|
+| `spring.datasource.url`               | JDBC URL for persisting the application state.                 | `jdbc:h2:./dhis2rapidpro;AUTO_SERVER=TRUE` | `jdbc:postgresql://localhost:5432/dhis2rapidpro` |
+| `spring.datasource.username`          | Username to access the JDBC data source.                       | `dhis2rapidpro`                            | `postgres`                                       |
+| `spring.datasource.password`          | Password to access the JDBC data source.                       | `dhis2rapidpro`                            | `postgres`                                       |
+| `spring.datasource.driver-class-name` | Class name of the JDBC driver used to connect to the database. | `org.h2.Driver`                            | `org.postgresql.Driver`                          |
+
+Switching to a different database requires that you add the database vendor's JDBC driver to the Java classpath. When running the DHIS-to-RapidPro [executable](#shell), third-party libraries should reside in the `lib` directory relative to DHIS-to-RapidPro's working directory.
 
 ## Management & Monitoring
 
-DHIS-to-RapidPro exposes its metrics through JMX. A JMX client like [VisualVM](https://visualvm.github.io/) can be used to observe these metrics, however, DHIS-to-RapidPro comes bundled with [Hawtio](https://hawt.io/) so that the system operator can easily monitor and manage runtime operations of the application without prior setup
+DHIS-to-RapidPro exposes its metrics through JMX. A JMX client like [VisualVM](https://visualvm.github.io/) can be used to observe these metrics, however, DHIS-to-RapidPro comes bundled with [Hawtio](https://hawt.io/) so that the system operator can easily monitor and manage the application's runtime operations without prior setup.
 
 From the Hawtio web console, apart from browsing application logs, the system operator can manage queues and endpoints, observe the application health status and queued RapidPro webhook messages, collect CPU and memory diagnostics, as well as view application settings:
 
 ![Hawtio Management Console](static/images/hawtio-management-console.png)
 
-You can log into the Hawtio console locally from [https://localhost:8443/dhis2rapidpro/management/hawtio](https://localhost:8443/dhis2rapidpro/management/hawtio) using the username and password `dhis2rapidpro`. You can set the parameter `management.endpoints.web.exposure.include` to an empty value (i.e., `--management.endpoints.web.exposure.include=`) to deny HTTP access to the Hawtio web console.
+You can log into the Hawtio console locally from [https://localhost:8443/dhis2rapidpro/management/hawtio](https://localhost:8443/dhis2rapidpro/management/hawtio) using the username and password `dhis2rapidpro`. Set the parameter `management.endpoints.web.exposure.include` to an empty value (i.e., `--management.endpoints.web.exposure.include=`) to deny HTTP access to the Hawtio web console.
 
 >***SECURITY***: immediately change the login credentials during setup (see `spring.security.user.name` and `spring.security.user.password` in [Configuration](#configuration)).
 
 ### Stopping Routes
 
-Individual integration points, or routes, within DHIS-to-RapidPro can be shut down from Hawtio while the application is running. This is especially useful for maintenance reasons. For example, you may want to suspend the processing of reports while DHIS2 is down to undergo scheduled maintenance. To stop a route, from the Hawtio console:
+Individual integration points, or routes, can be shut down from Hawtio while the application is running. This is especially useful for maintenance reasons. For example, you may want to suspend the processing of reports while DHIS2 is down to undergo scheduled maintenance. To stop a route, from the Hawtio console:
 
 1. Click the `Camel` tab on the left-hand side menu
 2. Expand `Camel Contexts` from the navigation tree
