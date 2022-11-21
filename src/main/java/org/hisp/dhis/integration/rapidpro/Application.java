@@ -127,6 +127,9 @@ public class Application extends SpringBootServletInitializer
     @Value( "${spring.h2.console.path}" )
     private String h2ConsolePath;
 
+    @Value( "${rapidpro.webhook.enabled}" )
+    private Boolean rapidProWebhookEnabled;
+
     @Autowired
     private ArtemisProperties artemisProperties;
 
@@ -177,17 +180,24 @@ public class Application extends SpringBootServletInitializer
             InetAddress.getLocalHost().getHostAddress(), serverPort,
             serverServletContextPath.startsWith( "/" ) ? serverServletContextPath : "/" + serverServletContextPath );
 
-        String hawtioUrl = baseUrl + managementEndpointsWebBasePath + "/hawtio";
-        String h2ConsoleUrl = baseUrl + h2ConsolePath;
-        String rapidProWebhook = baseUrl + "/services/webhook";
-        String flowPollTask = baseUrl + "/services/tasks/scan";
-        String contactSyncTask = baseUrl + "/services/tasks/sync";
-        String reminderSyncTask = baseUrl + "/services/tasks/reminders";
+        StringBuilder onlineBanner = new StringBuilder();
+
+        onlineBanner.append( "Hawtio console: " ).append( baseUrl ).append( managementEndpointsWebBasePath )
+            .append( "/hawtio\n" );
+        onlineBanner.append( " H2 console: " ).append( baseUrl ).append( h2ConsolePath ).append( "\n" );
+        if ( rapidProWebhookEnabled )
+        {
+            onlineBanner.append( " RapidPro webhook: " ).append( baseUrl ).append( "/services/webhook\n" );
+        }
+        onlineBanner.append( " Poll flows task: " ).append( baseUrl ).append( "/services/tasks/scan\n" );
+        onlineBanner.append( " Sync contacts task: " ).append( baseUrl ).append( "/services/tasks/sync\n" );
+        onlineBanner.append( " Remind contacts task: " ).append( baseUrl ).append( "/services/tasks/reminders\n" );
 
         LOGGER.info(
             String.format( StreamUtils.copyToString(
-                Thread.currentThread().getContextClassLoader().getResourceAsStream( "online-banner.txt" ),
-                StandardCharsets.UTF_8 ), hawtioUrl, h2ConsoleUrl, rapidProWebhook, flowPollTask, contactSyncTask, reminderSyncTask ) );
+                    Thread.currentThread().getContextClassLoader().getResourceAsStream( "online-banner.txt" ),
+                    StandardCharsets.UTF_8 ),
+                onlineBanner ) );
     }
 
     @Bean

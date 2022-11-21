@@ -38,6 +38,7 @@ public class WebHookRouteBuilder extends AbstractRouteBuilder
     protected void doConfigure()
     {
         from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
+            .precondition( "{{rapidpro.webhook.enabled}}" )
             .routeId( "RapidPro Webhook" )
             .removeHeader( Exchange.HTTP_URI )
             .to( "jms:queue:dhis2?exchangePattern=InOnly" )
