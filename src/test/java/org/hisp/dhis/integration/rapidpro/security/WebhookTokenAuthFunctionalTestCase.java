@@ -52,9 +52,13 @@ public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCa
     @Override
     public void doBeforeEach()
     {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
+        System.setProperty( "rapidpro.webhook.enabled", "true" );
+        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         jdbcTemplate.execute( "TRUNCATE TABLE token" );
         jdbcTemplate.execute( String.format( "INSERT INTO TOKEN (value_) VALUES ('%s')",
             Hashing.sha256().hashString( "secret", StandardCharsets.UTF_8 ).toString() ) );
+        camelContext.start();
     }
 
     @Test
@@ -62,9 +66,6 @@ public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCa
         throws
         IOException
     {
-        System.setProperty( "sync.rapidpro.contacts", "true" );
-        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
-        camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
 
         String webhookMessage = StreamUtils.copyToString(
@@ -83,9 +84,6 @@ public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCa
         throws
         IOException
     {
-        System.setProperty( "sync.rapidpro.contacts", "true" );
-        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
-        camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
 
         String webhookMessage = StreamUtils.copyToString(

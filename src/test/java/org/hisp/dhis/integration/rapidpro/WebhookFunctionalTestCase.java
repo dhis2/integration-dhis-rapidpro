@@ -30,6 +30,7 @@ package org.hisp.dhis.integration.rapidpro;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.http.base.HttpOperationFailedException;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StreamUtils;
 
@@ -46,6 +47,8 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
+        System.setProperty( "rapidpro.webhook.enabled", "true" );
+
         AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
@@ -62,12 +65,36 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
         Exchange responseExchange = producerTemplate.request(
             dhis2RapidProHttpEndpointUri
                 + "/services/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
-            exchange -> exchange.getMessage().setBody( String.format(  webhookMessage, contactUuid ) ) );
+            exchange -> exchange.getMessage().setBody( String.format( webhookMessage, contactUuid ) ) );
 
         assertEquals( "", responseExchange.getMessage().getBody( String.class ) );
         assertEquals( 202, responseExchange.getMessage().getHeaders().get( "CamelHttpResponseCode" ) );
 
         spyEndpoint.await( 10, TimeUnit.SECONDS );
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
+    }
+
+    @Test
+    public void testWebhookGivenItIsNotEnabled()
+        throws
+        Exception
+    {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
+
+        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
+        camelContext.start();
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
+
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+
+        producerTemplate.setDefaultEndpoint( camelContext.getEndpoint( dhis2RapidProHttpEndpointUri ) );
+        Exchange responseExchange = producerTemplate.request(
+            dhis2RapidProHttpEndpointUri
+                + "/services/webhook?dataSetCode=MAL_YEARLY&httpClientConfigurer=#selfSignedHttpClientConfigurer&httpMethod=POST",
+            exchange -> exchange.getMessage().setBody( String.format( webhookMessage, contactUuid ) ) );
+
+        assertEquals( HttpOperationFailedException.class, responseExchange.getException().getClass() );
     }
 }

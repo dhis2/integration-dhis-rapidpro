@@ -100,6 +100,7 @@ public class AbstractFunctionalTestCase
         System.clearProperty( "reminder.data.set.codes" );
         System.clearProperty( "report.delivery.schedule.expression" );
         System.clearProperty( "rapidpro.flow.uuids" );
+        System.clearProperty( "rapidpro.webhook.enabled" );
 
         jdbcTemplate.execute( "TRUNCATE TABLE DEAD_LETTER_CHANNEL" );
         jdbcTemplate.execute( "TRUNCATE TABLE SUCCESS_LOG" );

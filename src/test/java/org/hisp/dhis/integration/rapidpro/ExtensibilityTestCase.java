@@ -50,6 +50,7 @@ public class ExtensibilityTestCase extends AbstractFunctionalTestCase
         throws
         Exception
     {
+        System.setProperty( "rapidpro.webhook.enabled", "true" );
         System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "report.destination.endpoint",
             "http://localhost:" + serverPort + "/dhis2rapidpro/services/legacy" );

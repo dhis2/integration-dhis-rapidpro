@@ -9,12 +9,12 @@
 - [Getting Started](#getting-started)
     - [Shell](#shell)
         - [*inux](#inux)
-            - [Basic usage](#basic-usage)
+            - [Basic usage](#rapidpro-webhook-enabled)
             - [Auto-reminders](#auto-reminders)
             - [Contact synchronisation enabled](#contact-synchronisation-enabled)
             - [Report polling](#report-polling)
         - [Windows](#windows)
-            - [Basic usage](#basic-usage)
+            - [Basic usage](#rapidpro-webhook-enabled)
             - [Auto-reminders](#auto-reminders)
             - [Contact synchronisation enabled](#contact-synchronisation-enabled)
             - [Report polling](#report-polling)
@@ -67,13 +67,14 @@ The [JAR distribution](https://github.com/dhis2/integration-dhis-rapidpro/releas
 
 The above command will give an error since no parameters are provided. The next commands are common DHIS-to-RapidPro *nix usage examples:
 
-##### Basic usage
+##### RapidPro webhook enabled
 
 ```shell
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
 --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+--rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
+--rapidpro.webhook.enabled=true
 ```
 
 ##### Auto-reminders
@@ -116,14 +117,15 @@ java -jar dhis2-to-rapidpro.jar
 
 The above command will give an error since no parameters are provided. The next commands are common DHIS-to-RapidPro Windows usage examples:
 
-##### Basic usage
+##### RapidPro webhook enabled
 
 ```shell
 java -jar dhis2rapidpro.jar \
 --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
 --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+--rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
+--rapidpro.webhook.enabled=true
 ```
 
 ##### Auto-reminders
@@ -262,7 +264,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 8. Copy the UUID of the flow definition from your web browser's address bar:
    ![browser address bar](static/images/flow-uuid-poll.png)
 
-9. Paste the copied flow definition UUID into DHIS-to-RapidPro's `rapidpro.flow.uuids` config property:
+9. Paste the copied flow definition UUID into DHIS-to-RapidPro's `rapidpro.flow.uuids` config property. For example:
 
     ```shell
     java -jar dhis2rapidpro.jar \ 
@@ -334,6 +336,17 @@ While DHIS-to-RapidPro is running, to manually kick off the scanning of flow run
 
     Unless the `orgUnitId` webhook query parameter is set, you must populate this field, either manually or automatically, for each contact belonging to a DHIS2 organisation unit. The field should hold the contact's DHIS2 organisation unit identifier. By default, DHIS-to-RapidPro expects the organisation unit identifier to be the ID (see `org.unit.id.scheme` in [Configuration](#configuration)).
 
+6. Enable the `rapidpro.webhook.enabled` config property when starting DHIS-to-RapidPro. For example:
+
+    ```shell
+    java -jar dhis2rapidpro.jar \ 
+   --dhis2.api.url=https://play.dhis2.org/2.38.1/api \ 
+   --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
+   --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
+   --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
+   --rapidpro.webhook.enabled=true
+    ```
+   
 ### Auto-Reminders
 
 Reminders for overdue reports are sent for each DHIS2 data set specified in the config property `reminder.data.set.codes`. In this property, you enter the data set codes separated by comma. Reminders are sent to contacts that are within the `DHIS2` group. This group is automatically created and contacts assigned to it as part of the contact synchronisation process but you can also manually create the group in RapidPro as shown below:
@@ -366,6 +379,7 @@ By order of precedence, a config property can be specified:
 | `scan.reports.schedule.expression`            | Cron expression specifying how often RapidPro is queried for flow executions. By default, RapidPro is queried every thirty minutes.                    | `0 0/30 * * * ?` | `0 0 0 * * ?`                                                                                                    |
 | `report.delivery.schedule.expression`         | Cron expression specifying when queued reports are delivered to DHIS2.                                                                                 |                  | `0 0 0 * * ?`                                                                                                    |
 | `sync.rapidpro.contacts`                      | Whether to routinely create and update RapidPro contacts from DHIS2 users.                                                                             | `false`          | `true`                                                                                                           |
+| `rapidpro.webhook.enabled`                    | Whether to accept webhook requests from RapidPro.                                                                                                      | `false`          | `true`                                                                                                           |
 | `reminder.data.set.codes`                     | Comma-delimited list of DHIS2 data set codes for which overdue report reminders are sent.                                                              |                  | `DS_359414,HIV_CARE`                                                                                             |
 | `rapidpro.flow.uuids`                         | Comma-delimited list of RapidPro flow definition UUIDs to scan for completed flow executions.                                                          |                  | `2db0f7fa-be5d-486f-bda5-096d0f68db3e,51d660b5-5137-4d92-b874-0a6b7cf5c02c,ceef94f4-e0ae-4e10-9dd5-9afe51c110c5` |
 | `org.unit.id.scheme`                          | By which field organisation units are identified.                                                                                                      | `ID`             | `CODE`                                                                                                           |
@@ -383,7 +397,7 @@ By order of precedence, a config property can be specified:
 
 DHIS-to-RapidPro requires a relational database to store:
 
-* [delivered](#success-log) as well as [undelivered reports](#recovering-reports), 
+* [delivered](#success-log) as well as [undelivered reports](#recovering-reports)
 * the context between successive [flow polls](#polling)
 * the security token generated at start-up for [webhook authentication](#webhook)
  
