@@ -9,15 +9,15 @@
 - [Getting Started](#getting-started)
     - [Shell](#shell)
         - [*inux](#inux)
-            - [Basic usage](#rapidpro-webhook-enabled)
+            - [Accept webhook reports](#accept-webhook-reports)
             - [Auto-reminders](#auto-reminders)
-            - [Contact synchronisation enabled](#contact-synchronisation-enabled)
-            - [Report polling](#report-polling)
+            - [Activate contact synchronisation](#activate-contact-synchronisation)
+            - [Poll reports](#poll-reports)
         - [Windows](#windows)
-            - [Basic usage](#rapidpro-webhook-enabled)
+            - [Accept webhook reports](#accept-webhook-reports)
             - [Auto-reminders](#auto-reminders)
-            - [Contact synchronisation enabled](#contact-synchronisation-enabled)
-            - [Report polling](#report-polling)
+            - [Activate contact synchronisation](#activate-contact-synchronisation)
+            - [Poll reports](#poll-reports)
     - [WAR](#war)
 - [Features](#features)
     - [Contact Synchronisation](#contact-synchronisation)
@@ -67,7 +67,7 @@ The [JAR distribution](https://github.com/dhis2/integration-dhis-rapidpro/releas
 
 The above command will give an error since no parameters are provided. The next commands are common DHIS-to-RapidPro *nix usage examples:
 
-##### RapidPro webhook enabled
+##### Accept webhook reports
 
 ```shell
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
@@ -87,7 +87,7 @@ The above command will give an error since no parameters are provided. The next 
 --reminder.data.set.codes=DS_359414,DS_543073,HIV_CARE
 ```
 
-##### Contact synchronisation enabled
+##### Activate contact synchronisation
 
 ```shell
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
@@ -97,7 +97,7 @@ The above command will give an error since no parameters are provided. The next 
 --sync.rapidpro.contacts=true
 ```
 
-##### Report polling
+##### Poll reports
 
 ```shell
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
@@ -117,7 +117,7 @@ java -jar dhis2-to-rapidpro.jar
 
 The above command will give an error since no parameters are provided. The next commands are common DHIS-to-RapidPro Windows usage examples:
 
-##### RapidPro webhook enabled
+##### Accept webhook reports
 
 ```shell
 java -jar dhis2rapidpro.jar \
@@ -139,7 +139,7 @@ java -jar dhis2rapidpro.jar \
 --reminder.data.set.codes=DS_359414,DS_543073,HIV_CARE
 ```
 
-##### Contact synchronisation enabled
+##### Activate contact synchronisation
 
 ```shell
 java -jar dhis2rapidpro.jar \
@@ -150,7 +150,7 @@ java -jar dhis2rapidpro.jar \
 --sync.rapidpro.contacts=true
 ```
 
-##### Report polling
+##### Poll reports
 
 ```shell
 java -jar dhis2rapidpro.jar \
