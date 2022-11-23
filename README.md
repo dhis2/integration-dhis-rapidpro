@@ -559,7 +559,7 @@ Unexpected behaviour in DHIS-to-RapidPro typically manifests itself as:
 * errors in the applications logs, or
 * incorrect data (e.g., wrong organisation unit ID in the data value sets).
 
-The first step to determine the root cause of unexpected behaviour is to search for recent errors in the [dead letter channel](#recovering-failed-reports):
+The first step to determine the root cause of unexpected behaviour is to search for recent errors in the [dead letter channel](#recovering-reports):
 
 ```sql
 -- SQL is compatible with H2
