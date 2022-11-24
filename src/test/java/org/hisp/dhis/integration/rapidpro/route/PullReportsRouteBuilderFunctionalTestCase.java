@@ -33,9 +33,9 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.TransformDefinition;
-import org.hisp.dhis.api.model.v2_36_11.ImportTypeSummary;
-import org.hisp.dhis.api.model.v2_36_11.WebMessage;
-import org.hisp.dhis.api.model.v2_37_7.DataValueSet;
+import org.hisp.dhis.api.model.v2_38_1.DataValueSet;
+import org.hisp.dhis.api.model.v2_38_1.DescriptiveWebMessage;
+import org.hisp.dhis.api.model.v2_38_1.WebMessage;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
@@ -73,7 +73,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
@@ -90,7 +90,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
@@ -123,7 +123,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
@@ -136,19 +136,19 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         spyEndpoint.setExpectedCount( 1 );
         runFlowAndWaitUntilCompleted( flowUuid );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        spyEndpoint.await( 5, TimeUnit.SECONDS );
+        spyEndpoint.await( 10, TimeUnit.SECONDS );
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
 
         spyEndpoint.setExpectedCount( 2 );
         runFlowAndWaitUntilCompleted( flowUuid );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        spyEndpoint.await( 5, TimeUnit.SECONDS );
+        spyEndpoint.await( 10, TimeUnit.SECONDS );
         assertEquals( 2, spyEndpoint.getReceivedCounter() );
 
         spyEndpoint.setExpectedCount( 3 );
         runFlowAndWaitUntilCompleted( flowUuid );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        spyEndpoint.await( 5, TimeUnit.SECONDS );
+        spyEndpoint.await( 10, TimeUnit.SECONDS );
         assertEquals( 3, spyEndpoint.getReceivedCounter() );
     }
 
@@ -220,20 +220,23 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
             exchange.getMessage().setBody( objectMapper.writeValueAsString( flowRuns ) );
         } );
 
-        AdviceWith.adviceWith( camelContext, "Deliver Report", r -> r.weaveAddLast().to( "mock:spy" ) );
-        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
-        spyEndpoint.setExpectedCount( 1 );
+        AdviceWith.adviceWith( camelContext, "Transmit Report",
+            r -> r.weaveByToUri( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" )
+                .replace().to( "mock:dhis2" ) );
+        MockEndpoint fakeDhis2Endpoint = camelContext.getEndpoint( "mock:dhis2", MockEndpoint.class );
+        fakeDhis2Endpoint.setExpectedCount( 1 );
+        fakeDhis2Endpoint.whenAnyExchangeReceived(
+            exchange -> exchange.getMessage().setBody( objectMapper.writeValueAsString(
+                new WebMessage().withStatus( DescriptiveWebMessage.Status.OK ) ) ) );
 
         camelContext.start();
 
         producerTemplate.sendBody( "direct:pull", null );
-        spyEndpoint.await( 10, TimeUnit.SECONDS );
-        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
-        assertEquals( 1, deadLetterChannel.size() );
-        ImportTypeSummary importTypeSummary = objectMapper.readValue(
-            (String) deadLetterChannel.get( 0 ).get( "error_message" ), ImportTypeSummary.class );
-        assertEquals( "acme", importTypeSummary.getConflicts().get().get( 0 ).getObject().get() );
-        assertEquals( "Org unit not found or not accessible", importTypeSummary.getConflicts().get().get( 0 ).getValue().get() );
+        fakeDhis2Endpoint.await( 10, TimeUnit.SECONDS );
+        DataValueSet dataValueSet = objectMapper.readValue(
+            fakeDhis2Endpoint.getReceivedExchanges().get( 0 ).getMessage().getBody( String.class ),
+            DataValueSet.class );
+        assertEquals( "acme", dataValueSet.getOrgUnit().get() );
     }
 
     @Test

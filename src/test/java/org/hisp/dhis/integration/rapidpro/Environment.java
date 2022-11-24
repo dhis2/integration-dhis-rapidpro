@@ -42,17 +42,18 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import io.restassured.builder.MultiPartSpecBuilder;
-import org.hisp.dhis.api.model.v2_36_11.DescriptiveWebMessage;
-import org.hisp.dhis.api.model.v2_36_11.ImportReport;
-import org.hisp.dhis.api.model.v2_36_11.Notification;
-import org.hisp.dhis.api.model.v2_36_11.OrganisationUnit;
-import org.hisp.dhis.api.model.v2_36_11.OrganisationUnitLevel;
-import org.hisp.dhis.api.model.v2_36_11.User;
-import org.hisp.dhis.api.model.v2_36_11.UserAuthorityGroup;
-import org.hisp.dhis.api.model.v2_36_11.UserCredentials;
-import org.hisp.dhis.api.model.v2_36_11.WebMessage;
+import org.hisp.dhis.api.model.v2_38_1.DescriptiveWebMessage;
+import org.hisp.dhis.api.model.v2_38_1.ImportReport;
+import org.hisp.dhis.api.model.v2_38_1.Notification;
+import org.hisp.dhis.api.model.v2_38_1.OrganisationUnit;
+import org.hisp.dhis.api.model.v2_38_1.OrganisationUnitLevel;
+import org.hisp.dhis.api.model.v2_38_1.User;
+import org.hisp.dhis.api.model.v2_38_1.UserCredentialsDto;
+import org.hisp.dhis.api.model.v2_38_1.UserRole;
+import org.hisp.dhis.api.model.v2_38_1.WebMessage;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
+import org.hisp.dhis.integration.sdk.api.Dhis2Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
@@ -76,6 +77,8 @@ import io.restassured.specification.RequestSpecification;
 
 public final class Environment
 {
+    public static final String DHIS_IMAGE_NAME = System.getProperty( "dhis.image.name" );
+
     public static String ORG_UNIT_ID;
 
     public static Dhis2Client DHIS2_CLIENT;
@@ -228,7 +231,7 @@ public final class Environment
         DHIS2_DB_CONTAINER = newPostgreSQLContainer( "dhis2", "dhis", "dhis", DHIS2_NETWORK );
 
         DHIS2_CONTAINER = new GenericContainer<>(
-            "dhis2/core:2.36.11.1-tomcat-8.5.34-jre8-alpine" )
+            String.format( "dhis2/core:%s", DHIS_IMAGE_NAME ) )
             .withClasspathResourceMapping( "dhis.conf", "/DHIS2_home/dhis.conf", BindMode.READ_WRITE )
             .withNetwork( DHIS2_NETWORK ).withExposedPorts( 8080 )
             .dependsOn( DHIS2_DB_CONTAINER )
@@ -319,6 +322,7 @@ public final class Environment
         WebMessage webMessage = DHIS2_CLIENT.post( "resourceTables/analytics" ).transfer()
             .returnAs( WebMessage.class );
         String taskId = (String) ((Map<String, Object>) webMessage.getResponse().get()).get( "id" );
+
         Notification notification = null;
         while ( notification == null || !(Boolean) notification.getCompleted().get() )
         {
@@ -382,18 +386,31 @@ public final class Environment
         Faker faker = new Faker();
         Name name = faker.name();
 
-        return DHIS2_CLIENT.post( "users" )
+        Dhis2Response dhis2Response = DHIS2_CLIENT.post( "users" )
             .withResource( new User().withFirstName( name.firstName() ).withSurname( name.lastName() )
                 .withPhoneNumber( phoneNumber )
                 .withAttributeValues( Collections.emptyList() )
                 .withOrganisationUnits( List.of( new OrganisationUnit().withId( orgUnitId ) ) )
                 .withUserCredentials(
-                    new UserCredentials().withCatDimensionConstraints( Collections.emptyList() )
+                    new UserCredentialsDto().withCatDimensionConstraints( Collections.emptyList() )
                         .withCogsDimensionConstraints( Collections.emptyList() ).withUsername( name.username() )
                         .withPassword( "aKa9CD8HyAi8Y7!" ).withUserRoles(
-                            List.of( new UserAuthorityGroup().withId( "yrB6vc5Ip3r" ) ) ) ) )
-            .transfer().returnAs( ImportReport.class ).getTypeReports().get().get( 0 ).getObjectReports().get().get( 0 )
-            .getUid().get();
+                            List.of( new UserRole().withId( "yrB6vc5Ip3r" ) ) ) ) )
+            .transfer();
+
+        if ( DHIS_IMAGE_NAME.startsWith( "2.36." ) )
+        {
+            return dhis2Response.returnAs( ImportReport.class ).getTypeReports().get().get( 0 ).getObjectReports().get()
+                .get( 0 )
+                .getUid().get();
+        }
+        else
+        {
+            return (String) ((Map<String, Object>) dhis2Response.returnAs(
+                    org.hisp.dhis.api.model.v2_38_1.WebMessage.class )
+                .getResponse().get()).get( "uid" );
+
+        }
     }
 
     private static String fetchRapidProSessionId( String username, String password )

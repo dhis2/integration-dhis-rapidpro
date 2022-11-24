@@ -51,7 +51,7 @@ DHIS-to-RapidPro provides:
 
 * Java 11
 * RapidPro v7.4
-* DHIS >= v2.36
+* DHIS >= v2.36.12
 
 ## Getting Started
 
@@ -508,7 +508,7 @@ Integration flows in DHIS-to-RapidPro, known as [routes](https://camel.apache.or
 | RapidPro Webhook       | Accepts and queues RapidPro webhook messages                                           |
 | Consume Report         | De-queues the report for delivery to DHIS2                                             |
 | Transform Report       | Maps and enriches the report as received by RapidPro prior to transmitting it to DHIS2 |
-| Deliver Report         | Transmits the report to DHIS2                                                          |
+| Transmit Report        | Transmits the report to DHIS2                                                          |
 | Retry Reports          | Re-queues reports marked for replay                                                    |
 | Scan RapidPro Flows    | Polls RapidPro for flow runs and queues them                                           |
 | Broadcast Reminders    | Queries DHIS2 for overdue reports and sends any reminders to RapidPro                  |
@@ -521,13 +521,13 @@ You should place the file or files containing the custom routes in a directory n
 
 >**IMPORTANT:** Hot reloading is only recommended for non-production environments. 
 
-What follows is an example of a custom YAML route that overrides the inbuilt `Deliver Report` route:
+What follows is an example of a custom YAML route that overrides the inbuilt `Transmit Report` route:
 
 ```yaml
 - route:
-    id: "Deliver Report"
+    id: "Transmit Report"
     from:
-      uri: "direct:deliverReport"
+      uri: "direct:transmitReport"
       steps:
         - setProperty:
             name: msisdn
