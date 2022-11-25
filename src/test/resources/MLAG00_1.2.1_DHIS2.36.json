@@ -41934,6 +41934,7 @@
       },
       "id": "MUraSmIz6TK",
       "name": "MAL - ACT opening balance",
+      "shortName": "MAL_ACT_OPENING_BALANCE",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -41976,6 +41977,7 @@
       },
       "id": "qUSU2OjnKKM",
       "name": "Malaria confirmed MEAN+2 STD",
+      "shortName": "MAL_CONFIRMED_MEAN_2",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_DISTRICT_UID>"
@@ -42018,6 +42020,7 @@
       },
       "id": "nL09tTW2d6B",
       "name": "Malaria confirmed MEDIAN",
+      "shortName": "MAL_CONFIRMED_MEDIAN",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_DISTRICT_UID>"
@@ -42061,6 +42064,7 @@
       },
       "id": "DT6MpifpG2l",
       "name": "MAL - Artesunate opening balance",
+      "shortName": "MAL_ARTESUNATE_OPBAL",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42104,6 +42108,7 @@
       },
       "id": "q0sJHIRzhch",
       "name": "MAL - Facilities with ACT stockout days reported",
+      "shortName": "MAL_WITH_ACT_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42150,6 +42155,7 @@
       },
       "id": "lkmThgijm8K",
       "name": "MAL - Facilities with Artesunate stockout days reported",
+      "shortName": "MAL_WITH_ARTESUNATE_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42193,6 +42199,7 @@
       },
       "id": "rvdcyWeZSTP",
       "name": "MAL - Facilities with LLIN stockout days reported",
+      "shortName": "MAL_WITH_LLIN_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42236,6 +42243,7 @@
       },
       "id": "N4EGPe4K2Wm",
       "name": "MAL - Facilities without ACT stockout days reported",
+      "shortName": "MAL_WITHOUT_ACT_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42282,6 +42290,7 @@
       },
       "id": "Yj3VZ1ByrbZ",
       "name": "MAL - Facilities without Artesunate stockout days reported",
+      "shortName": "MAL_WITHOUT_ARTESUNATE_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42325,6 +42334,7 @@
       },
       "id": "Zz3axmqcaPT",
       "name": "MAL - Facilities without LLIN stockout days reported",
+      "shortName": "MAL_WITHOUT_LLIN_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42368,6 +42378,7 @@
       },
       "id": "BWVDRQUSpXz",
       "name": "MAL - Facilities without Primaquine stockout days reported",
+      "shortName": "MAL_WITHOUT_PRIMAQUINE_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42411,6 +42422,7 @@
       },
       "id": "P90G92Y1DiK",
       "name": "MAL - Facilities without RDTs stockout days reported",
+      "shortName": "MAL_WITHOUT_RDTS_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42456,6 +42468,7 @@
       },
       "id": "TyMVUAuplj7",
       "name": "MAL - Facilities without Sulfadoxine-pyrimethamine stockout days reported",
+      "shortName": "MAL_FAC_WITH_PRIMAQUINE_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42499,6 +42512,7 @@
       },
       "id": "HXvnsUOBbfX",
       "name": "MAL - Facilities with Primaquine stockout days reported",
+      "shortName": "MAL_WITH_PRIMAQUINE_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42542,6 +42556,7 @@
       },
       "id": "e2uM41wsazT",
       "name": "MAL - Facilities with RDTs stockout days reported",
+      "shortName": "MAL_WITH_RDTS_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42587,6 +42602,7 @@
       },
       "id": "diIxP0dpmtd",
       "name": "MAL - Facilities with Sulfadoxine-pyrimethamine stockout days reported",
+      "shortName": "MAL_FAC_WITH_SUL_PYRIMETHAMINE_SO_DAYS_REPORTED",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42629,6 +42645,7 @@
       },
       "id": "wmHxmTx2FZK",
       "name": "MAL - HF ACT Stockout",
+      "shortName": "MAL_ACT_STOCKOUT",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42674,6 +42691,7 @@
       },
       "id": "ADjBGB23mLr",
       "name": "MAL - HF RDT Stockout",
+      "shortName": "MAL - HF RDT Stockout",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42719,6 +42737,7 @@
       },
       "id": "mAzzLgXMSCO",
       "name": "MAL - HF reporting on anti-malarial or RDTs during the reporting period",
+      "shortName": "MAL_REPORTING_RDT",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42764,6 +42783,7 @@
       },
       "id": "pbT96SIj7eF",
       "name": "MAL - HF without stock-out of anti-malarial or RDTs during the reporting period",
+      "shortName": "MAL_WITHOUT_OS_RDT",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42810,6 +42830,7 @@
       },
       "id": "qA4QITVR4M2",
       "name": "MAL - LLIN opening balance",
+      "shortName": "MAL_LLIN_OPENING_BALANCEMAL_LLIN_OPENING_BALANCE",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42853,6 +42874,7 @@
       },
       "id": "uE66dpFP10h",
       "name": "MAL - Primaquine opening balance",
+      "shortName": "MAL_PRIMAQUINE_OPENING_BALANCE",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42896,6 +42918,7 @@
       },
       "id": "TOmKeDnDicG",
       "name": "MAL - RDT opening balance",
+      "shortName": "MAL_RDT_OPENING_BALANCE",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
@@ -42939,6 +42962,7 @@
       },
       "id": "Rc77fYcnqTQ",
       "name": "MAL - Sulfadoxine-pyrimethamine opening balance",
+      "shortName": "MAL - Sulfadoxine-pyrimethamine opening balance",
       "organisationUnitLevels": [
         {
           "id": "<OU_LEVEL_FACILITY_UID>"
