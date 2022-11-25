@@ -233,6 +233,7 @@ public final class Environment
         DHIS2_CONTAINER = new GenericContainer<>(
             String.format( "dhis2/core:%s", DHIS_IMAGE_NAME ) )
             .withClasspathResourceMapping( "dhis.conf", "/DHIS2_home/dhis.conf", BindMode.READ_WRITE )
+            .withClasspathResourceMapping( "dhis.conf", "/opt/dhis2/dhis.conf", BindMode.READ_WRITE )
             .withNetwork( DHIS2_NETWORK ).withExposedPorts( 8080 )
             .dependsOn( DHIS2_DB_CONTAINER )
             .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
