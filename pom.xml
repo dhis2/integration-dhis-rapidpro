@@ -17,7 +17,7 @@
         <camel.version>3.19.0</camel.version>
         <surefire.plugin.version>3.0.0-M4</surefire.plugin.version>
         <spring.boot-version>2.7.4</spring.boot-version>
-        <hawtio.version>2.16.0</hawtio.version>
+        <hawtio.version>2.16.1</hawtio.version>
         <dhis.image.name>2.36.12-tomcat-8.5.34-jre8-alpine</dhis.image.name>
     </properties>
 
