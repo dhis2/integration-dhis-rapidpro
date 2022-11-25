@@ -77,7 +77,7 @@ public class ExtensibilityTestCase extends AbstractFunctionalTestCase
         while ( true )
         {
             Thread.sleep( 5000 );
-            Route deliverReportRoute = camelContext.getRoute( "Deliver Report" );
+            Route deliverReportRoute = camelContext.getRoute( "Transmit Report" );
             if ( deliverReportRoute.getSourceLocationShort() != null && deliverReportRoute.getSourceLocationShort()
                 .equals( "deliverReport.yaml:4" ) )
             {

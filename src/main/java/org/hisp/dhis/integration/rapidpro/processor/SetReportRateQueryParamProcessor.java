@@ -28,11 +28,10 @@
 package org.hisp.dhis.integration.rapidpro.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.hisp.dhis.api.model.v2_36_11.DataSet;
-import org.hisp.dhis.api.model.v2_36_11.OrganisationUnit;
+import org.hisp.dhis.api.model.v2_38_1.DataSet;
+import org.hisp.dhis.api.model.v2_38_1.OrganisationUnit;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

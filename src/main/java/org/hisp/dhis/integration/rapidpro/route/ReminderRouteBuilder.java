@@ -29,7 +29,7 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.api.model.v2_36_11.ListGrid;
+import org.hisp.dhis.api.model.v2_38_1.ListGrid;
 import org.hisp.dhis.integration.rapidpro.expression.IterableReader;
 import org.hisp.dhis.integration.rapidpro.processor.SetReportRateQueryParamProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +79,7 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
                         .setProperty( "contacts", simple( "${body}" ) )
                         .to( "direct:fetchReportRate" )
                         .split( simple( "${body.rows.get}" ) )
-                            .filter( simple( "${body[4]} != '100.0'" ) )
+                            .filter().ognl(  "@java.lang.Double@parseDouble(request.body[4]) < 100" )
                             .to( "direct:sendBroadcast" )
                         .end()
                     .end()

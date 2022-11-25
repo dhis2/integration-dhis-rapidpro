@@ -31,7 +31,7 @@ import java.util.Date;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.hisp.dhis.api.model.v2_36_11.DataSet;
+import org.hisp.dhis.api.model.v2_38_1.DataSet;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.springframework.stereotype.Component;
 

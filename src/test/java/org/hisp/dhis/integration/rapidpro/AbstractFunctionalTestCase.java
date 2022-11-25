@@ -27,25 +27,14 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import static io.restassured.RestAssured.given;
-import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
-
-import java.io.File;
-import java.io.IOException;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
+import io.restassured.specification.RequestSpecification;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.camel.test.spring.junit5.UseAdviceWith;
 import org.apache.commons.io.FileUtils;
-import org.hisp.dhis.api.model.v2_36_11.DataValueSet;
-import org.hisp.dhis.api.model.v2_36_11.DataValue__1;
+import org.hisp.dhis.api.model.v2_38_1.DataValueSet;
+import org.hisp.dhis.api.model.v2_38_1.DataValue__1;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -57,7 +46,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-import io.restassured.specification.RequestSpecification;
+import java.io.File;
+import java.io.IOException;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import static io.restassured.RestAssured.given;
+import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 
 @SpringBootTest( webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT )
 @CamelSpringBootTest
@@ -121,7 +120,7 @@ public class AbstractFunctionalTestCase
                 new DataValueSet().withCompleteDate(
                         ZonedDateTime.now( ZoneOffset.UTC ).format( DateTimeFormatter.ISO_INSTANT ) )
                     .withOrgUnit( Environment.ORG_UNIT_ID )
-                    .withDataSet( "VEM58nY22sO" ).withPeriod( PeriodBuilder.monthOf( new Date(), -1 ) )
+                    .withDataSet( "qNtxTrp56wV" ).withPeriod( PeriodBuilder.yearOf( new Date(), -1 ) )
                     .withDataValues(
                         List.of(
                             new DataValue__1().withDataElement( "MAL_POP_TOTAL" ).withCategoryOptionCombo( "MAL-0514Y" )

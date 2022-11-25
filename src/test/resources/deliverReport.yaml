@@ -1,7 +1,7 @@
 - route:
-    id: "Deliver Report"
+    id: "Transmit Report"
     from:
-      uri: "direct:deliverReport"
+      uri: "direct:transmitReport"
       steps:
         - setProperty:
             name: month

@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import org.apache.camel.ErrorHandlerFactory;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.hisp.dhis.integration.rapidpro.ContactOrgUnitIdAggrStrategy;
@@ -41,7 +42,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Component
-public class TransmitReportRouteBuilder extends AbstractRouteBuilder
+public class DeliverReportRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
     private CurrentPeriodCalculator currentPeriodCalculator;
@@ -58,6 +59,10 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
     @Override
     protected void doConfigure()
     {
+        ErrorHandlerFactory errorHandlerDefinition = deadLetterChannel(
+            "direct:dlq" ).maximumRedeliveries( 3 ).useExponentialBackOff().useCollisionAvoidance()
+            .allowRedeliveryWhileStopping( false );
+
         from( "timer://retry?fixedRate=true&period=5000" )
             .routeId( "Retry Reports" )
             .setBody( simple( "${properties:retry.dlc.select.{{spring.datasource.platform}}}" ) )
@@ -77,38 +82,39 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
         from( "quartz://dhis2?cron={{report.delivery.schedule.expression}}" )
             .routeId( "Schedule Report Delivery" )
             .precondition( "'{{report.delivery.schedule.expression:}}' != ''" )
-            .pollEnrich("jms:queue:dhis2")
-            .to( "direct:transformReport" )
+            .pollEnrich( "jms:queue:dhis2" )
             .to( "direct:deliverReport" );
 
         from( "jms:queue:dhis2" )
             .routeId( "Consume Report" )
             .precondition( "'{{report.delivery.schedule.expression:}}' == ''" )
-            .to( "direct:transformReport" )
             .to( "direct:deliverReport" );
+
+        from( "direct:deliverReport" )
+            .routeId( "Deliver Report" )
+            .to( "direct:transformReport" )
+            .to( "direct:transmitReport" );
 
         from( "direct:transformReport" )
             .routeId( "Transform Report" )
+            .errorHandler( errorHandlerDefinition )
             .streamCaching()
             .setHeader( "originalPayload", simple( "${body}" ) )
-            .onException( Exception.class )
-                .to( "direct:dlq" )
-            .end()
             .unmarshal().json()
             .choice().when( header( "reportPeriodOffset" ).isNull() )
                 .setHeader( "reportPeriodOffset", constant( -1 ) )
             .end()
             .enrich()
-                .simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.code:eq:${headers['dataSetCode']}&fields=code&client=#dhis2Client" )
-                .aggregationStrategy( ( oldExchange, newExchange ) -> {
-                    oldExchange.getMessage().setHeader( "dataElementCodes",
-                        jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
-                    return oldExchange;
+            .simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.code:eq:${headers['dataSetCode']}&fields=code&client=#dhis2Client" )
+            .aggregationStrategy( ( oldExchange, newExchange ) -> {
+                oldExchange.getMessage().setHeader( "dataElementCodes",
+                    jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
+                return oldExchange;
             } )
             .choice().when( header( "orgUnitId" ).isNull() )
                 .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
                 .enrich().simple( "{{rapidpro.api.url}}/contacts.json?uuid=${body[contact][uuid]}&httpMethod=GET" )
-                    .aggregationStrategy(contactOrgUnitIdAggrStrategy)
+                    .aggregationStrategy( contactOrgUnitIdAggrStrategy )
                 .end()
                 .removeHeader( "Authorization" )
             .end()
@@ -119,10 +125,11 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
             .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
                 "application/x-java-object" ) )
             .process( idSchemeQueryParamSetter )
-            .marshal().json().transform().body(String.class);
+            .marshal().json().transform().body( String.class );
 
-        from( "direct:deliverReport" )
-            .routeId( "Deliver Report" )
+        from( "direct:transmitReport" )
+            .routeId( "Transmit Report" )
+            .errorHandler( errorHandlerDefinition )
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
             .setHeader( "dhisRequest", simple( "${body}" ) )
             .toD( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" )
@@ -130,7 +137,7 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
             .setHeader( "dhisResponse", simple( "${body}" ) )
             .unmarshal().json()
             .choice()
-            .when( simple( "${body['status']} == 'SUCCESS'" ) )
+            .when( simple( "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'" ) )
                 .setHeader( "rapidProPayload", header( "originalPayload" ) )
                 .setBody( simple( "${properties:success.log.insert.{{spring.datasource.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
@@ -149,7 +156,7 @@ public class TransmitReportRouteBuilder extends AbstractRouteBuilder
 
         from( "direct:computePeriod" )
             .routeId( "Compute Period" )
-            .toD( "dhis2://get/collection?path=dataSets&filter=code:eq:${headers['dataSetCode']}&fields=periodType&itemType=org.hisp.dhis.api.model.v2_36_11.DataSet&paging=false&client=#dhis2Client" )
+            .toD( "dhis2://get/collection?path=dataSets&filter=code:eq:${headers['dataSetCode']}&fields=periodType&itemType=org.hisp.dhis.api.model.v2_38_1.DataSet&paging=false&client=#dhis2Client" )
             .process( currentPeriodCalculator );
     }
 }
