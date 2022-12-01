@@ -35,6 +35,7 @@ import java.sql.SQLException;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.sql.DataSource;
 
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -60,6 +61,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.NestedExceptionUtils;
@@ -93,18 +95,6 @@ public class Application extends SpringBootServletInitializer
 
     @Value( "${rapidpro.api.token:#{null}}" )
     private String rapidProApiToken;
-
-    @Value( "${spring.datasource.url}" )
-    private String dataSourceUrl;
-
-    @Value( "${spring.datasource.driver-class-name}" )
-    private String dataSourceDriverClassName;
-
-    @Value( "${spring.datasource.username}" )
-    private String dataSourceUsername;
-
-    @Value( "${spring.datasource.password}" )
-    private String dataSourcePassword;
 
     @Value( "${test.connection.startup:true}" )
     private Boolean testConnectionOnStartUp;
@@ -144,6 +134,9 @@ public class Application extends SpringBootServletInitializer
 
     @Autowired
     private ConfigurableApplicationContext applicationContext;
+
+    @Autowired
+    private DataSource dataSource;
 
     @PostConstruct
     public void postConstruct()
@@ -414,10 +407,7 @@ public class Application extends SpringBootServletInitializer
             {
                 DatabaseStorageConfiguration databaseStorageConfiguration = new DatabaseStorageConfiguration();
 
-                databaseStorageConfiguration.setJdbcConnectionUrl( dataSourceUrl );
-                databaseStorageConfiguration.setJdbcDriverClassName( dataSourceDriverClassName );
-                databaseStorageConfiguration.setJdbcUser( dataSourceUsername );
-                databaseStorageConfiguration.setJdbcPassword( dataSourcePassword );
+                databaseStorageConfiguration.setDataSource( dataSource );
                 databaseStorageConfiguration.setLargeMessageTableName( "large_messages" );
                 databaseStorageConfiguration.setPageStoreTableName( "page_store" );
                 databaseStorageConfiguration.setBindingsTableName( "bindings" );
