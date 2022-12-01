@@ -65,17 +65,17 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
 
         from( "timer://retry?fixedRate=true&period=5000" )
             .routeId( "Retry Reports" )
-            .setBody( simple( "${properties:retry.dlc.select.{{spring.datasource.platform}}}" ) )
+            .setBody( simple( "${properties:retry.dlc.select.{{spring.sql.init.platform}}}" ) )
             .to( "jdbc:dataSource" )
             .split().body()
-                .setHeader( "id", simple( "${body['ID']}" ) )
+                .setHeader( "id", simple( "${body['id']}" ) )
                 .log( LoggingLevel.INFO, LOGGER, "Retrying row with ID ${header.id}" )
-                .setHeader( "dataSetCode", simple( "${body['DATA_SET_CODE']}" ) )
-                .setHeader( "reportPeriodOffset", simple( "${body['REPORT_PERIOD_OFFSET']}" ) )
-                .setHeader( "orgUnitId", simple( "${body['ORGANISATION_UNIT_ID']}" ) )
-                .setBody( simple( "${body['PAYLOAD']}" ) )
+                .setHeader( "dataSetCode", simple( "${body['data_set_code']}" ) )
+                .setHeader( "reportPeriodOffset", simple( "${body['report_period_offset']}" ) )
+                .setHeader( "orgUnitId", simple( "${body['organisation_unit_id']}" ) )
+                .setBody( simple( "${body['payload']}" ) )
                 .to( "jms:queue:dhis2?exchangePattern=InOnly" )
-                .setBody( simple( "${properties:processed.dlc.update.{{spring.datasource.platform}}}" ) )
+                .setBody( simple( "${properties:processed.dlc.update.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .end();
 
@@ -139,7 +139,7 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
             .choice()
             .when( simple( "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'" ) )
                 .setHeader( "rapidProPayload", header( "originalPayload" ) )
-                .setBody( simple( "${properties:success.log.insert.{{spring.datasource.platform}}}" ) )
+                .setBody( simple( "${properties:success.log.insert.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .otherwise()
                 .log( LoggingLevel.ERROR, LOGGER, "Import error from DHIS2 while saving data value set => ${body}" )
@@ -151,7 +151,7 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
             .setHeader( "errorMessage", rootCauseExpr )
             .setHeader( "payload", header( "originalPayload" ) )
             .setHeader( "orgUnitId" ).ognl( "request.headers.orgUnitId" )
-            .setBody( simple( "${properties:error.dlc.insert.{{spring.datasource.platform}}}" ) )
+            .setBody( simple( "${properties:error.dlc.insert.{{spring.sql.init.platform}}}" ) )
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
 
         from( "direct:computePeriod" )

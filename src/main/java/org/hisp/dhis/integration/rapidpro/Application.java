@@ -71,7 +71,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 @SpringBootApplication
-@PropertySource( "classpath:sql.properties" )
+@PropertySource( "${sql.data-location}" )
 public class Application extends SpringBootServletInitializer
 {
     protected static final Logger LOGGER = LoggerFactory.getLogger( Application.class );
@@ -418,6 +418,12 @@ public class Application extends SpringBootServletInitializer
                 databaseStorageConfiguration.setJdbcDriverClassName( dataSourceDriverClassName );
                 databaseStorageConfiguration.setJdbcUser( dataSourceUsername );
                 databaseStorageConfiguration.setJdbcPassword( dataSourcePassword );
+                databaseStorageConfiguration.setLargeMessageTableName( "large_messages" );
+                databaseStorageConfiguration.setPageStoreTableName( "page_store" );
+                databaseStorageConfiguration.setBindingsTableName( "bindings" );
+                databaseStorageConfiguration.setMessageTableName( "messages" );
+                databaseStorageConfiguration.setNodeManagerStoreTableName( "node_manager_store" );
+
                 configuration.setStoreConfiguration( databaseStorageConfiguration );
                 configuration.setPersistenceEnabled( true );
             }

@@ -85,6 +85,14 @@ public class AbstractFunctionalTestCase
     public static void beforeAll()
     {
         RAPIDPRO_API_REQUEST_SPEC = Environment.RAPIDPRO_API_REQUEST_SPEC;
+        if ( System.getProperties().get( "spring.sql.init.platform" ).equals( "postgresql" ) )
+        {
+            System.setProperty( "spring.datasource.url", String.format( "jdbc:postgresql://localhost:%s/dhis2",
+                Environment.DHIS2_DB_CONTAINER.getFirstMappedPort() ) );
+            System.setProperty( "spring.datasource.username", "dhis" );
+            System.setProperty( "spring.datasource.password", "dhis" );
+            System.setProperty( "spring.datasource.driver-class-name", "org.postgresql.Driver" );
+        }
     }
 
     @BeforeEach

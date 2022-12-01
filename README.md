@@ -403,16 +403,36 @@ DHIS-to-RapidPro requires a relational database to store:
  
   >***SECURITY***: the token is a 32-byte key that is hashed using SHA-256 before it is written to the database. A data breach could result the hashed token being leaked though it would be very hard to recover the clear token from the hash. Nonetheless, the hashed token is still vulnerable to bruteforce attacks, therefore, it is imperative that the table `TOKEN` is truncated after a suspected data breach in order to generate a new security token.
 
-[H2](https://www.h2database.com/html/main.html) is the embedded database that DHIS-to-RapidPro offers out-of-the-box. H2 is production-ready but may be lacking features that are available from your favourite database. You might even want to persist DHIS-to-RapidPro's state in your organisation's central database. The following configuration properties should be considered when persisting to a different database:
+[H2](https://www.h2database.com/html/main.html) is the embedded database that DHIS-to-RapidPro offers out-of-the-box. H2 is production-ready but may be lacking features that are available from your favourite database. You might even want to persist DHIS-to-RapidPro's state in your organisation's central database. 
 
-| Config name                           | Description                                                    | Default value                              | Example value                                    |
-|---------------------------------------|----------------------------------------------------------------|--------------------------------------------|--------------------------------------------------|
-| `spring.datasource.url`               | JDBC URL for persisting the application state.                 | `jdbc:h2:./dhis2rapidpro;AUTO_SERVER=TRUE` | `jdbc:postgresql://localhost:5432/dhis2rapidpro` |
-| `spring.datasource.username`          | Username to access the JDBC data source.                       | `dhis2rapidpro`                            | `postgres`                                       |
-| `spring.datasource.password`          | Password to access the JDBC data source.                       | `dhis2rapidpro`                            | `postgres`                                       |
-| `spring.datasource.driver-class-name` | Class name of the JDBC driver used to connect to the database. | `org.h2.Driver`                            | `org.postgresql.Driver`                          |
+The following configuration properties should be considered when persisting to a different database:
 
-Switching to a different database requires that you add the database vendor's JDBC driver to the Java classpath. When running the DHIS-to-RapidPro [executable](#shell), third-party libraries should reside in the `lib` directory relative to DHIS-to-RapidPro's working directory.
+| Config name                           | Description                                                                           | Default value                              | Example value                                    |
+|---------------------------------------|---------------------------------------------------------------------------------------|--------------------------------------------|--------------------------------------------------|
+| `spring.sql.init.platform`            | Database platform to use in the default schema or the DML statements.                 | `h2`                                       | `psotgresql`                                     |
+| `spring.datasource.url`               | JDBC URL for persisting the application state.                                        | `jdbc:h2:./dhis2rapidpro;AUTO_SERVER=TRUE` | `jdbc:postgresql://localhost:5432/dhis2rapidpro` |
+| `spring.datasource.username`          | Username to access the JDBC data source.                                              | `dhis2rapidpro`                            | `postgres`                                       |
+| `spring.datasource.password`          | Password to access the JDBC data source.                                              | `dhis2rapidpro`                            | `postgres`                                       |
+| `spring.datasource.driver-class-name` | Class name of the JDBC driver used to connect to the database.                        | `org.h2.Driver`                            | `org.postgresql.Driver`                          |
+| `spring.sql.init.schema-locations`    | Locations of the schema (DDL) scripts to apply to the database.                       | `classpath:/schema.sql`                    | `file:db/schema.postgres.sql`                    |
+| `sql.data-location`                   | Location of the properties file containing the DML statements to run on the database. | `classpath:/sql.properties`                | `file:db/sql.properties`                         |
+| `spring.sql.init.mode`                | Mode to apply when determining whether database initialisation should be performed.   | `always`                                   | `never`                                          |
+
+>***SECURITY***: create a dedicated database user for DHIS-to-RapidPro when using another database. The database user should only have read and write privileges to the database objects created by DHIS-to-RapdPro.
+
+Switching databases requires that you add the database vendor's JDBC driver to the Java classpath. When running the DHIS-to-RapidPro [executable](#shell), third-party libraries should reside in the `lib` directory relative to DHIS-to-RapidPro's working directory.
+
+>NOTE: DHIS-to-RapidPro's working directory is relative to the current directory when DHIS-to-RapidPro is executed as a JAR (e.g., `java -jar dhis2-to-rapidpro.jar`). On the other hand, the working directory is relative to the JAR binary when DHIS-to-RapidPro is executed as a shell command (e.g., `./dhis2-to-rapidpro.jar`).
+
+Apart from H2, PostgreSQL is supported as well. To configure the application's connection to PostgreSQL:
+
+1. Set the `spring.sql.init.platform` configuration property to `postgresql`
+2. Set the `spring.datasource.url` configuration property to the required JDBC address
+3. Set the `spring.datasource.username` and `spring.datasource.password` configuration properties to the database username and password, respectively.
+4. Set the `spring.datasource.driver-class-name` configuration property to `org.postgresql.Driver`
+5. Download the [PostgreSQL JDBC driver](https://jdbc.postgresql.org/download/) and place it in the `lib` directory as explained earlier.
+
+For databases other than H2 and PostgreSQL, you might need to tweak the application's DDL and DML statements to be compatible with your database. Modified DDL statements should reside in a file that `spring.sql.init.schema-locations` is referencing. Modified DML statements should reside in a file that `sql.data-location` is referencing. The bundled PostgreSQL [schema](https://github.com/dhis2/integration-dhis-rapidpro/blob/v2.0.0/src/main/resources/schema-postgresql.sql) and [queries](https://github.com/dhis2/integration-dhis-rapidpro/blob/v2.0.0/src/main/resources/sql.properties) are a useful point of reference when writing these SQL statements.
 
 ## Management & Monitoring
 

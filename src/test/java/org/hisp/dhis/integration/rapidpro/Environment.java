@@ -107,7 +107,7 @@ public final class Environment
 
     public static RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
 
-    private static PostgreSQLContainer<?> DHIS2_DB_CONTAINER;
+    public static PostgreSQLContainer<?> DHIS2_DB_CONTAINER;
 
     static
     {

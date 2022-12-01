@@ -33,6 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.List;
@@ -241,8 +243,30 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
         assertEquals( "PROCESSED", deadLetterChannel.get( 0 ).get( "STATUS" ) );
-        assertTrue( ((OffsetDateTime) deadLetterChannel.get( 0 ).get( "LAST_PROCESSED_AT" )).isAfter(
-            (OffsetDateTime) deadLetterChannel.get( 0 ).get( "CREATED_AT" ) ) );
+
+        Object lastProcessedAt = deadLetterChannel.get( 0 ).get( "LAST_PROCESSED_AT" );
+        Instant lastProcessedAsInstant;
+        if ( lastProcessedAt instanceof OffsetDateTime )
+        {
+            lastProcessedAsInstant = ((OffsetDateTime) lastProcessedAt).toInstant();
+        }
+        else
+        {
+            lastProcessedAsInstant = ((Timestamp) lastProcessedAt).toInstant();
+        }
+
+        Object createdAt = deadLetterChannel.get( 0 ).get( "CREATED_AT" );
+        Instant createdAtAsInstant;
+        if ( createdAt instanceof OffsetDateTime )
+        {
+            createdAtAsInstant = ((OffsetDateTime) createdAt).toInstant();
+        }
+        else
+        {
+            createdAtAsInstant = ((Timestamp) createdAt).toInstant();
+        }
+
+        assertTrue( lastProcessedAsInstant.isAfter( createdAtAsInstant ) );
     }
 
     @Test

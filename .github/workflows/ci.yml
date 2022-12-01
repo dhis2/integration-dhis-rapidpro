@@ -26,4 +26,5 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
           cache: maven
-      - run: mvn -B package --file pom.xml -Ddhis.image.name=${{ matrix.dhis-image-name }}
+      - run: mvn -B package -Ddhis.image.name=${{ matrix.dhis-image-name }}
+      - run: mvn -B test -Ddhis.image.name=${{ matrix.dhis-image-name }} -Dspring.sql.init.platform=postgresql
