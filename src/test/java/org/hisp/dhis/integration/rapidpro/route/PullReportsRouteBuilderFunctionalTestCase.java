@@ -130,25 +130,25 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         syncContactsAndFetchFirstContactUuid();
 
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        Thread.sleep( 5000 );
+        Thread.sleep( 15000 );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
 
         spyEndpoint.setExpectedCount( 1 );
         runFlowAndWaitUntilCompleted( flowUuid );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        spyEndpoint.await( 10, TimeUnit.SECONDS );
+        spyEndpoint.await( 15, TimeUnit.SECONDS );
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
 
         spyEndpoint.setExpectedCount( 2 );
         runFlowAndWaitUntilCompleted( flowUuid );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        spyEndpoint.await( 10, TimeUnit.SECONDS );
+        spyEndpoint.await( 15, TimeUnit.SECONDS );
         assertEquals( 2, spyEndpoint.getReceivedCounter() );
 
         spyEndpoint.setExpectedCount( 3 );
         runFlowAndWaitUntilCompleted( flowUuid );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        spyEndpoint.await( 10, TimeUnit.SECONDS );
+        spyEndpoint.await( 15, TimeUnit.SECONDS );
         assertEquals( 3, spyEndpoint.getReceivedCounter() );
     }
 
