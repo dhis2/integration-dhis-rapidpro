@@ -19,6 +19,7 @@
         <spring.boot-version>2.7.4</spring.boot-version>
         <hawtio.version>2.16.2</hawtio.version>
         <dhis.image.name>2.36.12-tomcat-8.5.34-jre8-alpine</dhis.image.name>
+        <spring.sql.init.platform>h2</spring.sql.init.platform>
     </properties>
 
     <dependencyManagement>
@@ -75,6 +76,7 @@
                     <skipAfterFailureCount>1</skipAfterFailureCount>
                     <systemPropertyVariables>
                         <dhis.image.name>${dhis.image.name}</dhis.image.name>
+                        <spring.sql.init.platform>${spring.sql.init.platform}</spring.sql.init.platform>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -358,6 +360,12 @@
             <groupId>com.github.javafaker</groupId>
             <artifactId>javafaker</artifactId>
             <version>1.0.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.5.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

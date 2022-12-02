@@ -31,8 +31,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
 import org.springframework.stereotype.Component;
 
+import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -42,7 +42,7 @@ public class LastRunCalculator implements Expression
     @Override
     public <T> T evaluate( Exchange exchange, Class<T> type )
     {
-        Date newLastRunAt = (Date) exchange.getMessage().getHeader( "newLastRunAt" );
+        Timestamp newLastRunAt = (Timestamp) exchange.getMessage().getHeader( "newLastRunAt" );
         Map<String, Object> body = exchange.getMessage().getBody( Map.class );
         List<Map<String, Object>> results = (List<Map<String, Object>>) body.get( "results" );
         for ( Map<String, Object> result : results )
@@ -51,10 +51,10 @@ public class LastRunCalculator implements Expression
             if ( exitedOn == null )
             {
                 String modifiedOn = (String) result.get( "modified_on" );
-                Date modifiedOnAsDate = Date.from( Instant.parse( modifiedOn ) );
-                if ( modifiedOnAsDate.before( newLastRunAt ) )
+                Instant modifiedOnAsInstant = Instant.parse( modifiedOn );
+                if ( modifiedOnAsInstant.isBefore( newLastRunAt.toInstant() ) )
                 {
-                    newLastRunAt = modifiedOnAsDate;
+                    newLastRunAt = Timestamp.from( modifiedOnAsInstant );
                 }
             }
         }

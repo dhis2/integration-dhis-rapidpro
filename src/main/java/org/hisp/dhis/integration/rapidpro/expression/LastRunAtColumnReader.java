@@ -29,8 +29,11 @@ package org.hisp.dhis.integration.rapidpro.expression;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
+import org.hisp.dhis.integration.rapidpro.Dhis2RapidProException;
 import org.springframework.stereotype.Component;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -46,10 +49,25 @@ public class LastRunAtColumnReader implements Expression
         List<Map<String, Object>> rows = exchange.getMessage().getBody( List.class );
         if ( !rows.isEmpty() )
         {
+            Instant lastRunAtAsInstant;
             Map<String, Object> row = rows.get( 0 );
-            OffsetDateTime lastRunAt = (OffsetDateTime) row.get( "LAST_RUN_AT" );
+            Object lastRunAt = row.get( "last_run_at" );
+            if ( lastRunAt instanceof OffsetDateTime )
+            {
+                lastRunAtAsInstant = ((OffsetDateTime) lastRunAt).toInstant();
+            }
+            else if ( lastRunAt instanceof Timestamp )
+            {
+                lastRunAtAsInstant = ((Timestamp) lastRunAt).toInstant();
+            }
+            else
+            {
+                throw new Dhis2RapidProException(
+                    String.format( "Can't infer the Java type to use for an instance of %s",
+                        lastRunAt.getClass().getCanonicalName() ) );
+            }
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" );
-            return (T) dateTimeFormatter.withZone( ZoneId.of( "UTC" ) ).format( lastRunAt );
+            return (T) dateTimeFormatter.withZone( ZoneId.of( "UTC" ) ).format( lastRunAtAsInstant );
         }
         else
         {

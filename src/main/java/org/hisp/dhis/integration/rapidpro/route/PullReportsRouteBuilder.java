@@ -64,11 +64,11 @@ public class PullReportsRouteBuilder extends AbstractRouteBuilder
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .split( simple( "{{rapidpro.flow.uuids:}}" ), "," )
                 .setHeader( "flowUuid", simple( "${body}" ) )
-                .setBody( simple( "${properties:last.run.select.{{spring.datasource.platform}}}" ) )
+                .setBody( simple( "${properties:last.run.select.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
                 .setProperty( "lastRunAt", lastRunAtColumnReader )
                 .setProperty( "nextRunsPageUrl", simple( "{{rapidpro.api.url}}/runs.json?flow=${header.flowUuid}&after=${exchangeProperty.lastRunAt}&reverse=true" ) )
-                .setHeader( "newLastRunAt", simple( "${date:now}" ) )
+                .setHeader( "newLastRunAt" ).ognl( "@java.sql.Timestamp@from(@java.time.Instant@now())" )
                 .loopDoWhile( exchangeProperty( "nextRunsPageUrl" ).isNotNull() )
                     .toD( "${exchangeProperty.nextRunsPageUrl}" )
                     .log( LoggingLevel.DEBUG, LOGGER, "Fetched flow runs from ${exchangeProperty.nextRunsPageUrl} => ${body}" )
@@ -89,7 +89,7 @@ public class PullReportsRouteBuilder extends AbstractRouteBuilder
                         .end()
                     .end()
                 .end()
-                .setBody( simple( "${properties:last.run.upsert.{{spring.datasource.platform}}}" ) )
+                .setBody( simple( "${properties:last.run.upsert.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .end();
     }

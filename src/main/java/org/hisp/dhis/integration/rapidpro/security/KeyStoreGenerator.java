@@ -78,7 +78,7 @@ public class KeyStoreGenerator
             try
             {
                 KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance( "RSA", "BC" );
-                keyPairGenerator.initialize( 1024, new SecureRandom() );
+                keyPairGenerator.initialize( 2048, new SecureRandom() );
 
                 java.security.KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
