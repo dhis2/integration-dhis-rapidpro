@@ -29,8 +29,35 @@ package org.hisp.dhis.integration.rapidpro;
 
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.MessageSourceResolvable;
+import org.springframework.context.NoSuchMessageException;
+import org.springframework.core.ResolvableType;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.io.ProtocolResolver;
+import org.springframework.core.io.Resource;
+import org.springframework.core.metrics.ApplicationStartup;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,6 +68,72 @@ public class ApplicationTestCase
     public static class TerminateException extends RuntimeException
     {
 
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = { "dhis2.api.pat", "dhis2.api.password", "rapidpro.api.token",
+        "spring.security.user.password", "spring.datasource.password" } )
+    public void testPostConstructTerminatesGivenGivenSecretInCommandLineArgument( String argumentName )
+    {
+        Application application = new Application()
+        {
+            @Override
+            protected void terminate( String shutdownMessage )
+            {
+                assertEquals( String.format(
+                    "`%s` is not permitted in a command-line argument. Hint: set it in an environment variable or inside the application properties file",
+                    argumentName ), shutdownMessage );
+                throw new TerminateException();
+            }
+        };
+        application.setTestConnectionOnStartUp( false );
+        application.setApplicationArguments( new ApplicationArguments()
+        {
+            @Override
+            public String[] getSourceArgs()
+            {
+                return new String[0];
+            }
+
+            @Override
+            public Set<String> getOptionNames()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean containsOption( String name )
+            {
+                return false;
+            }
+
+            @Override
+            public List<String> getOptionValues( String name )
+            {
+                if ( name.equals( argumentName ) )
+                {
+                    return List.of( "" );
+                }
+                else
+                {
+                    if ( ThreadLocalRandom.current().nextBoolean() )
+                    {
+                        return Collections.emptyList();
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            @Override
+            public List<String> getNonOptionArgs()
+            {
+                return null;
+            }
+        } );
+        assertThrows( TerminateException.class, application::postConstruct );
     }
 
     @Test
@@ -113,7 +206,7 @@ public class ApplicationTestCase
     }
 
     @Test
-    public void testRapidProConnectionGivenMissingApiToken()
+    public void testPostConstructTerminatesGivenMissingApiToken()
     {
         Application application = new Application()
         {
@@ -125,8 +218,40 @@ public class ApplicationTestCase
                 throw new TerminateException();
             }
         };
-        application.setRapidProApiUrl( Environment.RAPIDPRO_API_URL );
-        assertThrows( TerminateException.class, application::testRapidProConnection );
+        application.setApplicationArguments( new ApplicationArguments()
+        {
+            @Override
+            public String[] getSourceArgs()
+            {
+                return new String[0];
+            }
+
+            @Override
+            public Set<String> getOptionNames()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean containsOption( String name )
+            {
+                return false;
+            }
+
+            @Override
+            public List<String> getOptionValues( String name )
+            {
+                return null;
+            }
+
+            @Override
+            public List<String> getNonOptionArgs()
+            {
+                return null;
+            }
+        } );
+        application.setRapidProApiUrl( "http://rapidpro.test/api/v2" );
+        assertThrows( TerminateException.class, application::postConstruct );
     }
 
     @Test

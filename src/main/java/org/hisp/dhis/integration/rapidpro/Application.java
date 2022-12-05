@@ -27,20 +27,12 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-import javax.sql.DataSource;
-
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-
 import org.apache.activemq.artemis.core.config.storage.DatabaseStorageConfiguration;
 import org.apache.camel.CamelContext;
 import org.apache.commons.io.FileUtils;
@@ -53,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCustomizer;
@@ -61,16 +54,21 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import javax.annotation.PostConstruct;
+import javax.sql.DataSource;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 
 @SpringBootApplication
 @PropertySource( "${sql.data-location}" )
@@ -136,13 +134,53 @@ public class Application extends SpringBootServletInitializer
     private ConfigurableApplicationContext applicationContext;
 
     @Autowired
-    private DataSource dataSource;
+    private ApplicationArguments applicationArguments;
 
+    @Autowired
+    private DataSource dataSource;
+    
     @PostConstruct
     public void postConstruct()
         throws
         IOException
     {
+        String sensitivePropertyErrorMessage = "`%s` is not permitted in a command-line argument. Hint: set it in an environment variable or inside the application properties file";
+
+        if ( !isNullOrEmpty( applicationArguments.getOptionValues( "dhis2.api.pat" ) ) )
+        {
+            terminate( String.format( sensitivePropertyErrorMessage, "dhis2.api.pat" ) );
+        }
+
+        if ( !isNullOrEmpty( applicationArguments.getOptionValues( "dhis2.api.password" ) ) )
+        {
+            terminate( String.format( sensitivePropertyErrorMessage, "dhis2.api.password" ) );
+        }
+
+        if ( !isNullOrEmpty( applicationArguments.getOptionValues( "rapidpro.api.token" ) ) )
+        {
+            terminate( String.format( sensitivePropertyErrorMessage, "rapidpro.api.token" ) );
+        }
+
+        if ( !isNullOrEmpty( applicationArguments.getOptionValues( "spring.security.user.password" ) ) )
+        {
+            terminate( String.format( sensitivePropertyErrorMessage, "spring.security.user.password" ) );
+        }
+
+        if ( !isNullOrEmpty( applicationArguments.getOptionValues( "spring.datasource.password" ) ) )
+        {
+            terminate( String.format( sensitivePropertyErrorMessage, "spring.datasource.password" ) );
+        }
+
+        if ( !StringUtils.hasText( rapidProApiUrl ) )
+        {
+            terminate( "Missing RapidPro API URL. Are you sure that you set `rapidpro.api.url`?" );
+        }
+
+        if ( !StringUtils.hasText( rapidProApiToken ) )
+        {
+            terminate( "Missing RapidPro API token. Are you sure that you set `rapidpro.api.token`?" );
+        }
+
         if ( testConnectionOnStartUp )
         {
             testRapidProConnection();
@@ -235,16 +273,6 @@ public class Application extends SpringBootServletInitializer
         throws
         IOException
     {
-        if ( !StringUtils.hasText( rapidProApiUrl ) )
-        {
-            terminate( "Missing RapidPro API URL. Are you sure that you set `rapidpro.api.url`?" );
-        }
-
-        if ( !StringUtils.hasText( rapidProApiToken ) )
-        {
-            terminate( "Missing RapidPro API token. Are you sure that you set `rapidpro.api.token`?" );
-        }
-
         OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
         HttpUrl httpUrl = HttpUrl.parse( rapidProApiUrl + "/workspace.json" );
         HttpUrl.Builder httpUrlBuilder = httpUrl.newBuilder();
@@ -442,5 +470,40 @@ public class Application extends SpringBootServletInitializer
     public void setRapidProApiToken( String rapidProApiToken )
     {
         this.rapidProApiToken = rapidProApiToken;
+    }
+
+    public ApplicationArguments getApplicationArguments()
+    {
+        return applicationArguments;
+    }
+
+    public void setApplicationArguments( ApplicationArguments applicationArguments )
+    {
+        this.applicationArguments = applicationArguments;
+    }
+
+    public ConfigurableApplicationContext getApplicationContext()
+    {
+        return applicationContext;
+    }
+
+    public void setApplicationContext( ConfigurableApplicationContext applicationContext )
+    {
+        this.applicationContext = applicationContext;
+    }
+
+    public Boolean getTestConnectionOnStartUp()
+    {
+        return testConnectionOnStartUp;
+    }
+
+    public void setTestConnectionOnStartUp( Boolean testConnectionOnStartUp )
+    {
+        this.testConnectionOnStartUp = testConnectionOnStartUp;
+    }
+
+    protected boolean isNullOrEmpty( List<String> arg )
+    {
+        return arg == null || arg.isEmpty();
     }
 }

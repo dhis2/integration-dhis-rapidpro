@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ActiveProfiles( "test" )
 @DirtiesContext( classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD )
 @TestPropertySource( properties = { "dhis2.api.url=http://dhis2.test/api", "rapidpro.api.url=mock:rapidpro", "test.connection.startup=false",
-    "rapidpro.api.token=" } )
+    "rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0" } )
 public class ConfigureRapidProRouteTestCase
 {
     @Autowired
