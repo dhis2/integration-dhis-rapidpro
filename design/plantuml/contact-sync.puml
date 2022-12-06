@@ -2,34 +2,38 @@
 title Contact Synchronisation
 autonumber
 skinparam responseMessageBelowArrow true
+header
+    1. users.json
+endheader
+
 loop sync.schedule.expression
     alt sync.rapidpro.contacts = true
         == Preparation ==
-        Dhis2RapidPro -> RapidPro: Fetch dhis2_organisation_unit_id contact field
+        Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/fields#listing-fields Fetch dhis2_organisation_unit_id contact field]]
         RapidPro --> Dhis2RapidPro: Field results
         alt results is empty
-            Dhis2RapidPro -> RapidPro: Create dhis2_organisation_unit_id contact field
+            Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/fields#adding-fields Create dhis2_organisation_unit_id contact field]]
         end
-        Dhis2RapidPro -> RapidPro: Fetch dhis2_user_id contact field
+        Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/fields#listing-fields Fetch dhis2_user_id contact field]]
         RapidPro --> Dhis2RapidPro: Field results
         alt results is empty
-            Dhis2RapidPro -> RapidPro: Create dhis2_user_id contact field
+            Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/fields#adding-fields Create dhis2_user_id contact field]]
         end
-        Dhis2RapidPro -> RapidPro: Fetch DHIS2 group
+        Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/groups#listing-groups Fetch DHIS2 group]]
         RapidPro --> Dhis2RapidPro: Group results
         alt results is empty
-            Dhis2RapidPro -> RapidPro: Create DHIS2 group
+            Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/groups#adding-a-group Create DHIS2 group]]
         end
         == Synchronisation ==
-        Dhis2RapidPro -> DHIS2: Fetch users
+        Dhis2RapidPro -> DHIS2: Fetch users [1]
         DHIS2 --> Dhis2RapidPro: Users
-        Dhis2RapidPro -> RapidPro: Fetch contacts in DHIS2 group
+        Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/contacts#listing-contacts Fetch contacts in DHIS2 group]]
         RapidPro --> Dhis2RapidPro: Contacts
         note over Dhis2RapidPro: Compile list of DHIS2 users that do not have corresponding RapidPro contacts
         note over Dhis2RapidPro: Compile list of DHIS2 users that have corresponding RapidPro contacts
         loop unmapped DHIS2 users
             note over Dhis2RapidPro: Transform unmapped DHIS2 user to RapidPro contact
-            Dhis2RapidPro -> RapidPro: Create contact & assign it to DHIS2 group
+            Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/contacts#adding-contacts Create contact & assign it to DHIS2 group]]
             RapidPro --> Dhis2RapidPro: HTTP response
             alt HTTP RC != 201 and HTTP RC < 500
                 Dhis2RapidPro -> Dhis2RapidPro: Print warning
@@ -39,7 +43,7 @@ loop sync.schedule.expression
         end
         loop mapped DHIS2 users
             note over Dhis2RapidPro: Transform mapped DHIS2 user to RapidPro contact
-            Dhis2RapidPro -> RapidPro: Update contact
+            Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/contacts#updating-contacts Update contact]]
             RapidPro --> Dhis2RapidPro: HTTP response
             alt HTTP RC != 200 & HTTP RC < 500
                 Dhis2RapidPro -> Dhis2RapidPro: Print warning
