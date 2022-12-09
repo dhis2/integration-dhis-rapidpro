@@ -2,22 +2,27 @@
 title Auto-Reminders
 autonumber
 skinparam responseMessageBelowArrow true
+header
+    1. dataSets.json
+    2. listGrid.json
+endheader
+
 alt sync.rapidpro.contacts = true
     ref over Dhis2RapidPro : Synchronise contacts
 end
-Dhis2RapidPro -> RapidPro: Fetch contacts in DHIS2 group
+Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/contacts#listing-contacts Fetch contacts in DHIS2 group]]
 RapidPro --> Dhis2RapidPro: Contacts
 loop data set codes
-    Dhis2RapidPro -> DHIS2: Fetch data set
+    Dhis2RapidPro -> DHIS2: Fetch data set [1]
     DHIS2 --> Dhis2RapidPro: Data set
     note over Dhis2RapidPro: Collect org unit IDs from contacts
     note over Dhis2RapidPro: Read period type from data set
     note over Dhis2RapidPro: Compute last elapsed period from period type
     Dhis2RapidPro -> DHIS2: Fetch data set report rate
-    DHIS2 --> Dhis2RapidPro: Report rate
+    DHIS2 --> Dhis2RapidPro: Report rate [2]
     alt report rate < 100
         note over Dhis2RapidPro: Find contacts belonging to the data set org unit ID
-        Dhis2RapidPro -> RapidPro: Broadcast reminder to found contacts
+        Dhis2RapidPro -> RapidPro: [[https://rapidpro.io/api/v2/broadcasts#sending-broadcasts Broadcast reminder to found contacts]]
     end
 end
 @enduml
