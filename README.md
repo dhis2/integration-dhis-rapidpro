@@ -70,40 +70,44 @@ The above command will give an error since no parameters are provided. The next 
 ##### Accept webhook reports
 
 ```shell
+export DHIS2_API_PAT=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
+export RAPIDPRO_API_TOKEN=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --rapidpro.webhook.enabled=true
 ```
 
 ##### Auto-reminders
 
 ```shell
+export DHIS2_API_PAT=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
+export RAPIDPRO_API_TOKEN=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --reminder.data.set.codes=DS_359414,DS_543073,HIV_CARE
 ```
 
 ##### Activate contact synchronisation
 
 ```shell
+export DHIS2_API_PAT=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
+export RAPIDPRO_API_TOKEN=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --sync.rapidpro.contacts=true
 ```
 
 ##### Poll reports
 
 ```shell
+export DHIS2_API_PAT=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
+export RAPIDPRO_API_TOKEN=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+
 ./dhis2rapidpro.jar --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --rapidpro.flow.uuids=21a055c2-f0a7-4ec3-9e5e-bc05504b8967,1baa7dd3-9ccf-4ee8-b7a4-8779ba22b933,a6fd08af-4757-46a0-b4a7-c9a210b425db
 ```
 
@@ -120,44 +124,48 @@ The above command will give an error since no parameters are provided. The next 
 ##### Accept webhook reports
 
 ```shell
+set DHIS2_API_PAT=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
+set RAPIDPRO_API_TOKEN=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+
 java -jar dhis2rapidpro.jar \
 --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --rapidpro.webhook.enabled=true
 ```
 
 ##### Auto-reminders
 
 ```shell
+set DHIS2_API_PAT=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
+set RAPIDPRO_API_TOKEN=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+
 java -jar dhis2rapidpro.jar \ 
 --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --reminder.data.set.codes=DS_359414,DS_543073,HIV_CARE
 ```
 
 ##### Activate contact synchronisation
 
 ```shell
+set DHIS2_API_PAT=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
+set RAPIDPRO_API_TOKEN=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+
 java -jar dhis2rapidpro.jar \
 --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --sync.rapidpro.contacts=true
 ```
 
 ##### Poll reports
 
 ```shell
+set DHIS2_API_PAT=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556
+set RAPIDPRO_API_TOKEN=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0
+
 java -jar dhis2rapidpro.jar \
 --dhis2.api.url=https://play.dhis2.org/2.38.1/api \
---dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
 --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
---rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
 --rapidpro.flow.uuids=21a055c2-f0a7-4ec3-9e5e-bc05504b8967,1baa7dd3-9ccf-4ee8-b7a4-8779ba22b933,a6fd08af-4757-46a0-b4a7-c9a210b425db
 ```
 
@@ -269,9 +277,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
     ```shell
     java -jar dhis2rapidpro.jar \ 
    --dhis2.api.url=https://play.dhis2.org/2.38.1/api \ 
-   --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
    --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
-   --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
    --rapidpro.flow.uuids=21a055c2-f0a7-4ec3-9e5e-bc05504b8967
     ```
     
@@ -280,9 +286,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
    ```shell
     java -jar dhis2rapidpro.jar \ 
    --dhis2.api.url=https://play.dhis2.org/2.38.1/api \ 
-   --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
    --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
-   --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
    --rapidpro.flow.uuids=21a055c2-f0a7-4ec3-9e5e-bc05504b8967,1baa7dd3-9ccf-4ee8-b7a4-8779ba22b933,a6fd08af-4757-46a0-b4a7-c9a210b425db
     ```
 
@@ -341,9 +345,7 @@ While DHIS-to-RapidPro is running, to manually kick off the scanning of flow run
     ```shell
     java -jar dhis2rapidpro.jar \ 
    --dhis2.api.url=https://play.dhis2.org/2.38.1/api \ 
-   --dhis2.api.pat=d2pat_apheulkR1x7ac8vr9vcxrFkXlgeRiFc94200032556 \
    --rapidpro.api.url=https://rapidpro.dhis2.org/api/v2 \
-   --rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0 \
    --rapidpro.webhook.enabled=true
     ```
    
@@ -364,6 +366,8 @@ By order of precedence, a config property can be specified:
 1. as a command-line argument (e.g., `--dhis2.api.url=https://play.dhis2.org/2.38.1/api`)
 2. as an OS environment variable (e.g., `export DHIS2_API_URL=https://play.dhis2.org/2.38.1/api`)
 3. in a key/value property file called `application.properties` or a YAML file named `application.yml`
+
+>***SECURITY***: the application rejects secrets like passwords set from command-line arguments.
 
 | Config name                                   | Description                                                                                                                                            | Default value    | Example value                                                                                                    |
 |-----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|------------------|------------------------------------------------------------------------------------------------------------------|
