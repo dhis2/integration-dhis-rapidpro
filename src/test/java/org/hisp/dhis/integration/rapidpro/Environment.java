@@ -236,7 +236,7 @@ public final class Environment
             .withClasspathResourceMapping( "dhis.conf", "/opt/dhis2/dhis.conf", BindMode.READ_WRITE )
             .withNetwork( DHIS2_NETWORK ).withExposedPorts( 8080 )
             .dependsOn( DHIS2_DB_CONTAINER )
-            .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
+            .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 5 ) ) )
             .withEnv( "WAIT_FOR_DB_CONTAINER", "db" + ":" + 5432 + " -t 0" );
     }
 
@@ -267,7 +267,7 @@ public final class Environment
             .dependsOn( rapidProDbContainer )
             .withExposedPorts( 8000 )
             .withNetwork( RAPIDPRO_NETWORK )
-            .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 3 ) ) )
+            .waitingFor( new HttpWaitStrategy().forStatusCode( 200 ).withStartupTimeout( Duration.ofMinutes( 5 ) ) )
             .withEnv( "SECRET_KEY", "super-secret-key" )
             .withEnv( "DATABASE_URL", "postgresql://temba:temba@db/temba" )
             .withEnv( "REDIS_URL", "redis://redis:6379/0" )
@@ -284,7 +284,7 @@ public final class Environment
                 "sed -i '/CsrfViewMiddleware/s/^/#/g' temba/settings_common.py && /startup.sh" );
 
         ImageFromDockerfile mailroomImage = new ImageFromDockerfile( "mailroom:7.4.1", false ).withDockerfile(
-                Path.of( "rapidpro-docker/mailroom/Dockerfile" ) ).withBuildArg( "MAILROOM_REPO", "nyaruka/mailroom" )
+                Path.of( "rapidpro-docker/mailroom/Dockerfile" ) ).withBuildArg( "MAILROOM_REPO", "rapidpro/mailroom" )
             .withBuildArg( "MAILROOM_VERSION", "7.4.1" );
 
         MAILROOM_CONTAINER = new GenericContainer<>(

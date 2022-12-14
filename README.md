@@ -181,7 +181,7 @@ To run DHIS-to-RapidPro as a web application inside a web container like Tomcat,
 
 ### Contact Synchronisation
 
->***SECURITY***: contact synchronisation copies personal data from DHIS to RapidPro. Ensure that the data provider agrees to sharing DHIS user details with the data receiver before activating synchronisation.
+>***SECURITY***: contact synchronisation copies personal data from DHIS to RapidPro. Ensure that the data provider agrees to sharing DHIS2 user details with the data receiver before activating synchronisation.
 
 During contact synchronisation, DHIS-to-RapidPro fetches the users from your DHIS2 server to either:
 * create RapidPro contacts containing the DHIS2 user's ID, organisation unit ID, name, and mobile phone number, or
@@ -239,7 +239,7 @@ Each ingestion mode comes with its own set of trade-offs. For instance, webhook 
 
 2. Identify the root of each happy flow path, that is, the root of each successful execution path. You should apply the proceeding steps to these root paths. 
 
-3. Save a result containing the DHIS code of the data set representing the report:
+3. Save a result containing the DHIS2 code of the data set representing the report:
  
     <img src="static/images/data-set-code-poll.png" width="50%" height="50%"/>
 
