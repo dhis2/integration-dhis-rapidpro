@@ -323,7 +323,7 @@
         <dependency>
             <groupId>org.hisp.dhis.integration.camel</groupId>
             <artifactId>camel-dhis2</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>

@@ -29,6 +29,7 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS_IMAGE_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -150,6 +151,35 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             objectMapper.readValue( (String) deadLetterChannel.get( 0 ).get( "error_message" ),
                     WebMessage.class )
                 .getStatus().get().value() );
+    }
+
+    @Test
+    public void testRecordInDeadLetterChannelIsCreatedGivenMissingDataSetCode()
+        throws
+        Exception
+    {
+        System.setProperty( "sync.rapidpro.contacts", "true" );
+        AdviceWith.adviceWith( camelContext, "Transmit Report",
+            r -> r.weaveByToUri( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" )
+                .replace().to( "mock:dhis2" ) );
+        MockEndpoint fakeDhis2Endpoint = camelContext.getEndpoint( "mock:dhis2", MockEndpoint.class );
+        fakeDhis2Endpoint.whenAnyExchangeReceived(
+            exchange -> exchange.getMessage().setBody( objectMapper.writeValueAsString(
+                new WebMessage().withStatus( DescriptiveWebMessage.Status.ERROR ) ) ) );
+
+        camelContext.start();
+        String contactUuid = syncContactsAndFetchFirstContactUuid();
+
+        String webhookMessage = StreamUtils.copyToString(
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
+            Charset.defaultCharset() );
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
+            Map.of( "orgUnitId", Environment.ORG_UNIT_ID ) );
+
+        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
+        assertEquals( 1, deadLetterChannel.size() );
+        assertNull( deadLetterChannel.get( 0 ).get( "data_set_code" ) );
     }
 
     @Test

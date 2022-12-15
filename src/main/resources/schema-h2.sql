@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS DEAD_LETTER_CHANNEL (
     id                      INTEGER                             PRIMARY KEY AUTO_INCREMENT,
     payload                 VARCHAR                             NOT NULL,
-    data_set_code           VARCHAR                             NOT NULL,
+    data_set_code           VARCHAR,
     report_period_offset    INTEGER                             NOT NULL,
     organisation_unit_id    VARCHAR,
     error_message           VARCHAR                             NOT NULL,

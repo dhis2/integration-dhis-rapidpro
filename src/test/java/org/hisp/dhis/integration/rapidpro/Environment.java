@@ -54,6 +54,7 @@ import org.hisp.dhis.api.model.v2_38_1.WebMessage;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.hisp.dhis.integration.sdk.api.Dhis2Response;
+import org.hisp.dhis.integration.sdk.internal.security.BasicCredentialsSecurityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
@@ -139,7 +140,9 @@ public final class Environment
 
         System.setProperty( "dhis2.api.url", dhis2ApiUrl );
 
-        DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl, "admin", "district" ).build();
+        DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl,
+                new BasicCredentialsSecurityContext( "admin", "district" ), 5, 300000L, 0L, 20000L, 20000L, 10000L )
+            .build();
 
         ORG_UNIT_ID = createOrgUnit();
         createOrgUnitLevel();

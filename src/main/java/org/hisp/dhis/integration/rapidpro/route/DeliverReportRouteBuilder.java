@@ -151,6 +151,7 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
             .setHeader( "errorMessage", rootCauseExpr )
             .setHeader( "payload", header( "originalPayload" ) )
             .setHeader( "orgUnitId" ).ognl( "request.headers.orgUnitId" )
+            .setHeader( "dataSetCode" ).ognl( "request.headers.dataSetCode" )
             .setBody( simple( "${properties:error.dlc.insert.{{spring.sql.init.platform}}}" ) )
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
 
