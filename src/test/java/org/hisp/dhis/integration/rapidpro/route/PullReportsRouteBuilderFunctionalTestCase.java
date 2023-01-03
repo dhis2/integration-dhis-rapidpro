@@ -34,6 +34,7 @@ import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.TransformDefinition;
 import org.hisp.dhis.api.model.v2_38_1.DataValueSet;
+import org.hisp.dhis.api.model.v2_38_1.DataValue__1;
 import org.hisp.dhis.api.model.v2_38_1.DescriptiveWebMessage;
 import org.hisp.dhis.api.model.v2_38_1.WebMessage;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
@@ -110,11 +111,24 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
             .returnAs(
                 DataValueSet.class );
 
-        assertEquals( "5", dataValueSet.getDataValues().get().get( 0 ).getValue().get() );
-        assertEquals( "2", dataValueSet.getDataValues().get().get( 1 ).getValue().get() );
-        assertEquals( "3", dataValueSet.getDataValues().get().get( 2 ).getValue().get() );
-        assertEquals( "10", dataValueSet.getDataValues().get().get( 3 ).getValue().get() );
-        assertEquals( "rtfSaMjPyq6", dataValueSet.getDataValues().get().get( 3 ).getCategoryOptionCombo().get() );
+        assertEquals( "5", getDataValue( "EpyvZBsqMmM", dataValueSet ).getValue().get() );
+        assertEquals( "2", getDataValue( "tpz77FcntKx", dataValueSet ).getValue().get() );
+        assertEquals( "3", getDataValue( "UH47dKFqTRK", dataValueSet ).getValue().get() );
+        assertEquals( "10", getDataValue( "dFaBg0HpoIL", dataValueSet ).getValue().get() );
+        assertEquals( "rtfSaMjPyq6", getDataValue( "dFaBg0HpoIL", dataValueSet ).getCategoryOptionCombo().get() );
+    }
+
+    private DataValue__1 getDataValue( String dataElementId, DataValueSet dataValueSet )
+    {
+        for ( int i = 0; i < 4; i++ )
+        {
+            if ( dataValueSet.getDataValues().get().get( i ).getDataElement().get().equals( dataElementId ) )
+            {
+                return dataValueSet.getDataValues().get().get( i );
+            }
+        }
+
+        return null;
     }
 
     @Test
