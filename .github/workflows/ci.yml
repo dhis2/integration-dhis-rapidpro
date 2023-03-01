@@ -16,7 +16,7 @@ jobs:
   build:
     strategy:
       matrix:
-        dhis-image-name: [ 2.36.12-tomcat-8.5.34-jre8-alpine, 2.37.8-tomcat-8.5.34-jre8-alpine, 2.38.1.1-tomcat-9.0-jdk11-openjdk-slim, 2.39.0 ]
+        dhis-image-name: [ 2.37.8-tomcat-8.5.34-jre8-alpine, 2.38.1.1-tomcat-9.0-jdk11-openjdk-slim, 2.39.0 ]
     runs-on: ubuntu-latest
 
     steps:

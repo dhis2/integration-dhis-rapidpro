@@ -51,7 +51,7 @@ DHIS-to-RapidPro provides:
 
 * Java 11
 * RapidPro v7.4
-* DHIS >= v2.36.12
+* DHIS >= v2.37.8
 
 ## Getting Started
 
@@ -184,7 +184,7 @@ To run DHIS-to-RapidPro as a web application inside a web container like Tomcat,
 >***SECURITY***: contact synchronisation copies personal data from DHIS to RapidPro. Ensure that the data provider agrees to sharing DHIS2 user details with the data receiver before activating synchronisation.
 
 During contact synchronisation, DHIS-to-RapidPro fetches the users from your DHIS2 server to either:
-* create RapidPro contacts containing the DHIS2 user's ID, organisation unit ID, name, and mobile phone number, or
+* create RapidPro contacts containing the DHIS2 user's ID, organisation unit ID, name, mobile phone number, Telegram identifier, WhatsApp phone number, Facebook messenger username, and Twitter handle, or
 * update existing RapidPro contacts to match any changes in the corresponding DHIS2 users.
 
 Prior to synchronisation, DHIS-to-RapidPro automatically creates in RapidPro:
