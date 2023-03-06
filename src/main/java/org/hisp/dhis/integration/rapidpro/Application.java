@@ -118,6 +118,9 @@ public class Application extends SpringBootServletInitializer
     @Value( "${rapidpro.webhook.enabled}" )
     private Boolean rapidProWebhookEnabled;
 
+    @Value( "${sync.rapidpro.contacts}" )
+    private Boolean syncRapidProContacts;
+
     @Autowired
     private ArtemisProperties artemisProperties;
 
@@ -221,7 +224,10 @@ public class Application extends SpringBootServletInitializer
             onlineBanner.append( " RapidPro webhook: " ).append( baseUrl ).append( "/services/webhook\n" );
         }
         onlineBanner.append( " Poll flows task: " ).append( baseUrl ).append( "/services/tasks/scan\n" );
-        onlineBanner.append( " Sync contacts task: " ).append( baseUrl ).append( "/services/tasks/sync\n" );
+        if ( syncRapidProContacts )
+        {
+            onlineBanner.append( " Sync contacts task: " ).append( baseUrl ).append( "/services/tasks/sync\n" );
+        }
         onlineBanner.append( " Remind contacts task: " ).append( baseUrl ).append( "/services/tasks/reminders\n" );
 
         LOGGER.info(

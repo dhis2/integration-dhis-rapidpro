@@ -52,7 +52,7 @@ public class SetReportRateQueryParamProcessor implements Processor
     @Override
     public void process( Exchange exchange )
     {
-        Map dataSetAsMap = exchange.getProperty( "dataSet", Map.class );
+        Map<String, Object> dataSetAsMap = exchange.getProperty( "dataSet", Map.class );
         DataSet dataSet = objectMapper.convertValue( dataSetAsMap, DataSet.class );
 
         Map<String, Object> contacts = (Map<String, Object>) exchange.getProperty( "contacts" );
@@ -78,6 +78,7 @@ public class SetReportRateQueryParamProcessor implements Processor
                 "rows", "ou",
                 "tableLayout", "true", "hideEmptyRows", "true", "displayProperty", "SHORTNAME", "includeNumDen",
                 "false", "filter", String.format( "pe:%s", lastElapsedPeriod ) );
+
             exchange.getMessage().setHeader( "CamelDhis2.queryParams", queryParams );
         }
     }

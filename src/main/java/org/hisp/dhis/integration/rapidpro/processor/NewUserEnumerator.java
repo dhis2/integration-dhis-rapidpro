@@ -61,18 +61,29 @@ public class NewUserEnumerator implements Processor
 
         for ( User dhis2User : dhis2Users )
         {
-            Optional<Map<String, Object>> rapidProContact = results.stream().filter(
-                c -> ((Map<String, Object>) c.get( "fields" )).get( "dhis2_user_id" )
-                    .equals( dhis2User.getId().get() ) )
-                .findFirst();
-
-            if ( rapidProContact.isEmpty() )
+            if ( isNotBlank( dhis2User.getPhoneNumber() ) || isNotBlank( dhis2User.getTelegram() ) || isNotBlank(
+                dhis2User.getTwitter() ) || isNotBlank(
+                dhis2User.getFacebookMessenger() ) || isNotBlank(
+                dhis2User.getWhatsApp() ) )
             {
-                newDhis2Users.add( new DefaultDocument<>( objectMapper.convertValue( dhis2User, Map.class ),
-                    new MediaType( "application", "x-java-object" ) ) );
+                Optional<Map<String, Object>> rapidProContact = results.stream().filter(
+                        c -> ((Map<String, Object>) c.get( "fields" )).get( "dhis2_user_id" )
+                            .equals( dhis2User.getId().get() ) )
+                    .findFirst();
+
+                if ( rapidProContact.isEmpty() )
+                {
+                    newDhis2Users.add( new DefaultDocument<>( objectMapper.convertValue( dhis2User, Map.class ),
+                        new MediaType( "application", "x-java-object" ) ) );
+                }
             }
         }
 
         exchange.getMessage().setBody( newDhis2Users );
+    }
+
+    private boolean isNotBlank( Optional<String> stringOptional )
+    {
+        return stringOptional.isPresent() && !stringOptional.get().isBlank();
     }
 }
