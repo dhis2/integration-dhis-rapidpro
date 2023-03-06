@@ -402,19 +402,9 @@ public final class Environment
                             List.of( new UserRole().withId( "yrB6vc5Ip3r" ) ) ) ) )
             .transfer();
 
-        if ( DHIS_IMAGE_NAME.startsWith( "2.36." ) )
-        {
-            return dhis2Response.returnAs( ImportReport.class ).getTypeReports().get().get( 0 ).getObjectReports().get()
-                .get( 0 )
-                .getUid().get();
-        }
-        else
-        {
-            return (String) ((Map<String, Object>) dhis2Response.returnAs(
-                    org.hisp.dhis.api.model.v2_38_1.WebMessage.class )
-                .getResponse().get()).get( "uid" );
-
-        }
+        return (String) ((Map<String, Object>) dhis2Response.returnAs(
+                WebMessage.class )
+            .getResponse().get()).get( "uid" );
     }
 
     private static String fetchRapidProSessionId( String username, String password )

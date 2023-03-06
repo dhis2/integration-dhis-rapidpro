@@ -30,6 +30,8 @@ package org.hisp.dhis.integration.rapidpro.route;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.CamelLogger;
 import org.apache.camel.spring.boot.SpringBootCamelContext;
+import org.hisp.dhis.api.model.v2_38_1.CompleteDataSetRegistration;
+import org.hisp.dhis.api.model.v2_38_1.CompleteDataSetRegistrations;
 import org.hisp.dhis.api.model.v2_38_1.DataValueSet;
 import org.hisp.dhis.api.model.v2_38_1.DataValue__1;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
@@ -95,14 +97,23 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
         System.setProperty( "reminder.data.set.codes", "MAL_EL" );
         camelContext.start();
 
+        String period = PeriodBuilder.monthOf( new Date(), -1 );
         DHIS2_CLIENT.post( "dataValueSets" ).withResource(
                 new DataValueSet().withCompleteDate(
                         ZonedDateTime.now( ZoneOffset.UTC ).format( DateTimeFormatter.ISO_INSTANT ) )
                     .withOrgUnit( Environment.ORG_UNIT_ID )
-                    .withDataSet( "VEM58nY22sO" ).withPeriod( PeriodBuilder.monthOf( new Date(), -1 ) )
+                    .withDataSet( "VEM58nY22sO" ).withPeriod( period )
                     .withDataValues(
                         List.of( new DataValue__1().withDataElement( "GEN_ALL-CAUSE_DTH_CASES" ).withValue( "20" ) ) ) )
             .withParameter( "dataElementIdScheme", "CODE" )
+            .transfer().close();
+
+        DHIS2_CLIENT.post( "completeDataSetRegistrations" ).withResource(
+             new CompleteDataSetRegistrations().withCompleteDataSetRegistrations(
+                List.of( new CompleteDataSetRegistration().withCompleted( true )
+                    .withAdditionalProperty( "dataSet", "VEM58nY22sO" )
+                    .withAdditionalProperty( "organisationUnit", Environment.ORG_UNIT_ID )
+                    .withAdditionalProperty( "period", period) ) ) )
             .transfer().close();
 
         DHIS2_CLIENT.post( "maintenance" ).withParameter( "cacheClear", "true" )

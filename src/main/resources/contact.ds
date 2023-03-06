@@ -1,6 +1,10 @@
 {
     name: body.firstName + ' ' + body.surname,
-    urns: ['tel:%s' % body.phoneNumber],
+    urns: (if std.objectHas(body, "phoneNumber") && !ds.isBlank(body.phoneNumber) then ['tel:%s' % body.phoneNumber] else []) +
+          (if std.objectHas(body, "telegram") && !ds.isBlank(body.telegram) then ['telegram:%s' % body.telegram] else []) +
+          (if std.objectHas(body, "whatsApp") && !ds.isBlank(body.whatsApp) then ['whatsapp:%s' % body.whatsApp] else []) +
+          (if std.objectHas(body, "facebookMessenger") && !ds.isBlank(body.facebookMessenger) then ['facebook:%s' % body.facebookMessenger] else []) +
+          (if std.objectHas(body, "twitter") && !ds.isBlank(body.twitter) then ['twitterid:%s' % body.twitter] else []),
     groups: [cml.exchangeProperty('groupUuid')],
     fields: {
         dhis2_organisation_unit_id: body.organisationUnits[0].id,

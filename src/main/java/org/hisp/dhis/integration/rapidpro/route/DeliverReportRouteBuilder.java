@@ -30,6 +30,7 @@ package org.hisp.dhis.integration.rapidpro.route;
 import org.apache.camel.ErrorHandlerFactory;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.hisp.dhis.integration.rapidpro.CompleteDataSetRegistrationFunction;
 import org.hisp.dhis.integration.rapidpro.ContactOrgUnitIdAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.expression.RootCauseExpr;
 import org.hisp.dhis.integration.rapidpro.processor.CurrentPeriodCalculator;
@@ -55,6 +56,9 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
 
     @Autowired
     private ContactOrgUnitIdAggrStrategy contactOrgUnitIdAggrStrategy;
+
+    @Autowired
+    private CompleteDataSetRegistrationFunction completeDataSetRegistrationFunction;
 
     @Override
     protected void doConfigure()
@@ -138,9 +142,7 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
             .unmarshal().json()
             .choice()
             .when( simple( "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'" ) )
-                .setHeader( "rapidProPayload", header( "originalPayload" ) )
-                .setBody( simple( "${properties:success.log.insert.{{spring.sql.init.platform}}}" ) )
-                .to( "jdbc:dataSource?useHeadersAsParameters=true" )
+                .to( "direct:completeDataSetRegistration" )
             .otherwise()
                 .log( LoggingLevel.ERROR, LOGGER, "Import error from DHIS2 while saving data value set => ${body}" )
                 .to( "direct:dlq" )
@@ -159,5 +161,19 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
             .routeId( "Compute Period" )
             .toD( "dhis2://get/collection?path=dataSets&filter=code:eq:${headers['dataSetCode']}&fields=periodType&itemType=org.hisp.dhis.api.model.v2_38_1.DataSet&paging=false&client=#dhis2Client" )
             .process( currentPeriodCalculator );
+
+        from( "direct:completeDataSetRegistration" )
+            .setBody( completeDataSetRegistrationFunction )
+            .toD( "dhis2://post/resource?path=completeDataSetRegistrations&inBody=resource&client=#dhis2Client" )
+            .unmarshal().json()
+            .choice()
+            .when( simple( "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'" ) )
+                .setHeader( "rapidProPayload", header( "originalPayload" ) )
+                .setBody( simple( "${properties:success.log.insert.{{spring.sql.init.platform}}}" ) )
+                .to( "jdbc:dataSource?useHeadersAsParameters=true" )
+            .otherwise()
+                .log( LoggingLevel.ERROR, LOGGER, "Error from DHIS2 while completing data set registration => ${body}" )
+                .to( "direct:dlq" )
+            .end();
     }
 }
