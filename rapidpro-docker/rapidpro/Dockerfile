@@ -26,12 +26,14 @@ ENV PATH="/venv/bin:$PATH"
 ENV VIRTUAL_ENV="/venv"
 
 # Install configuration related dependencies
-RUN /venv/bin/pip install --upgrade pip && poetry install --no-interaction --no-dev && poetry add \
+RUN /venv/bin/pip install --upgrade pip && poetry install --no-interaction --no-dev
+RUN poetry add --lock \
         "django-getenv==1.3.2" \
         "django-cache-url==3.2.3" \
         "uwsgi==2.0.20" \
         "whitenoise==5.3.0" \
         "flower==1.0.0"
+RUN poetry install --no-dev
 
 FROM ghcr.io/praekeltfoundation/python-base-nw:3.9-bullseye
 

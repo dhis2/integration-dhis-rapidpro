@@ -31,31 +31,11 @@ import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.MessageSourceResolvable;
-import org.springframework.context.NoSuchMessageException;
-import org.springframework.core.ResolvableType;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.io.ProtocolResolver;
-import org.springframework.core.io.Resource;
-import org.springframework.core.metrics.ApplicationStartup;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -174,7 +154,9 @@ public class ApplicationTestCase
             }
         };
         assertThrows( TerminateException.class, () -> application.testDhis2Connection(
-            Dhis2ClientBuilder.newClient( "https://httpbin.org/anything", "admin", "district" ).build() ) );
+            Dhis2ClientBuilder.newClient(
+                String.format( "http://localhost:%s/anything", Environment.HTTPBIN_CONTAINER.getFirstMappedPort() ),
+                "admin", "district" ).build() ) );
     }
 
     @Test
@@ -267,7 +249,8 @@ public class ApplicationTestCase
                 throw new TerminateException();
             }
         };
-        application.setRapidProApiUrl( "https://httpbin.org/anything" );
+        application.setRapidProApiUrl(
+            String.format( "http://localhost:%s/anything", Environment.HTTPBIN_CONTAINER.getFirstMappedPort() ) );
         application.setRapidProApiToken( "98f3fe494b94742cf577f442e2cc175ae4f635a5" );
         assertThrows( TerminateException.class, application::testRapidProConnection );
     }

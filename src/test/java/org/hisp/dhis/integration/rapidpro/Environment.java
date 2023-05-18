@@ -84,6 +84,8 @@ public final class Environment
 
     public static Dhis2Client DHIS2_CLIENT;
 
+    public static GenericContainer<?> HTTPBIN_CONTAINER;
+
     public static GenericContainer<?> DHIS2_CONTAINER;
 
     public static String RAPIDPRO_API_URL;
@@ -225,7 +227,10 @@ public final class Environment
 
     private static void startContainers()
     {
-        Stream.of( REDIS_CONTAINER, ELASTICSEARCH_CONTAINER, RAPIDPRO_CONTAINER,
+        HTTPBIN_CONTAINER = new GenericContainer<>(
+            DockerImageName.parse( "kennethreitz/httpbin:latest" ) ).withExposedPorts( 80 );
+        Stream.of( HTTPBIN_CONTAINER, REDIS_CONTAINER, ELASTICSEARCH_CONTAINER,
+            RAPIDPRO_CONTAINER,
             MAILROOM_CONTAINER, DHIS2_CONTAINER ).parallel().forEach( GenericContainer::start );
     }
 
