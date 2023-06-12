@@ -27,30 +27,23 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import static io.restassured.RestAssured.given;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Stream;
-
+import com.github.javafaker.Faker;
+import com.github.javafaker.Name;
+import io.restassured.RestAssured;
 import io.restassured.builder.MultiPartSpecBuilder;
-import org.hisp.dhis.api.model.v2_38_1.DescriptiveWebMessage;
-import org.hisp.dhis.api.model.v2_38_1.ImportReport;
-import org.hisp.dhis.api.model.v2_38_1.Notification;
-import org.hisp.dhis.api.model.v2_38_1.OrganisationUnit;
-import org.hisp.dhis.api.model.v2_38_1.OrganisationUnitLevel;
-import org.hisp.dhis.api.model.v2_38_1.User;
-import org.hisp.dhis.api.model.v2_38_1.UserCredentialsDto;
-import org.hisp.dhis.api.model.v2_38_1.UserRole;
-import org.hisp.dhis.api.model.v2_38_1.WebMessage;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.http.ContentType;
+import io.restassured.response.ExtractableResponse;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
+import org.hisp.dhis.api.model.v40_0.Notification;
+import org.hisp.dhis.api.model.v40_0.OrganisationUnit;
+import org.hisp.dhis.api.model.v40_0.OrganisationUnitLevel;
+import org.hisp.dhis.api.model.v40_0.RefOrganisationUnit;
+import org.hisp.dhis.api.model.v40_0.RefUserRole;
+import org.hisp.dhis.api.model.v40_0.User;
+import org.hisp.dhis.api.model.v40_0.UserCredentialsDto;
+import org.hisp.dhis.api.model.v40_0.WebMessage;
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.hisp.dhis.integration.sdk.api.Dhis2Response;
@@ -66,15 +59,19 @@ import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.utility.DockerImageName;
 
-import com.github.javafaker.Faker;
-import com.github.javafaker.Name;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 
-import io.restassured.RestAssured;
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.http.ContentType;
-import io.restassured.response.ExtractableResponse;
-import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
+import static io.restassured.RestAssured.given;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public final class Environment
 {
@@ -333,7 +330,7 @@ public final class Environment
         String taskId = (String) ((Map<String, Object>) webMessage.getResponse().get()).get( "id" );
 
         Notification notification = null;
-        while ( notification == null || !(Boolean) notification.getCompleted().get() )
+        while ( notification == null || !(Boolean) notification.getCompleted() )
         {
             Thread.sleep( 5000 );
             Iterable<Notification> notifications = DHIS2_CLIENT.get( "system/tasks/ANALYTICS_TABLE/{taskId}",
@@ -399,12 +396,12 @@ public final class Environment
             .withResource( new User().withFirstName( name.firstName() ).withSurname( name.lastName() )
                 .withPhoneNumber( phoneNumber )
                 .withAttributeValues( Collections.emptyList() )
-                .withOrganisationUnits( List.of( new OrganisationUnit().withId( orgUnitId ) ) )
+                .withOrganisationUnits( List.of( new RefOrganisationUnit().withId( orgUnitId ) ) )
                 .withUserCredentials(
                     new UserCredentialsDto().withCatDimensionConstraints( Collections.emptyList() )
                         .withCogsDimensionConstraints( Collections.emptyList() ).withUsername( name.username() )
                         .withPassword( "aKa9CD8HyAi8Y7!" ).withUserRoles(
-                            List.of( new UserRole().withId( "yrB6vc5Ip3r" ) ) ) ) )
+                            List.of( new RefUserRole().withId( "yrB6vc5Ip3r" ) ) ) ) )
             .transfer();
 
         return (String) ((Map<String, Object>) dhis2Response.returnAs(
@@ -451,7 +448,7 @@ public final class Environment
             .withResource( metaData )
             .withParameter( "atomicMode", "NONE" ).transfer().returnAs( WebMessage.class );
 
-        assertEquals( DescriptiveWebMessage.Status.OK, webMessage.getStatus().get() );
+        assertEquals( WebMessage.Status.OK, webMessage.getStatus().value() );
     }
 
     private static void createOrgUnitLevel()

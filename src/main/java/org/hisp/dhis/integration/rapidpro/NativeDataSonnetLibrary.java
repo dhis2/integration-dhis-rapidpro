@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import org.hisp.dhis.api.model.v2_38_1.CategoryOptionCombo;
+import org.hisp.dhis.api.model.v40_0.CategoryOptionCombo;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

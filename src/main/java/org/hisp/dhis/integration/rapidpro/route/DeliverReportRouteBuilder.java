@@ -159,7 +159,7 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
 
         from( "direct:computePeriod" )
             .routeId( "Compute Period" )
-            .toD( "dhis2://get/collection?path=dataSets&filter=code:eq:${headers['dataSetCode']}&fields=periodType&itemType=org.hisp.dhis.api.model.v2_38_1.DataSet&paging=false&client=#dhis2Client" )
+            .toD( "dhis2://get/collection?path=dataSets&arrayName=dataSet&filter=code:eq:${headers['dataSetCode']}&fields=periodType&itemType=org.hisp.dhis.api.model.v40_0.DataSet&paging=false&client=#dhis2Client" )
             .process( currentPeriodCalculator );
 
         from( "direct:completeDataSetRegistration" )

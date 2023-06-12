@@ -74,7 +74,7 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
             .log( LoggingLevel.INFO, LOGGER, "Synchronising RapidPro contacts..." )
             .to( "direct:prepareRapidPro" )
             .setProperty( "orgUnitIdScheme", simple( "{{org.unit.id.scheme}}" ) )
-            .toD( "dhis2://get/collection?path=users&fields=id,firstName,surname,phoneNumber,telegram,whatsApp,twitter,facebookMessenger,organisationUnits[${exchangeProperty.orgUnitIdScheme.toLowerCase()}~rename(id)]&filter=organisationUnits.id:!null&itemType=org.hisp.dhis.api.model.v2_38_1.User&paging=false&client=#dhis2Client" )
+            .toD( "dhis2://get/collection?path=users&arrayName=users&fields=id,firstName,surname,phoneNumber,telegram,whatsApp,twitter,facebookMessenger,organisationUnits[${exchangeProperty.orgUnitIdScheme.toLowerCase()}~rename(id)]&filter=organisationUnits.id:!null&itemType=org.hisp.dhis.api.model.v40_0.User&paging=false&client=#dhis2Client" )
             .setProperty( "dhis2Users", iterableReader )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .setProperty( "nextContactsPageUrl", simple( "{{rapidpro.api.url}}/contacts.json?group=DHIS2" ) )

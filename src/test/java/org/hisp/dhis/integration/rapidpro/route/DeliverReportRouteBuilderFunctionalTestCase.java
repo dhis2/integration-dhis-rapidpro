@@ -47,10 +47,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.hisp.dhis.api.model.v2_38_1.DataValueSet;
-import org.hisp.dhis.api.model.v2_38_1.DataValue__1;
-import org.hisp.dhis.api.model.v2_38_1.DescriptiveWebMessage;
-import org.hisp.dhis.api.model.v2_38_1.WebMessage;
+import org.hisp.dhis.api.model.v40_0.DataValue;
+import org.hisp.dhis.api.model.v40_0.DataValueSet;
+import org.hisp.dhis.api.model.v40_0.WebMessage;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
@@ -95,7 +94,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             .returnAs(
                 DataValueSet.class );
 
-        Optional<DataValue__1> dataValue = dataValueSet.getDataValues().get().stream()
+        Optional<DataValue> dataValue = dataValueSet.getDataValues().get().stream()
             .filter( v -> v.getDataElement().get().equals( "tpz77FcntKx" ) ).findFirst();
 
         assertTrue( dataValue.isPresent() );
@@ -133,7 +132,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         MockEndpoint fakeDhis2Endpoint = camelContext.getEndpoint( "mock:dhis2", MockEndpoint.class );
         fakeDhis2Endpoint.whenAnyExchangeReceived(
             exchange -> exchange.getMessage().setBody( objectMapper.writeValueAsString(
-                new WebMessage().withStatus( DescriptiveWebMessage.Status.ERROR ) ) ) );
+                new WebMessage().withStatus( WebMessage.Status.ERROR ) ) ) );
 
         camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
@@ -150,7 +149,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         assertEquals( "ERROR",
             objectMapper.readValue( (String) deadLetterChannel.get( 0 ).get( "error_message" ),
                     WebMessage.class )
-                .getStatus().get().value() );
+                .getStatus().value() );
     }
 
     @Test
@@ -165,7 +164,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         MockEndpoint fakeDhis2Endpoint = camelContext.getEndpoint( "mock:dhis2", MockEndpoint.class );
         fakeDhis2Endpoint.whenAnyExchangeReceived(
             exchange -> exchange.getMessage().setBody( objectMapper.writeValueAsString(
-                new WebMessage().withStatus( DescriptiveWebMessage.Status.ERROR ) ) ) );
+                new WebMessage().withStatus( WebMessage.Status.ERROR ) ) ) );
 
         camelContext.start();
         String contactUuid = syncContactsAndFetchFirstContactUuid();
@@ -323,7 +322,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             .returnAs(
                 DataValueSet.class );
 
-        Optional<DataValue__1> dataValue = dataValueSet.getDataValues().get().stream()
+        Optional<DataValue> dataValue = dataValueSet.getDataValues().get().stream()
             .filter( v -> v.getDataElement().get().equals( "tpz77FcntKx" ) ).findFirst();
 
         assertTrue( dataValue.isPresent() );

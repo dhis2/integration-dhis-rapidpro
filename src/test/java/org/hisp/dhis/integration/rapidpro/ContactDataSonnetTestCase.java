@@ -34,8 +34,8 @@ import org.apache.camel.builder.ValueBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.language.DatasonnetExpression;
 import org.apache.camel.support.DefaultExchange;
-import org.hisp.dhis.api.model.v2_38_1.OrganisationUnit;
-import org.hisp.dhis.api.model.v2_38_1.User;
+import org.hisp.dhis.api.model.v40_0.RefOrganisationUnit;
+import org.hisp.dhis.api.model.v40_0.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -68,7 +68,7 @@ public class ContactDataSonnetTestCase
         Map<String, Object> user = new ObjectMapper().registerModule( new Jdk8Module() ).convertValue(
             new User().withId( "AIK2aQOJIbj" ).withFirstName( "Alice" ).withSurname( "Wonderland" )
                 .withPhoneNumber( "+233223232" ).withTelegram( "6249937697" )
-                .withOrganisationUnits( List.of( new OrganisationUnit().withId( "lc3eMKXaEfw" ) ) ), Map.class );
+                .withOrganisationUnits( List.of( new RefOrganisationUnit().withId( "lc3eMKXaEfw" ) ) ), Map.class );
         exchange.getMessage().setBody( user );
         Map<String, Object> contact = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
 

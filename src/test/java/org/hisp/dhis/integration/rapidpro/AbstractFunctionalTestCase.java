@@ -33,8 +33,8 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.camel.test.spring.junit5.UseAdviceWith;
 import org.apache.commons.io.FileUtils;
-import org.hisp.dhis.api.model.v2_38_1.DataValueSet;
-import org.hisp.dhis.api.model.v2_38_1.DataValue__1;
+import org.hisp.dhis.api.model.v40_0.DataValue;
+import org.hisp.dhis.api.model.v40_0.DataValueSet;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -131,11 +131,11 @@ public class AbstractFunctionalTestCase
                     .withDataSet( "qNtxTrp56wV" ).withPeriod( PeriodBuilder.yearOf( new Date(), -1 ) )
                     .withDataValues(
                         List.of(
-                            new DataValue__1().withDataElement( "MAL_POP_TOTAL" ).withCategoryOptionCombo( "MAL-0514Y" )
+                            new DataValue().withDataElement( "MAL_POP_TOTAL" ).withCategoryOptionCombo( "MAL-0514Y" )
                                 .withValue( "0" ),
-                            new DataValue__1().withDataElement( "MAL_LLIN_DISTR_PW" ).withValue( "0" ),
-                            new DataValue__1().withDataElement( "GEN_DOMESTIC_FUND" ).withValue( "0" ),
-                            new DataValue__1().withDataElement( "GEN_EXT_FUND" ).withValue( "0" ) ) ) )
+                            new DataValue().withDataElement( "MAL_LLIN_DISTR_PW" ).withValue( "0" ),
+                            new DataValue().withDataElement( "GEN_DOMESTIC_FUND" ).withValue( "0" ),
+                            new DataValue().withDataElement( "GEN_EXT_FUND" ).withValue( "0" ) ) ) )
             .withParameter( "dataElementIdScheme", "CODE" )
             .withParameter( "categoryOptionComboIdScheme", "CODE" )
             .transfer().close();
