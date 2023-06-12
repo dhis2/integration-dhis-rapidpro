@@ -30,10 +30,8 @@ package org.hisp.dhis.integration.rapidpro.route;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.CamelLogger;
 import org.apache.camel.spring.boot.SpringBootCamelContext;
-import org.hisp.dhis.api.model.v2_38_1.CompleteDataSetRegistration;
-import org.hisp.dhis.api.model.v2_38_1.CompleteDataSetRegistrations;
-import org.hisp.dhis.api.model.v2_38_1.DataValueSet;
-import org.hisp.dhis.api.model.v2_38_1.DataValue__1;
+import org.hisp.dhis.api.model.v40_0.DataValueSet;
+import org.hisp.dhis.api.model.v40_0.DataValue;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
@@ -76,7 +74,8 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
         CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
         ((SpringBootCamelContext) camelContext)
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
-                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.equals( "Cannot remind contacts given unknown data set code 'Foo'" ) )
+                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.equals(
+                    "Cannot remind contacts given unknown data set code 'Foo'" ) )
                 {
                     expectedLogMessage.countDown();
                 }
@@ -91,7 +90,9 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
 
     @Test
     public void testReportIsNotOverdue()
-        throws IOException, InterruptedException
+        throws
+        IOException,
+        InterruptedException
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "reminder.data.set.codes", "MAL_EL" );
@@ -104,17 +105,14 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
                     .withOrgUnit( Environment.ORG_UNIT_ID )
                     .withDataSet( "VEM58nY22sO" ).withPeriod( period )
                     .withDataValues(
-                        List.of( new DataValue__1().withDataElement( "GEN_ALL-CAUSE_DTH_CASES" ).withValue( "20" ) ) ) )
+                        List.of( new DataValue().withDataElement( "GEN_ALL-CAUSE_DTH_CASES" ).withValue( "20" ) ) ) )
             .withParameter( "dataElementIdScheme", "CODE" )
             .transfer().close();
 
-        DHIS2_CLIENT.post( "completeDataSetRegistrations" ).withResource(
-             new CompleteDataSetRegistrations().withCompleteDataSetRegistrations(
-                List.of( new CompleteDataSetRegistration().withCompleted( true )
-                    .withAdditionalProperty( "dataSet", "VEM58nY22sO" )
-                    .withAdditionalProperty( "organisationUnit", Environment.ORG_UNIT_ID )
-                    .withAdditionalProperty( "period", period) ) ) )
-            .transfer().close();
+        DHIS2_CLIENT.post( "completeDataSetRegistrations" ).withResource( List.of(
+            Map.of( "completed", true, "dataSet", "VEM58nY22sO", "organisationUnit",
+                Environment.ORG_UNIT_ID, "period",
+                period ) ) ).transfer().close();
 
         DHIS2_CLIENT.post( "maintenance" ).withParameter( "cacheClear", "true" )
             .transfer().close();

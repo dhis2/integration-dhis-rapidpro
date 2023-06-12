@@ -31,7 +31,7 @@ import java.util.Date;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.hisp.dhis.api.model.v2_38_1.DataSet;
+import org.hisp.dhis.api.model.v40_0.DataSet;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.springframework.stereotype.Component;
 
@@ -43,7 +43,7 @@ public class CurrentPeriodCalculator implements Processor
         throws Exception
     {
         Iterable<DataSet> dataSets = exchange.getMessage().getBody( Iterable.class );
-        String periodType = (String) dataSets.iterator().next().getPeriodType().get();
+        String periodType = dataSets.iterator().next().getPeriodType().get().value();
         int reportPeriodOffset = exchange.getMessage().getHeader( "reportPeriodOffset", Integer.class );
         String period;
         if ( periodType.equalsIgnoreCase( "Daily" ) )

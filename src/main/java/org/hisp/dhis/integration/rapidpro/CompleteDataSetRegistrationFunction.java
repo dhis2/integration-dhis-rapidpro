@@ -28,11 +28,10 @@
 package org.hisp.dhis.integration.rapidpro;
 
 import org.apache.camel.Exchange;
-import org.hisp.dhis.api.model.v2_38_1.CompleteDataSetRegistration;
-import org.hisp.dhis.api.model.v2_38_1.CompleteDataSetRegistrations;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 @Component
@@ -42,11 +41,9 @@ public class CompleteDataSetRegistrationFunction implements Function<Exchange, O
     @Override
     public Object apply( Exchange exchange )
     {
-        CompleteDataSetRegistrations completeDataSetRegistrations = new CompleteDataSetRegistrations().withCompleteDataSetRegistrations(
-            List.of( new CompleteDataSetRegistration().withCompleted( true )
-                .withAdditionalProperty( "dataSet", exchange.getMessage().getHeader( "dataSetCode" ) )
-                .withAdditionalProperty( "organisationUnit", exchange.getMessage().getHeader( "orgUnitId" ) )
-                .withAdditionalProperty( "period", exchange.getMessage().getHeader( "period" ) ) ) );
-        return completeDataSetRegistrations;
+        return Map.of( "CompleteDataSetRegistrations", List.of(
+            Map.of( "completed", true, "dataSet", exchange.getMessage().getHeader( "dataSetCode" ), "organisationUnit",
+                exchange.getMessage().getHeader( "orgUnitId" ), "period",
+                exchange.getMessage().getHeader( "period" ) ) ) );
     }
 }

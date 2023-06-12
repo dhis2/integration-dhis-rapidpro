@@ -29,7 +29,6 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.api.model.v2_38_1.ListGrid;
 import org.hisp.dhis.integration.rapidpro.expression.IterableReader;
 import org.hisp.dhis.integration.rapidpro.processor.SetReportRateQueryParamProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,7 +103,7 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
         from( "direct:fetchReportRate" )
             .process( setReportRateQueryParamProcessor )
             .to( "dhis2://get/resource?path=analytics&client=#dhis2Client" )
-            .unmarshal().json( ListGrid.class );
+            .unmarshal().json( Map.class );
 
         from( "direct:sendBroadcast" )
             .transform( datasonnet( "resource:classpath:broadcast.ds", String.class, "application/x-java-object", "application/json" ) )

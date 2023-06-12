@@ -34,9 +34,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
 import org.apache.camel.spi.CamelLogger;
 import org.apache.camel.spring.boot.SpringBootCamelContext;
-import org.hisp.dhis.api.model.v2_38_1.DescriptiveWebMessage;
-import org.hisp.dhis.api.model.v2_38_1.ImportReportWebMessageResponse;
-import org.hisp.dhis.api.model.v2_38_1.User;
+import org.hisp.dhis.api.model.v40_0.User;
+import org.hisp.dhis.api.model.v40_0.WebMessage;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
@@ -236,12 +235,12 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
         usersIterable.forEach( users::add );
         User user = users.get( ThreadLocalRandom.current().nextInt( 0, users.size() ) );
         user.setPhoneNumber( phoneNumber );
-        ImportReportWebMessageResponse importReportWebMessageResponse = Environment.DHIS2_CLIENT.put( "users/{id}",
+        WebMessage importReportWebMessageResponse = Environment.DHIS2_CLIENT.put( "users/{id}",
                 user.getId().get() )
             .withResource( user ).transfer()
             .returnAs(
-                ImportReportWebMessageResponse.class );
-        assertEquals( DescriptiveWebMessage.Status.OK, importReportWebMessageResponse.getStatus().get() );
+                WebMessage.class );
+        assertEquals( WebMessage.Status.OK, importReportWebMessageResponse.getStatus().value() );
 
         return user;
     }

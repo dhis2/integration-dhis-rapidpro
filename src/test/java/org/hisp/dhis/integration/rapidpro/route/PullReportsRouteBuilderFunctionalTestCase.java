@@ -33,10 +33,9 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.TransformDefinition;
-import org.hisp.dhis.api.model.v2_38_1.DataValueSet;
-import org.hisp.dhis.api.model.v2_38_1.DataValue__1;
-import org.hisp.dhis.api.model.v2_38_1.DescriptiveWebMessage;
-import org.hisp.dhis.api.model.v2_38_1.WebMessage;
+import org.hisp.dhis.api.model.v40_0.DataValue;
+import org.hisp.dhis.api.model.v40_0.DataValueSet;
+import org.hisp.dhis.api.model.v40_0.WebMessage;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
@@ -118,7 +117,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         assertEquals( "rtfSaMjPyq6", getDataValue( "dFaBg0HpoIL", dataValueSet ).getCategoryOptionCombo().get() );
     }
 
-    private DataValue__1 getDataValue( String dataElementId, DataValueSet dataValueSet )
+    private DataValue getDataValue( String dataElementId, DataValueSet dataValueSet )
     {
         for ( int i = 0; i < 4; i++ )
         {
@@ -241,7 +240,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         fakeDhis2Endpoint.setExpectedCount( 1 );
         fakeDhis2Endpoint.whenAnyExchangeReceived(
             exchange -> exchange.getMessage().setBody( objectMapper.writeValueAsString(
-                new WebMessage().withStatus( DescriptiveWebMessage.Status.OK ) ) ) );
+                new WebMessage().withStatus( WebMessage.Status.OK ) ) ) );
 
         camelContext.start();
 

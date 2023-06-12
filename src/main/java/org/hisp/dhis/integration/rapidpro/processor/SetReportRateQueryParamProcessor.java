@@ -30,8 +30,9 @@ package org.hisp.dhis.integration.rapidpro.processor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.hisp.dhis.api.model.v2_38_1.DataSet;
-import org.hisp.dhis.api.model.v2_38_1.OrganisationUnit;
+import org.hisp.dhis.api.model.v40_0.DataSet;
+import org.hisp.dhis.api.model.v40_0.OrganisationUnit;
+import org.hisp.dhis.api.model.v40_0.RefOrganisationUnit;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -58,18 +59,18 @@ public class SetReportRateQueryParamProcessor implements Processor
         Map<String, Object> contacts = (Map<String, Object>) exchange.getProperty( "contacts" );
         Set<String> contactOrgUnitIds = reduceOrgUnitIds( (List<Map<String, Object>>) contacts.get( "results" ) );
 
-        String periodType = (String) dataSet.getPeriodType().get();
+        String periodType = dataSet.getPeriodType().get().value();
         String lastElapsedPeriod = createLastElapsedPeriod( periodType );
 
         if ( dataSet.getOrganisationUnits().isPresent() && !dataSet.getOrganisationUnits().get().isEmpty() )
         {
             String orgUnitIdScheme = exchange.getProperty( "orgUnitIdScheme", String.class ).toLowerCase();
             StringBuilder ouDimensionStringBuilder = new StringBuilder();
-            for ( OrganisationUnit organisationUnit : dataSet.getOrganisationUnits().get() )
+            for ( RefOrganisationUnit organisationUnit : dataSet.getOrganisationUnits().get() )
             {
                 if ( contactOrgUnitIds.contains( ((Optional<String>) organisationUnit.get( orgUnitIdScheme )).get() ) )
                 {
-                    ouDimensionStringBuilder.append( organisationUnit.getId().get() ).append( ";" );
+                    ouDimensionStringBuilder.append( organisationUnit.getId() ).append( ";" );
                 }
             }
             Map<String, Object> queryParams = Map.of( "dimension",
