@@ -327,7 +327,7 @@ public final class Environment
 
         WebMessage webMessage = DHIS2_CLIENT.post( "resourceTables/analytics" ).transfer()
             .returnAs( WebMessage.class );
-        String taskId = (String) ((Map<String, Object>) webMessage.getResponse().get()).get( "id" );
+        String taskId = webMessage.getResponse().get().get( "id" );
 
         Notification notification = null;
         while ( notification == null || !(Boolean) notification.getCompleted() )
@@ -376,14 +376,14 @@ public final class Environment
         throws
         IOException
     {
-        Iterable<User> usersIterable = Environment.DHIS2_CLIENT.get( "users" ).withFilter( "phoneNumber:!null" )
+        Iterable<User> usersIterable = DHIS2_CLIENT.get( "users" ).withFilter( "phoneNumber:!null" )
             .withFields( "*" ).withoutPaging()
             .transfer()
             .returnAs( User.class, "users" );
 
         for ( User user : usersIterable )
         {
-            Environment.DHIS2_CLIENT.delete( "users/{id}", user.getId().get() ).transfer().close();
+            DHIS2_CLIENT.delete( "users/{id}", user.getId().get() ).transfer().close();
         }
     }
 
@@ -404,9 +404,7 @@ public final class Environment
                             List.of( new RefUserRole().withId( "yrB6vc5Ip3r" ) ) ) ) )
             .transfer();
 
-        return (String) ((Map<String, Object>) dhis2Response.returnAs(
-                WebMessage.class )
-            .getResponse().get()).get( "uid" );
+        return dhis2Response.returnAs( WebMessage.class ).getResponse().get().get( "uid" );
     }
 
     private static String fetchRapidProSessionId( String username, String password )
@@ -448,7 +446,7 @@ public final class Environment
             .withResource( metaData )
             .withParameter( "atomicMode", "NONE" ).transfer().returnAs( WebMessage.class );
 
-        assertEquals( WebMessage.Status.OK, webMessage.getStatus().value() );
+        assertEquals( WebMessage.Status.OK, webMessage.getStatus() );
     }
 
     private static void createOrgUnitLevel()
@@ -463,10 +461,10 @@ public final class Environment
 
     private static String createOrgUnit()
     {
-        return (String) ((Map<String, Object>) DHIS2_CLIENT.post( "organisationUnits" ).withResource(
+        return DHIS2_CLIENT.post( "organisationUnits" ).withResource(
                 new OrganisationUnit().withName( "Acme" ).withCode( "ACME" ).withShortName( "Acme" )
                     .withOpeningDate( new Date( 964866178L ) ) ).transfer()
-            .returnAs( WebMessage.class ).getResponse().get()).get( "uid" );
+            .returnAs( WebMessage.class ).getResponse().get().get( "uid" );
     }
 
 }

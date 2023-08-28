@@ -109,10 +109,11 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
             .withParameter( "dataElementIdScheme", "CODE" )
             .transfer().close();
 
-        DHIS2_CLIENT.post( "completeDataSetRegistrations" ).withResource( List.of(
-            Map.of( "completed", true, "dataSet", "VEM58nY22sO", "organisationUnit",
-                Environment.ORG_UNIT_ID, "period",
-                period ) ) ).transfer().close();
+        DHIS2_CLIENT.post( "completeDataSetRegistrations" )
+            .withResource( Map.of( "completeDataSetRegistrations", List.of(
+                Map.of( "completed", true, "dataSet", "VEM58nY22sO", "organisationUnit",
+                    Environment.ORG_UNIT_ID, "period",
+                    period ) ) ) ).transfer().close();
 
         DHIS2_CLIENT.post( "maintenance" ).withParameter( "cacheClear", "true" )
             .transfer().close();

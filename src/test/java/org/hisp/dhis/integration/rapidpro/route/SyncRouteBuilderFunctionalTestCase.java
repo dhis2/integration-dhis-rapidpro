@@ -240,7 +240,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
             .withResource( user ).transfer()
             .returnAs(
                 WebMessage.class );
-        assertEquals( WebMessage.Status.OK, importReportWebMessageResponse.getStatus().value() );
+        assertEquals( WebMessage.Status.OK, importReportWebMessageResponse.getStatus() );
 
         return user;
     }
