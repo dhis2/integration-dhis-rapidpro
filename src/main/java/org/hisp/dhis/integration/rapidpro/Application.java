@@ -41,6 +41,7 @@ import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.hisp.dhis.integration.sdk.api.Dhis2ClientException;
 import org.hisp.dhis.integration.sdk.api.Dhis2Response;
+import org.hisp.dhis.integration.sdk.api.RemoteDhis2ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -358,8 +359,8 @@ public class Application extends SpringBootServletInitializer
         }
         catch ( Dhis2ClientException e )
         {
-            Throwable t = NestedExceptionUtils.getRootCause( e );
-            if ( t instanceof Dhis2ClientException )
+            Throwable t = NestedExceptionUtils.getMostSpecificCause( e );
+            if ( t instanceof RemoteDhis2ClientException )
             {
                 terminate( String.format(
                     "Unexpected HTTP response code during DHIS2 connection test. Are you sure that `dhis2.api.url` is set correctly and the credentials are valid? Hint: check your firewall settings. Error message => %s",

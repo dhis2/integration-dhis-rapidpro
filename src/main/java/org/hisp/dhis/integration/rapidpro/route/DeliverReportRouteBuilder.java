@@ -30,6 +30,8 @@ package org.hisp.dhis.integration.rapidpro.route;
 import org.apache.camel.ErrorHandlerFactory;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedBodyAggregationStrategy;
+import org.hisp.dhis.api.model.v40_0.DataSet;
 import org.hisp.dhis.integration.rapidpro.CompleteDataSetRegistrationFunction;
 import org.hisp.dhis.integration.rapidpro.ContactOrgUnitIdAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.expression.RootCauseExpr;
@@ -159,7 +161,10 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
 
         from( "direct:computePeriod" )
             .routeId( "Compute Period" )
-            .toD( "dhis2://get/collection?path=dataSets&arrayName=dataSet&filter=code:eq:${headers['dataSetCode']}&fields=periodType&itemType=org.hisp.dhis.api.model.v40_0.DataSet&paging=false&client=#dhis2Client" )
+            .toD( "dhis2://get/collection?path=dataSets&arrayName=dataSets&filter=code:eq:${headers['dataSetCode']}&fields=periodType&client=#dhis2Client" )
+            .split().body().aggregationStrategy( new GroupedBodyAggregationStrategy() )
+                .convertBodyTo( DataSet.class )
+            .end()
             .process( currentPeriodCalculator );
 
         from( "direct:completeDataSetRegistration" )

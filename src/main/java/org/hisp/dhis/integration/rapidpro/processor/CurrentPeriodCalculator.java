@@ -28,6 +28,7 @@
 package org.hisp.dhis.integration.rapidpro.processor;
 
 import java.util.Date;
+import java.util.List;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -42,8 +43,8 @@ public class CurrentPeriodCalculator implements Processor
     public void process( Exchange exchange )
         throws Exception
     {
-        Iterable<DataSet> dataSets = exchange.getMessage().getBody( Iterable.class );
-        String periodType = dataSets.iterator().next().getPeriodType().get().value();
+        List<DataSet> dataSets = exchange.getMessage().getBody( List.class );
+        String periodType = dataSets.get( 0 ).getPeriodType().get().value();
         int reportPeriodOffset = exchange.getMessage().getHeader( "reportPeriodOffset", Integer.class );
         String period;
         if ( periodType.equalsIgnoreCase( "Daily" ) )

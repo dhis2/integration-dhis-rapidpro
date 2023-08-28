@@ -41,7 +41,7 @@ public class CompleteDataSetRegistrationFunction implements Function<Exchange, O
     @Override
     public Object apply( Exchange exchange )
     {
-        return Map.of( "CompleteDataSetRegistrations", List.of(
+        return Map.of( "completeDataSetRegistrations", List.of(
             Map.of( "completed", true, "dataSet", exchange.getMessage().getHeader( "dataSetCode" ), "organisationUnit",
                 exchange.getMessage().getHeader( "orgUnitId" ), "period",
                 exchange.getMessage().getHeader( "period" ) ) ) );

@@ -77,7 +77,7 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
                         .to("direct:fetchContacts" )
                         .setProperty( "contacts", simple( "${body}" ) )
                         .to( "direct:fetchReportRate" )
-                        .split( simple( "${body.rows.get}" ) )
+                        .split( simple( "${body['rows']}" ) )
                             .filter().ognl(  "@java.lang.Double@parseDouble(request.body[4]) < 100" )
                             .to( "direct:sendBroadcast" )
                         .end()

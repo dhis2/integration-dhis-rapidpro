@@ -32,7 +32,8 @@ RUN poetry add --lock \
         "django-cache-url==3.2.3" \
         "uwsgi==2.0.20" \
         "whitenoise==5.3.0" \
-        "flower==1.0.0"
+        "flower==1.0.0" \
+        "codecov==2.1.13"
 RUN poetry install --no-dev
 
 FROM ghcr.io/praekeltfoundation/python-base-nw:3.9-bullseye

@@ -29,6 +29,7 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.hisp.dhis.api.model.v40_0.User;
 import org.hisp.dhis.integration.rapidpro.expression.IterableReader;
 import org.hisp.dhis.integration.rapidpro.processor.ExistingUserEnumerator;
 import org.hisp.dhis.integration.rapidpro.processor.NewUserEnumerator;
@@ -74,21 +75,24 @@ public class SyncRouteBuilder extends AbstractRouteBuilder
             .log( LoggingLevel.INFO, LOGGER, "Synchronising RapidPro contacts..." )
             .to( "direct:prepareRapidPro" )
             .setProperty( "orgUnitIdScheme", simple( "{{org.unit.id.scheme}}" ) )
-            .toD( "dhis2://get/collection?path=users&arrayName=users&fields=id,firstName,surname,phoneNumber,telegram,whatsApp,twitter,facebookMessenger,organisationUnits[${exchangeProperty.orgUnitIdScheme.toLowerCase()}~rename(id)]&filter=organisationUnits.id:!null&itemType=org.hisp.dhis.api.model.v40_0.User&paging=false&client=#dhis2Client" )
-            .setProperty( "dhis2Users", iterableReader )
-            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .setProperty( "nextContactsPageUrl", simple( "{{rapidpro.api.url}}/contacts.json?group=DHIS2" ) )
-            .loopDoWhile( exchangeProperty( "nextContactsPageUrl" ).isNotNull() )
-                .toD( "${exchangeProperty.nextContactsPageUrl}" ).unmarshal().json()
-                .setProperty( "nextContactsPageUrl", simple( "${body[next]}" ) )
-                .setProperty( "rapidProContacts", simple( "${body}" ) )
-                .process( newUserEnumerator )
-                .split().body()
-                    .to( "direct:createContact" )
-                .end()
-                .process( existingUserEnumerator )
-                .split().body()
-                    .to( "direct:updateContact" )
+            .toD( "dhis2://get/collection?path=users&arrayName=users&fields=id,firstName,surname,phoneNumber,telegram,whatsApp,twitter,facebookMessenger,organisationUnits[${exchangeProperty.orgUnitIdScheme.toLowerCase()}~rename(id)]&filter=organisationUnits.id:!null&client=#dhis2Client" )
+            .split().body()
+                .convertBodyTo( User.class )
+                .setProperty( "dhis2Users", iterableReader )
+                .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+                .setProperty( "nextContactsPageUrl", simple( "{{rapidpro.api.url}}/contacts.json?group=DHIS2" ) )
+                .loopDoWhile( exchangeProperty( "nextContactsPageUrl" ).isNotNull() )
+                    .toD( "${exchangeProperty.nextContactsPageUrl}" ).unmarshal().json()
+                    .setProperty( "nextContactsPageUrl", simple( "${body[next]}" ) )
+                    .setProperty( "rapidProContacts", simple( "${body}" ) )
+                    .process( newUserEnumerator )
+                    .split().body()
+                        .to( "direct:createContact" )
+                    .end()
+                    .process( existingUserEnumerator )
+                    .split().body()
+                        .to( "direct:updateContact" )
+                    .end()
                 .end()
             .end()
             .log( LoggingLevel.INFO, LOGGER, "Completed synchronisation of RapidPro contacts with DHIS2 users" );

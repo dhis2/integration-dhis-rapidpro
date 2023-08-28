@@ -68,7 +68,7 @@ public class SetReportRateQueryParamProcessor implements Processor
             StringBuilder ouDimensionStringBuilder = new StringBuilder();
             for ( RefOrganisationUnit organisationUnit : dataSet.getOrganisationUnits().get() )
             {
-                if ( contactOrgUnitIds.contains( ((Optional<String>) organisationUnit.get( orgUnitIdScheme )).get() ) )
+                if ( contactOrgUnitIds.contains( organisationUnit.get( orgUnitIdScheme ) ) )
                 {
                     ouDimensionStringBuilder.append( organisationUnit.getId() ).append( ";" );
                 }
