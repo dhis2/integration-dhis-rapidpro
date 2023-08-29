@@ -35,6 +35,3 @@ build/
 .DS_Store
 
 *.jks
-
-### Secrets ###
-env.properties
