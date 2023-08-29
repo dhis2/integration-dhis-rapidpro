@@ -71,7 +71,7 @@ public class ExtensibilityTestCase extends AbstractFunctionalTestCase
 
         camelContext.start();
 
-        FileUtils.copyFile( new File( this.getClass().getResource( "/deliverReport.yaml" ).getFile() ),
+        FileUtils.copyFile( new File( java.net.URLDecoder.decode(this.getClass().getResource( "/deliverReport.yaml" ).getFile(),"UTF-8" )),
             new File( "target/routes/deliverReport.yaml" ) );
 
         while ( true )
