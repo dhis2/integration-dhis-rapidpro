@@ -63,7 +63,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
     public void doBeforeEach()
     {
         flowUuid = given( RAPIDPRO_API_REQUEST_SPEC ).get( "flows.json" ).then().extract()
-            .path( "results[0].uuid" );
+            .path( "results.find { it.name == 'Flow Under Test' }.uuid" );
         System.setProperty( "rapidpro.flow.uuids", flowUuid );
     }
 

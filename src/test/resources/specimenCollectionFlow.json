@@ -1,0 +1,285 @@
+{
+  "version": "13",
+  "site": "https://textit.com",
+  "flows": [
+    {
+      "name": "Specimen collection and shipment to NRL",
+      "uuid": "94b31ca6-52d6-4ec8-ac75-915da5d1fe0d",
+      "spec_version": "13.2.0",
+      "language": "eng",
+      "type": "messaging",
+      "nodes": [
+        {
+          "uuid": "4b2f97b9-73fd-4d46-a7f8-a33a915687bf",
+          "actions": [],
+          "router": {
+            "type": "switch",
+            "default_category_uuid": "ab584508-bdb6-46e8-b733-e9db1fa7e17d",
+            "categories": [
+              {
+                "uuid": "ab584508-bdb6-46e8-b733-e9db1fa7e17d",
+                "name": "All Responses",
+                "exit_uuid": "d1d39811-58fb-410a-b9bf-aece277bc77e"
+              }
+            ],
+            "cases": [],
+            "operand": "msg"
+          },
+          "exits": [
+            {
+              "uuid": "d1d39811-58fb-410a-b9bf-aece277bc77e",
+              "destination_uuid": "464c36ae-e5fc-4708-b80c-c82b9d1b4ed7"
+            }
+          ]
+        },
+        {
+          "uuid": "464c36ae-e5fc-4708-b80c-c82b9d1b4ed7",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "event_id",
+              "value": "@trigger.params.eventId",
+              "category": "",
+              "uuid": "e6c0d569-43af-4092-8b59-728436cdf567"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "fb9c99ed-a32e-493a-9bf6-026f50076d18",
+              "destination_uuid": "1e005e56-2f76-41d5-8df4-3e5c029a1125"
+            }
+          ]
+        },
+        {
+          "uuid": "1e005e56-2f76-41d5-8df4-3e5c029a1125",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "IDS_AFI_SPECIMEN_COLLECTOR_GIVEN_NAME",
+              "value": "Doe",
+              "category": "",
+              "uuid": "297c17ad-eaa1-468b-a16a-7405faf8ee61"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "5205dd88-8d9b-4f5e-865a-00908fadb76f",
+              "destination_uuid": "b0f6b7f2-edbe-4b77-a200-6916c95105ee"
+            }
+          ]
+        },
+        {
+          "uuid": "b0f6b7f2-edbe-4b77-a200-6916c95105ee",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "IDS_AFI_SPECIMEN_COLLECTOR_FAMILY_NAME",
+              "value": "John",
+              "category": "",
+              "uuid": "0ba89ea3-65ce-4d54-b3e4-99021e8d1843"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "d7386aca-e0c5-4292-9f6d-a0567e18fa30",
+              "destination_uuid": "abb5c92c-b56b-4762-bf4d-06d5ba2c1080"
+            }
+          ]
+        },
+        {
+          "uuid": "abb5c92c-b56b-4762-bf4d-06d5ba2c1080",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "IDS_AFI_SPECIMEN_DATE_COLLECTION",
+              "value": "2023-10-19",
+              "category": "",
+              "uuid": "8a78b3bd-cc7e-45df-92f6-bc431cf8f6a6"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "d96bf7e7-05cc-40bb-adc3-8fbe911fb8f5",
+              "destination_uuid": "1a35f1bb-3854-4c8d-99cf-b859e527047b"
+            }
+          ]
+        },
+        {
+          "uuid": "1a35f1bb-3854-4c8d-99cf-b859e527047b",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "IDS_AFI_SPECIMEN_TIME_COLLECTION",
+              "value": "12:00",
+              "category": "",
+              "uuid": "7d9757c4-c230-48c3-9bf6-7b54d322a2cc"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "0605538a-d2c2-4fc5-b004-e278e588be92",
+              "destination_uuid": "562877df-e0a0-4a1a-9325-ecef0056075c"
+            }
+          ]
+        },
+        {
+          "uuid": "562877df-e0a0-4a1a-9325-ecef0056075c",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "IDS_AFI_SPECIMEN_COLLECTION_BLOOD",
+              "value": "true",
+              "category": "",
+              "uuid": "b1fe3274-d138-4f75-ae2b-70b93a274216"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "ad6854d9-0107-42b4-aa52-14313855212e",
+              "destination_uuid": "13a06952-70d2-4335-9200-3d4bf0b05bda"
+            }
+          ]
+        },
+        {
+          "uuid": "13a06952-70d2-4335-9200-3d4bf0b05bda",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "IDS_AFI_SPECIMEN_COLLECTION_SERUM",
+              "value": "true",
+              "category": "",
+              "uuid": "ad3d4133-6504-4d12-85b8-5f635379048f"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "287110db-6080-4521-8234-675fe1cadc6b",
+              "destination_uuid": "5d55918e-5d0f-4194-bdf7-07d43402d3da"
+            }
+          ]
+        },
+        {
+          "uuid": "5d55918e-5d0f-4194-bdf7-07d43402d3da",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "IDS_AFI_SPECIMEN_DATE_TRANSPORT",
+              "value": "2023-10-19",
+              "category": "",
+              "uuid": "b6504e59-cc93-4196-bae7-b922faf2ef59"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "143d01ad-0f85-418c-a2bf-84482f660a0b",
+              "destination_uuid": "84c35312-6f84-4bb2-9513-22657ab25d68"
+            }
+          ]
+        },
+        {
+          "uuid": "84c35312-6f84-4bb2-9513-22657ab25d68",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "IDS_AFI_SPECIMEN_TIME_TRANSPORT",
+              "value": "12:00",
+              "category": "",
+              "uuid": "fbbe83c3-52af-4d46-a8ae-9bf76bcd548f"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "e695688e-eb75-43f1-8f6c-ca76a8d95c10",
+              "destination_uuid": null
+            }
+          ]
+        }
+      ],
+      "_ui": {
+        "nodes": {
+          "464c36ae-e5fc-4708-b80c-c82b9d1b4ed7": {
+            "position": {
+              "left": 140,
+              "top": 700
+            },
+            "type": "execute_actions"
+          },
+          "4b2f97b9-73fd-4d46-a7f8-a33a915687bf": {
+            "type": "split_by_expression",
+            "position": {
+              "left": 140,
+              "top": 580
+            },
+            "config": {
+              "cases": {}
+            }
+          },
+          "1e005e56-2f76-41d5-8df4-3e5c029a1125": {
+            "position": {
+              "left": 140,
+              "top": 820
+            },
+            "type": "execute_actions"
+          },
+          "b0f6b7f2-edbe-4b77-a200-6916c95105ee": {
+            "position": {
+              "left": 140,
+              "top": 1000
+            },
+            "type": "execute_actions"
+          },
+          "abb5c92c-b56b-4762-bf4d-06d5ba2c1080": {
+            "position": {
+              "left": 140,
+              "top": 1180
+            },
+            "type": "execute_actions"
+          },
+          "1a35f1bb-3854-4c8d-99cf-b859e527047b": {
+            "position": {
+              "left": 140,
+              "top": 1380
+            },
+            "type": "execute_actions"
+          },
+          "562877df-e0a0-4a1a-9325-ecef0056075c": {
+            "position": {
+              "left": 140,
+              "top": 1560
+            },
+            "type": "execute_actions"
+          },
+          "13a06952-70d2-4335-9200-3d4bf0b05bda": {
+            "position": {
+              "left": 140,
+              "top": 1720
+            },
+            "type": "execute_actions"
+          },
+          "5d55918e-5d0f-4194-bdf7-07d43402d3da": {
+            "position": {
+              "left": 140,
+              "top": 1880
+            },
+            "type": "execute_actions"
+          },
+          "84c35312-6f84-4bb2-9513-22657ab25d68": {
+            "position": {
+              "left": 140,
+              "top": 2060
+            },
+            "type": "execute_actions"
+          }
+        },
+        "stickies": {}
+      },
+      "revision": 138,
+      "expire_after_minutes": 10080,
+      "localization": {}
+    }
+  ],
+  "campaigns": [],
+  "triggers": [],
+  "fields": [],
+  "groups": []
+}

@@ -1,0 +1,126 @@
+{
+  "version": "13",
+  "site": "https://rapidpro.dhis2.org",
+  "flows": [
+    {
+      "name": "Laboratory testing and results",
+      "uuid": "94ca6c15-46d8-4ea1-9c3c-98cf04939c7e",
+      "spec_version": "13.1.0",
+      "language": "eng",
+      "type": "messaging",
+      "nodes": [
+        {
+          "uuid": "f8d2cc1e-3265-4741-8c2e-6c26f2effcd4",
+          "actions": [],
+          "router": {
+            "type": "switch",
+            "default_category_uuid": "63d740c8-3488-461a-a4c2-3f304a2d7ab7",
+            "cases": [],
+            "categories": [
+              {
+                "uuid": "63d740c8-3488-461a-a4c2-3f304a2d7ab7",
+                "name": "All Responses",
+                "exit_uuid": "d5c69f8a-e115-4fde-b45d-26836e4c1fa8"
+              },
+              {
+                "uuid": "a4a5990d-ba41-49ff-bb77-96812c8826ab",
+                "name": "No Response",
+                "exit_uuid": "e181a280-a94e-439e-b62f-057a9c2e2f31"
+              }
+            ],
+            "operand": "@input.text",
+            "wait": {
+              "type": "msg",
+              "timeout": {
+                "seconds": 60,
+                "category_uuid": "a4a5990d-ba41-49ff-bb77-96812c8826ab"
+              }
+            },
+            "result_name": "Result"
+          },
+          "exits": [
+            {
+              "uuid": "d5c69f8a-e115-4fde-b45d-26836e4c1fa8",
+              "destination_uuid": "fcf96546-40f4-4616-bdd2-0e88a4a8dead"
+            },
+            {
+              "uuid": "e181a280-a94e-439e-b62f-057a9c2e2f31",
+              "destination_uuid": "fcf96546-40f4-4616-bdd2-0e88a4a8dead"
+            }
+          ]
+        },
+        {
+          "uuid": "fcf96546-40f4-4616-bdd2-0e88a4a8dead",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "IDS_AFI_LAB_NAME",
+              "value": "Health facility",
+              "category": "",
+              "uuid": "fc4134ec-1c7c-4271-b6cd-11a92b5eda4e"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "82722990-7dcd-4662-a40b-486c0e43b386",
+              "destination_uuid": "a8662ce4-9ce4-4535-845d-d5c161aa6652"
+            }
+          ]
+        },
+        {
+          "uuid": "a8662ce4-9ce4-4535-845d-d5c161aa6652",
+          "actions": [
+            {
+              "type": "set_run_result",
+              "name": "event_id",
+              "value": "@trigger.params.eventId",
+              "category": "",
+              "uuid": "7b3fa4d3-1b66-4a6d-bfae-eb1902e398a9"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "2d3e42ef-f396-45d5-923f-a15fa076810d",
+              "destination_uuid": null
+            }
+          ]
+        }
+      ],
+      "_ui": {
+        "nodes": {
+          "f8d2cc1e-3265-4741-8c2e-6c26f2effcd4": {
+            "type": "wait_for_response",
+            "position": {
+              "left": 460,
+              "top": 0
+            },
+            "config": {
+              "cases": {}
+            }
+          },
+          "fcf96546-40f4-4616-bdd2-0e88a4a8dead": {
+            "position": {
+              "left": 460,
+              "top": 160
+            },
+            "type": "execute_actions"
+          },
+          "a8662ce4-9ce4-4535-845d-d5c161aa6652": {
+            "position": {
+              "left": 460,
+              "top": 280
+            },
+            "type": "execute_actions"
+          }
+        }
+      },
+      "revision": 9,
+      "expire_after_minutes": 10080,
+      "localization": {}
+    }
+  ],
+  "campaigns": [],
+  "triggers": [],
+  "fields": [],
+  "groups": []
+}
