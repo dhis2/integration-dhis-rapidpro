@@ -33,7 +33,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedBodyAggregationStrategy;
 import org.hisp.dhis.api.model.v40_0.DataSet;
 import org.hisp.dhis.integration.rapidpro.CompleteDataSetRegistrationFunction;
-import org.hisp.dhis.integration.rapidpro.ContactOrgUnitIdAggrStrategy;
+import org.hisp.dhis.integration.rapidpro.aggregationStrategy.ContactOrgUnitIdAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.expression.RootCauseExpr;
 import org.hisp.dhis.integration.rapidpro.processor.CurrentPeriodCalculator;
 import org.hisp.dhis.integration.rapidpro.processor.IdSchemeQueryParamSetter;

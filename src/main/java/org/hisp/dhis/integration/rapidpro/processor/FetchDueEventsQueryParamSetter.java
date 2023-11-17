@@ -25,31 +25,33 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro;
+package org.hisp.dhis.integration.rapidpro.processor;
 
-import com.jayway.jsonpath.JsonPath;
-import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.camel.Processor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class ContactOrgUnitIdAggrStrategy implements AggregationStrategy
+public class FetchDueEventsQueryParamSetter implements Processor
 {
-    protected static final Logger LOGGER = LoggerFactory.getLogger( ContactOrgUnitIdAggrStrategy.class );
-
     @Override
-    public Exchange aggregate( Exchange oldExchange, Exchange newExchange )
+    public void process( Exchange exchange ) throws Exception
     {
-        String contact = newExchange.getMessage().getBody( String.class );
-        String contactUuid = (String) ((Map<String, Object>) oldExchange.getMessage().getBody( Map.class )
-            .get( "contact" )).get( "uuid" );
-        LOGGER.debug( String.format( "Fetched contact %s => %s ", contactUuid, contact ) );
-        oldExchange.getMessage()
-            .setHeader( "orgUnitId", JsonPath.read( contact, "$.results[0].fields.dhis2_organisation_unit_id" ) );
-        return oldExchange;
+        String programStageId = (String) exchange.getMessage().getHeader("programStage");
+        String todayString = LocalDate.now().toString();
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put( "status", "SCHEDULE" );
+        queryParams.put( "programStage", programStageId );
+        queryParams.put( "skipPaging", "true" );
+
+        // FIXME: should ideally use "scheduledBefore" and not "occurredBefore", but there seems to be an issue with "scheduledBefore" on DHIS2 prior to 2.38.4
+        queryParams.put( "occurredBefore", todayString );
+        queryParams.put( "scheduledBefore", todayString );
+        exchange.getMessage().setHeader( "CamelDhis2.queryParams", queryParams );
+
     }
 }
