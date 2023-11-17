@@ -27,70 +27,32 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import static io.restassured.RestAssured.given;
+import static org.hisp.dhis.integration.rapidpro.Environment.RAPIDPRO_API_REQUEST_SPEC;
 
-@Configuration
-@ConfigurationProperties( prefix = "dhis2.rapidpro" )
-public class ProgramStageToFlowMap
+public class ProgramStageToFlowMapInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext>
 {
-    private Map<String, String> map = new HashMap<>();
 
-    public Map<String, String> getMap()
+    @Override
+    public void initialize( ConfigurableApplicationContext applicationContext )
     {
-        return this.map;
+        String specimenCollectionFlowUuid = getFlowUuid("Specimen collection and shipment to NRL");
+        String laboratoryTestingFlowUuid = getFlowUuid("Laboratory testing and results");
+        TestPropertyValues.of(
+            "dhis2.rapidpro.map.ZP5HZ87wzc0="+specimenCollectionFlowUuid,"dhis2.rapidpro.map.Ish2wk3eLg3="+laboratoryTestingFlowUuid
+        ).applyTo( applicationContext );
     }
-
-    public void setMap( Map<String, String> map )
+    private String getFlowUuid(String flowName)
     {
-        this.map = map;
-    }
-
-    public boolean flowUuidExists( String flowUuid )
-    {
-        return map.values().contains( flowUuid );
-    }
-
-    public String getFlowUuids( String programStageId )
-    {
-        return map.get( programStageId );
-    }
-
-    public String getFlowUuids( Map<String, Object> body )
-    {
-        return map.get( body.get( "programStage" ) );
-    }
-
-    public String getFlowUuids()
-    {
-        return String.join( ",", this.map.values() );
-    }
-
-    public void deleteFlows()
-    {
-        this.map.clear();
-    }
-
-    public String getProgramStage( String flowUuid )
-    {
-        for ( Map.Entry<String, String> entry : map.entrySet() )
-        {
-            if ( entry.getValue().equals( flowUuid ) )
-            {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    public List<String> getAllProgramStageIds()
-    {
-        return new ArrayList<>( map.keySet() );
+        return given(RAPIDPRO_API_REQUEST_SPEC)
+            .get("flows.json")
+            .then()
+            .extract()
+            .path("results.find { it.name == '"+flowName+"' }.uuid");
     }
 
 }
