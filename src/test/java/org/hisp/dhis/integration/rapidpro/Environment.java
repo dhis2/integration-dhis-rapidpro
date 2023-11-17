@@ -86,6 +86,12 @@ public final class Environment
 {
     public static final String DHIS_IMAGE_NAME = System.getProperty( "dhis.image.name" );
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( Environment.class );
+
+    private static final Network RAPIDPRO_NETWORK = Network.builder().build();
+
+    private static final Network DHIS2_NETWORK = Network.builder().build();
+
     public static String ORG_UNIT_ID;
 
     public static Dhis2Client DHIS2_CLIENT;
@@ -98,11 +104,11 @@ public final class Environment
 
     public static String RAPIDPRO_API_TOKEN;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( Environment.class );
+    public static RequestSpecification RAPIDPRO_REQUEST_SPEC;
 
-    private static final Network RAPIDPRO_NETWORK = Network.builder().build();
+    public static RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
 
-    private static final Network DHIS2_NETWORK = Network.builder().build();
+    public static PostgreSQLContainer<?> DHIS2_DB_CONTAINER;
 
     private static GenericContainer<?> RAPIDPRO_CONTAINER;
 
@@ -111,12 +117,6 @@ public final class Environment
     private static GenericContainer<?> ELASTICSEARCH_CONTAINER;
 
     private static GenericContainer<?> MAILROOM_CONTAINER;
-
-    public static RequestSpecification RAPIDPRO_REQUEST_SPEC;
-
-    public static RequestSpecification RAPIDPRO_API_REQUEST_SPEC;
-
-    public static PostgreSQLContainer<?> DHIS2_DB_CONTAINER;
 
     static
     {
@@ -136,6 +136,11 @@ public final class Environment
             LOGGER.error( e.getMessage(), e );
             throw new RuntimeException( e );
         }
+    }
+
+    private Environment()
+    {
+
     }
 
     private static void setUpDhis2()
@@ -195,7 +200,7 @@ public final class Environment
             .when()
             .post( "/org/signup/" ).then().statusCode( 302 );
 
-        importTestFlow("flow.json" );
+        importTestFlow( "flow.json" );
         importTestFlow( "laboratoryTestingFlow.json" );
         importTestFlow( "specimenCollectionFlow.json" );
 
@@ -229,11 +234,6 @@ public final class Environment
                 .header( "Content-Transfer-Encoding", "binary" ).build() )
             .when()
             .post( "/org/import/" ).then().statusCode( 302 ).header( "Location", "/org/home/" );
-    }
-
-    private Environment()
-    {
-
     }
 
     private static void startContainers()
@@ -430,28 +430,35 @@ public final class Environment
         return dhis2Response.returnAs( WebMessage.class ).getResponse().get().get( "uid" );
     }
 
-    public static void createDhis2TrackedEntitiesWithEnrollment(String orgUnitId)
-        throws IOException, ParseException
+    public static void createDhis2TrackedEntitiesWithEnrollment( String orgUnitId )
+        throws
+        IOException,
+        ParseException
     {
-        createDhis2TrackedEntitiesWithEnrollment(orgUnitId, 10 );
+        createDhis2TrackedEntitiesWithEnrollment( orgUnitId, 10 );
     }
 
     public static void createDhis2TrackedEntitiesWithEnrollment( String orgUnitId, int numOfTrackedEntities )
-        throws IOException, ParseException
+        throws
+        IOException,
+        ParseException
     {
         int phoneNumber = 50100;
         int patientId = 1000000;
         for ( int i = 0; i < numOfTrackedEntities; i++ )
         {
             String firstName = new Faker().name().firstName();
-            createDhis2TrackedEntityWithEnrollment(orgUnitId, "55" + phoneNumber, "ID-" + patientId, firstName );
+            createDhis2TrackedEntityWithEnrollment( orgUnitId, "55" + phoneNumber, "ID-" + patientId, firstName );
             phoneNumber++;
             patientId++;
         }
     }
 
-    public static String createDhis2TrackedEntityWithEnrollment(String orgUnitId, String phoneNumber, String patientUID, String firstName )
-        throws IOException, ParseException
+    public static String createDhis2TrackedEntityWithEnrollment( String orgUnitId, String phoneNumber,
+        String patientUID, String firstName )
+        throws
+        IOException,
+        ParseException
     {
         List<String> programStageIds = List.of( "ZP5HZ87wzc0" );
         TrackedEntity trackedEntity = new TrackedEntity()
@@ -471,9 +478,12 @@ public final class Environment
         return enrollmentId;
     }
 
-    public static String createDhis2TrackedEntityWithEnrollment( String orgUnitId, String phoneNumber, String patientUID, String firstName,
-                                                                 List<String> programStageIds )
-        throws IOException, ParseException
+    public static String createDhis2TrackedEntityWithEnrollment( String orgUnitId, String phoneNumber,
+        String patientUID, String firstName,
+        List<String> programStageIds )
+        throws
+        IOException,
+        ParseException
     {
         TrackedEntity trackedEntity = new TrackedEntity()
             .withOrgUnit( orgUnitId )
@@ -588,19 +598,19 @@ public final class Environment
         IOException
     {
         String mlagMetaData = StreamUtils.copyToString(
-                        Thread.currentThread().getContextClassLoader().getResourceAsStream( "MLAG00_1.2.1_DHIS2.36.json" ),
-                        Charset.defaultCharset() ).replaceAll( "<OU_LEVEL_DISTRICT_UID>", orgUnitLevelId )
-                .replaceAll( "<OU_LEVEL_FACILITY_UID>", orgUnitLevelId );
+                Thread.currentThread().getContextClassLoader().getResourceAsStream( "MLAG00_1.2.1_DHIS2.36.json" ),
+                Charset.defaultCharset() ).replaceAll( "<OU_LEVEL_DISTRICT_UID>", orgUnitLevelId )
+            .replaceAll( "<OU_LEVEL_FACILITY_UID>", orgUnitLevelId );
         String afiMetaData = StreamUtils.copyToString(
-                Thread.currentThread().getContextClassLoader()
-                        .getResourceAsStream( "IDS_AFI_COMPLETE_1.0.0_DHIS2.38.json" ),
-                Charset.defaultCharset() );
+            Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream( "IDS_AFI_COMPLETE_1.0.0_DHIS2.38.json" ),
+            Charset.defaultCharset() );
         WebMessage webMessageMlag = DHIS2_CLIENT.post( "metadata" )
-                .withResource( mlagMetaData )
-                .withParameter( "atomicMode", "NONE" ).transfer().returnAs( WebMessage.class );
+            .withResource( mlagMetaData )
+            .withParameter( "atomicMode", "NONE" ).transfer().returnAs( WebMessage.class );
         WebMessage webMessageAfi = DHIS2_CLIENT.post( "metadata" )
-                .withResource( afiMetaData )
-                .withParameter( "atomicMode", "NONE" ).transfer().returnAs( WebMessage.class );
+            .withResource( afiMetaData )
+            .withParameter( "atomicMode", "NONE" ).transfer().returnAs( WebMessage.class );
         assertEquals( WebMessage.Status.OK, webMessageMlag.getStatus() );
         assertEquals( WebMessage.Status.OK, webMessageAfi.getStatus() );
     }
