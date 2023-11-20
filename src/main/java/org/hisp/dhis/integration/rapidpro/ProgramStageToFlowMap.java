@@ -51,6 +51,21 @@ public class ProgramStageToFlowMap
         this.map = map;
     }
 
+    public void add( String programStageId, String flowUuid )
+    {
+        map.put( programStageId, flowUuid );
+    }
+
+    public void remove( String programStageId )
+    {
+        map.remove( programStageId );
+    }
+
+    public void clear()
+    {
+        map.clear();
+    }
+
     public boolean flowUuidExists( String flowUuid )
     {
         return map.values().contains( flowUuid );

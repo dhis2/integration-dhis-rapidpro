@@ -60,7 +60,8 @@ public class FetchScheduledTrackerEvents extends AbstractRouteBuilder
             .removeHeaders( "*" )
             .to( "direct:eventFetchAndProcess" )
             .setHeader( Exchange.CONTENT_TYPE, constant( "application/json" ) )
-            .setBody( constant( Map.of( "status", "success", "data", "Fetched and enqueued due program stage events" ) ) )
+            .setBody(
+                constant( Map.of( "status", "success", "data", "Fetched and enqueued due program stage events" ) ) )
             .marshal().json();
 
         from( "quartz://fetchDueEvents?cron={{sync.events.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
@@ -83,7 +84,6 @@ public class FetchScheduledTrackerEvents extends AbstractRouteBuilder
             .setProperty( "dueEventsCount", jsonpath( "$.instances.length()" ) )
             .setProperty( "dueEvents", jsonpath( "$.instances" ) )
             .log( LoggingLevel.INFO, LOGGER, "Fetched ${exchangeProperty.dueEventsCount} due events from DHIS2" )
-            .end();
-
+        .end();
     }
 }

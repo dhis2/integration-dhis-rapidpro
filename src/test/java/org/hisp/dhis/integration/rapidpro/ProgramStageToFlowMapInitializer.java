@@ -40,19 +40,21 @@ public class ProgramStageToFlowMapInitializer implements ApplicationContextIniti
     @Override
     public void initialize( ConfigurableApplicationContext applicationContext )
     {
-        String specimenCollectionFlowUuid = getFlowUuid("Specimen collection and shipment to NRL");
-        String laboratoryTestingFlowUuid = getFlowUuid("Laboratory testing and results");
+        String specimenCollectionFlowUuid = getFlowUuid( "Specimen collection and shipment to NRL" );
+        String laboratoryTestingFlowUuid = getFlowUuid( "Laboratory testing and results" );
         TestPropertyValues.of(
-            "dhis2.rapidpro.map.ZP5HZ87wzc0="+specimenCollectionFlowUuid,"dhis2.rapidpro.map.Ish2wk3eLg3="+laboratoryTestingFlowUuid
+            "dhis2.rapidpro.map.ZP5HZ87wzc0=" + specimenCollectionFlowUuid,
+            "dhis2.rapidpro.map.Ish2wk3eLg3=" + laboratoryTestingFlowUuid
         ).applyTo( applicationContext );
     }
-    private String getFlowUuid(String flowName)
+
+    private String getFlowUuid( String flowName )
     {
-        return given(RAPIDPRO_API_REQUEST_SPEC)
-            .get("flows.json")
+        return given( RAPIDPRO_API_REQUEST_SPEC )
+            .get( "flows.json" )
             .then()
             .extract()
-            .path("results.find { it.name == '"+flowName+"' }.uuid");
+            .path( "results.find { it.name == '" + flowName + "' }.uuid" );
     }
 
 }

@@ -173,7 +173,6 @@ public final class Environment
         addOrgUnitToDataSet( ORG_UNIT_ID );
         addOrgUnitToTrackerProgram( ORG_UNIT_ID );
         createDhis2Users( ORG_UNIT_ID );
-        createDhis2TrackedEntitiesWithEnrollment( ORG_UNIT_ID );
         runAnalytics();
     }
 
@@ -443,14 +442,26 @@ public final class Environment
         IOException,
         ParseException
     {
-        int phoneNumber = 50100;
-        int patientId = 1000000;
         for ( int i = 0; i < numOfTrackedEntities; i++ )
         {
             String firstName = new Faker().name().firstName();
-            createDhis2TrackedEntityWithEnrollment( orgUnitId, "55" + phoneNumber, "ID-" + patientId, firstName );
-            phoneNumber++;
-            patientId++;
+            String phoneNumber = new Faker().phoneNumber().cellPhone();
+            String id = new Faker().idNumber().toString();
+            createDhis2TrackedEntityWithEnrollment( orgUnitId, phoneNumber, "ID-" + id, firstName );
+        }
+    }
+
+    public static void createDhis2TrackedEntitiesWithEnrollment( String orgUnitId, int numOfTrackedEntities, List<String> programStageIds )
+        throws
+        IOException,
+        ParseException
+    {
+        for ( int i = 0; i < numOfTrackedEntities; i++ )
+        {
+            String firstName = new Faker().name().firstName();
+            String phoneNumber = new Faker().phoneNumber().cellPhone();
+            String id = new Faker().idNumber().toString();
+            createDhis2TrackedEntityWithEnrollment( orgUnitId, phoneNumber, "ID-" + id, firstName, programStageIds );
         }
     }
 
@@ -556,6 +567,10 @@ public final class Environment
             .withParameter( "orgUnit", orgUnitId )
             .transfer()
             .returnAs( TrackedEntity.class, "instances" );
+
+        if (!trackedEntitiesIterable.iterator().hasNext()) {
+            return;
+        }
 
         for ( TrackedEntity trackedEntity : trackedEntitiesIterable )
         {
