@@ -36,16 +36,12 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.rapidpro.ProgramStageToFlowMap;
-import org.hisp.dhis.integration.rapidpro.ProgramStageToFlowMapInitializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -142,7 +138,7 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
         throws
         Exception
     {
-        Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 1 );
+        Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 1, List.of( "ZP5HZ87wzc0" ) );
         programStageToFlowMap.add( "invalid", "invalid-flow-uuid-placeholder" );
         camelContext.start();
 

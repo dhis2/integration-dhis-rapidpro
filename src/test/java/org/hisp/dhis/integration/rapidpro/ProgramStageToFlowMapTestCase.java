@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,17 +40,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProgramStageToFlowMapTestCase
 {
-    private ProgramStageToFlowMap programStageToFlowMap;
+    private ProgramStageToFlowMap programStageToFlowMap = new ProgramStageToFlowMap();
 
     @BeforeEach
-    public void setUp()
+    public void beforeEach()
     {
-        Map<String, String> testMap = new HashMap<>();
-        testMap.put( "ZP5HZ87wzc0", "specimen-collection-flow-uuid" );
-        testMap.put( "Ish2wk3eLg3", "laboratory-testing-flow-uuid" );
+        programStageToFlowMap.add( "ZP5HZ87wzc0", "specimen-collection-flow-uuid" );
+        programStageToFlowMap.add( "Ish2wk3eLg3", "laboratory-testing-flow-uuid" );
+    }
 
-        programStageToFlowMap = new ProgramStageToFlowMap();
-        programStageToFlowMap.setMap( testMap );
+    @AfterEach
+    public void afterEach()
+    {
+        programStageToFlowMap.clear();
     }
 
     @Test
