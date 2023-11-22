@@ -122,6 +122,9 @@ public class Application extends SpringBootServletInitializer
     @Value( "${sync.rapidpro.contacts}" )
     private Boolean syncRapidProContacts;
 
+    @Value( "${sync.dhis2.events.to.rapidpro.flows}" )
+    private Boolean syncDhisEvents;
+
     @Autowired
     private ArtemisProperties artemisProperties;
 
@@ -228,6 +231,11 @@ public class Application extends SpringBootServletInitializer
         if ( syncRapidProContacts )
         {
             onlineBanner.append( " Sync contacts task: " ).append( baseUrl ).append( "/services/tasks/sync\n" );
+        }
+        if ( syncDhisEvents )
+        {
+            onlineBanner.append( " Sync DHI2 events task: " ).append( baseUrl )
+                .append( "/services/tasks/syncEvents\n" );
         }
         onlineBanner.append( " Remind contacts task: " ).append( baseUrl ).append( "/services/tasks/reminders\n" );
 

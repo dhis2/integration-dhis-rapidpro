@@ -63,7 +63,7 @@ public class FetchScheduledTrackerEvents extends AbstractRouteBuilder
         throws
         Exception
     {
-        from( "servlet:tasks/fetchDueEvents?muteException=true" )
+        from( "servlet:tasks/syncEvents?muteException=true" )
             .precondition( "{{sync.dhis2.events.to.rapidpro.flows}}" )
             .removeHeaders( "*" )
             .to( "direct:eventFetchAndProcess" )

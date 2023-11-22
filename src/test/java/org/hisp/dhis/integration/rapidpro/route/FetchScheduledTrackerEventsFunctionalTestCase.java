@@ -28,30 +28,23 @@
 package org.hisp.dhis.integration.rapidpro.route;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kotlin.jvm.Throws;
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
-import org.apache.camel.Expression;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.hisp.dhis.api.model.v40_0.Enrollment;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.rapidpro.ProgramStageToFlowMap;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.restassured.RestAssured.given;
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
