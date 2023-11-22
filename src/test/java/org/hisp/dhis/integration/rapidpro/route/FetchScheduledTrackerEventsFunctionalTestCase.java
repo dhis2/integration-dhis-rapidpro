@@ -28,21 +28,31 @@
 package org.hisp.dhis.integration.rapidpro.route;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kotlin.jvm.Throws;
+import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
+import org.apache.camel.Expression;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.hisp.dhis.api.model.v40_0.Enrollment;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.rapidpro.ProgramStageToFlowMap;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static io.restassured.RestAssured.given;
+import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -167,6 +177,153 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
         Exchange exchange = spyEndpoint.getExchanges().get( 0 );
         int dueEventsCount = exchange.getProperty( "dueEventsCount", Integer.class );
         assertEquals( 600, dueEventsCount );
+    }
+
+    @Test
+    public void testAttributeFetchTrackedEntityId()
+        throws
+        Exception
+    {
+        String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "1234",
+            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+        camelContext.start();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put( "enrollment", enrollmentId );
+        producerTemplate.sendBody( "direct:fetchAttributes", ExchangePattern.InOut, body );
+        spyEndpoint.assertIsSatisfied();
+        String trackedEntityId = (String) DHIS2_CLIENT.get( "tracker/enrollments/{}", enrollmentId ).transfer()
+            .returnAs(
+                Map.class ).get( "trackedEntity" );
+        Map<String, Object> bodyAfterAttributeEnrichment = spyEndpoint.getExchanges().get( 0 ).getMessage()
+            .getBody( Map.class );
+        assertEquals( trackedEntityId, bodyAfterAttributeEnrichment.get( "trackedEntity" ) );
+    }
+
+    @Test
+    public void testReturnsCorrectAttributesEndpointWhenProgramAttributes()
+        throws
+        Exception
+    {
+        String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "1234",
+            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+        camelContext.start();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put( "enrollment", enrollmentId );
+        producerTemplate.sendBody( "direct:fetchAttributes", ExchangePattern.InOut, body );
+        spyEndpoint.assertIsSatisfied();
+        Exchange exchange = spyEndpoint.getExchanges().get( 0 );
+        String attributeEndpoint = (String) exchange.getProperty( "attributesEndpoint" );
+        assertEquals(
+            "dhis2://get/resource?path=tracker/enrollments/" + enrollmentId + "&fields=attributes[attribute,code,value]&client=#dhis2Client",
+            attributeEndpoint );
+    }
+
+    @Test
+    public void testReturnsCorrectAttributesEndpointWhenTypeAttributes()
+        throws
+        Exception
+    {
+        String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "1234",
+            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+        String trackedEntityId = (String) DHIS2_CLIENT.get( "tracker/enrollments/{}", enrollmentId ).transfer()
+            .returnAs(
+                Map.class ).get( "trackedEntity" );
+
+        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> {
+            r.interceptSendToEndpoint(
+                    "dhis2://get/resource?path=tracker/enrollments/" + enrollmentId + "&fields=trackedEntity,attributes[code]&client=#dhis2Client" )
+                .skipSendToOriginalEndpoint()
+                .setBody( exchange -> "{\"trackedEntity\": \"" + trackedEntityId + "\", \"attributes\": [] }" );
+        } );
+        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+        camelContext.start();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put( "enrollment", enrollmentId );
+        producerTemplate.sendBody( "direct:fetchAttributes", ExchangePattern.InOut, body );
+        spyEndpoint.assertIsSatisfied();
+        Exchange exchange = spyEndpoint.getExchanges().get( 0 );
+        String attributeEndpoint = (String) exchange.getProperty( "attributesEndpoint" );
+
+        assertEquals(
+            "dhis2://get/resource?path=tracker/trackedEntities/" + trackedEntityId + "&fields=attributes[attribute,code,value]&client=#dhis2Client",
+            attributeEndpoint );
+    }
+
+    @Test
+    public void testAttributeFetchGivenNameAndContactUrnAsTrackedEntityProgramAttributes()
+        throws
+        Exception
+    {
+        String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "12345678",
+            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+        camelContext.start();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put( "enrollment", enrollmentId );
+        producerTemplate.sendBody( "direct:fetchAttributes", ExchangePattern.InOut, body );
+        spyEndpoint.assertIsSatisfied();
+        Map<String, Object> bodyAfterAttributeEnrichment = spyEndpoint.getExchanges().get( 0 ).getMessage()
+            .getBody( Map.class );
+        String expectedContactUrn = "whatsapp:12345678";
+        String expectedGivenName = "John";
+        assertEquals( expectedContactUrn, bodyAfterAttributeEnrichment.get( "contactUrn" ) );
+        assertEquals( expectedGivenName, bodyAfterAttributeEnrichment.get( "givenName" ) );
+    }
+
+    @Test
+    public void testAttributeFetchGivenNameAndContactUrnAsTrackedEntityTypeAttributes()
+        throws
+        Exception
+    {
+        String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "12345678",
+            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+        String trackedEntityId = (String) DHIS2_CLIENT.get( "tracker/enrollments/{}", enrollmentId ).transfer()
+            .returnAs(
+                Map.class ).get( "trackedEntity" );
+
+        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> {
+            r.interceptSendToEndpoint(
+                    "dhis2://get/resource?path=tracker/enrollments/" + enrollmentId + "&fields=trackedEntity,attributes[code]&client=#dhis2Client" )
+                .skipSendToOriginalEndpoint()
+                .setBody( exchange -> "{\"trackedEntity\": \"" + trackedEntityId + "\", \"attributes\": [] }" );
+        } );
+
+        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> {
+            r.interceptSendToEndpoint(
+                    "dhis2://get/resource?path=tracker/trackedEntities/" + trackedEntityId + "&fields=attributes[attribute,code,value]&client=#dhis2Client" )
+                .skipSendToOriginalEndpoint()
+                .setBody(
+                    exchange -> "{\"attributes\":[{\"attribute\":\"xdRQzKcARGt\",\"value\":\"NO\"},{\"attribute\":\"sB1IHYu2xQT\",\"code\":\"GIVEN_NAME\",\"value\":\"John\"},{\"attribute\":\"ljHL8NnSEAD\",\"value\":\"v3HIu78Y4Wf\"},{\"attribute\":\"fctSQp5nAYl\",\"code\":\"PHONE_LOCAL\",\"value\":\"12345678\"},{\"attribute\":\"ENRjVGxVL6l\",\"code\":\"FAMILY_NAME\",\"value\":\"Williams\"}]}" );
+        } );
+        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+        camelContext.start();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put( "enrollment", enrollmentId );
+        producerTemplate.sendBody( "direct:fetchAttributes", ExchangePattern.InOut, body );
+        spyEndpoint.assertIsSatisfied();
+        Map<String, Object> bodyAfterAttributeEnrichment = spyEndpoint.getExchanges().get( 0 ).getMessage()
+            .getBody( Map.class );
+        String expectedContactUrn = "whatsapp:12345678";
+        String expectedGivenName = "John";
+        assertEquals( expectedContactUrn, bodyAfterAttributeEnrichment.get( "contactUrn" ) );
+        assertEquals( expectedGivenName, bodyAfterAttributeEnrichment.get( "givenName" ) );
     }
 
 }

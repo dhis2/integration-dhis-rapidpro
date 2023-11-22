@@ -1,0 +1,693 @@
+{
+  "code": "GEN_LIB_TRK_PERSON",
+  "lastUpdated": "2023-11-21T15:05:11.554",
+  "id": "MCPQUTHX1Ze",
+  "href": "http://localhost:63134/api/trackedEntityTypes/MCPQUTHX1Ze",
+  "created": "2023-11-21T15:02:16.674",
+  "name": "Person",
+  "displayName": "Person",
+  "publicAccess": "r-------",
+  "externalAccess": false,
+  "allowAuditLog": false,
+  "featureType": "NONE",
+  "minAttributesRequiredToSearch": 1,
+  "displayFormName": "Person",
+  "maxTeiCountToReturn": 0,
+  "favorite": false,
+  "access": {
+    "read": true,
+    "update": true,
+    "externalize": true,
+    "delete": true,
+    "write": true,
+    "manage": true,
+    "data": {
+      "read": true,
+      "write": true
+    }
+  },
+  "lastUpdatedBy": {
+    "code": "admin",
+    "displayName": "admin admin",
+    "name": "admin admin",
+    "id": "M5zQapPyTZI",
+    "username": "admin"
+  },
+  "sharing": {
+    "owner": "M5zQapPyTZI",
+    "userGroups": {
+      "GXyPvmW7lzw": {
+        "displayName": "AFI access",
+        "access": "r-r-----",
+        "id": "GXyPvmW7lzw"
+      },
+      "GnDNJsUmcKm": {
+        "displayName": "AFI admin",
+        "access": "rw------",
+        "id": "GnDNJsUmcKm"
+      },
+      "Wv2rbTtpVZV": {
+        "displayName": "AFI data capture",
+        "access": "r-rw----",
+        "id": "Wv2rbTtpVZV"
+      }
+    },
+    "external": false,
+    "public": "r-------",
+    "users": {}
+  },
+  "createdBy": {
+    "code": "admin",
+    "displayName": "admin admin",
+    "name": "admin admin",
+    "id": "M5zQapPyTZI",
+    "username": "admin"
+  },
+  "user": {
+    "code": "admin",
+    "displayName": "admin admin",
+    "name": "admin admin",
+    "id": "M5zQapPyTZI",
+    "username": "admin"
+  },
+  "favorites": [],
+  "trackedEntityTypeAttributes": [
+    {
+      "lastUpdated": "2023-11-21T15:05:11.555",
+      "id": "grIb5ig5GOk",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person AFI - Age (Months)",
+      "displayShortName": "null Age (Months)",
+      "externalAccess": false,
+      "valueType": "INTEGER_POSITIVE",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person AFI - Age (Months)",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "q4sbdujYHIj"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.555",
+      "id": "QmYuk76Ho6N",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person AFI - Age (Years)",
+      "displayShortName": "null Age (Years)",
+      "externalAccess": false,
+      "valueType": "INTEGER_POSITIVE",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person AFI - Age (Years)",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "IDBPweogFMQ"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.555",
+      "id": "n19zwxkMWP2",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person AFI - Date of birth - Unknown",
+      "displayShortName": "null Date of birth - Unknown",
+      "externalAccess": false,
+      "valueType": "TRUE_ONLY",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person AFI - Date of birth - Unknown",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "Cuh5nNmNWbl"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.555",
+      "id": "tZpyWmajRsV",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person Alternate phone number",
+      "displayShortName": "null Alternate phone number",
+      "externalAccess": false,
+      "valueType": "NUMBER",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person Alternate phone number",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "yIUuFclti50"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.555",
+      "id": "KsekocsgP6s",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person GEN - Address (current)",
+      "displayShortName": "null Address (current)",
+      "externalAccess": false,
+      "valueType": "LONG_TEXT",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person GEN - Address (current)",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "A6Hb0Kvg4vb"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.555",
+      "id": "tcEcWXuVLyk",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person GEN - Administrative area of residence",
+      "displayShortName": "null Administrative area of residence",
+      "externalAccess": false,
+      "valueType": "ORGANISATION_UNIT",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person GEN - Administrative area of residence",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "ljHL8NnSEAD"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.555",
+      "id": "OYx9A5pq5nM",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person GEN - Contact phone number (local)",
+      "displayShortName": "null Phone number",
+      "externalAccess": false,
+      "valueType": "PHONE_NUMBER",
+      "searchable": false,
+      "displayInList": true,
+      "name": "Person GEN - Contact phone number (local)",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "fctSQp5nAYl"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.555",
+      "id": "f5SG5DIp9Lh",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person GEN - Date of birth",
+      "mandatory": true,
+      "displayShortName": "null Date of birth",
+      "externalAccess": false,
+      "valueType": "DATE",
+      "searchable": false,
+      "displayInList": true,
+      "name": "Person GEN - Date of birth",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "NI0QRzJvQ0k"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.556",
+      "id": "XSmtk3lQJmK",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person GEN - Family name",
+      "displayShortName": "null Family name",
+      "externalAccess": false,
+      "valueType": "TEXT",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person GEN - Family name",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "ENRjVGxVL6l"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.556",
+      "id": "MmI1LTOnpVv",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person GEN - Given name",
+      "displayShortName": "null Given name",
+      "externalAccess": false,
+      "valueType": "TEXT",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person GEN - Given name",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "sB1IHYu2xQT"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.556",
+      "id": "LGifBFb2fcJ",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person GEN - Sex",
+      "displayShortName": "null Sex",
+      "externalAccess": false,
+      "valueType": "TEXT",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person GEN - Sex",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "oindugucx72"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.556",
+      "id": "EYPGu8pDI0j",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person Highest education received",
+      "displayShortName": "null Highest education received",
+      "externalAccess": false,
+      "valueType": "TEXT",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person Highest education received",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "HysEcGdXB1w"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.556",
+      "id": "j46oeHhpBfW",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person Marital status",
+      "displayShortName": "null Marital status",
+      "externalAccess": false,
+      "valueType": "TEXT",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person Marital status",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "bDm1t4BanCm"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.556",
+      "id": "ixyClrhniMw",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person Occupation",
+      "displayShortName": "null Occupation",
+      "externalAccess": false,
+      "valueType": "TEXT",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person Occupation",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "dMyRrx6lb7H"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.556",
+      "id": "YLg3t1v8MTl",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person Patient UID",
+      "mandatory": true,
+      "displayShortName": "null Patient UID",
+      "externalAccess": false,
+      "valueType": "TEXT",
+      "searchable": false,
+      "displayInList": true,
+      "name": "Person Patient UID",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "HlKXyR5qr2e"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    },
+    {
+      "lastUpdated": "2023-11-21T15:05:11.556",
+      "id": "mfObTwEDX8a",
+      "created": "2023-11-21T15:04:28.967",
+      "displayName": "Person Race / Ethnicity / Nationality",
+      "displayShortName": "null Race / Ethnicity / Nationality",
+      "externalAccess": false,
+      "valueType": "TEXT",
+      "searchable": false,
+      "displayInList": false,
+      "name": "Person Race / Ethnicity / Nationality",
+      "favorite": false,
+      "access": {
+        "read": true,
+        "update": true,
+        "externalize": true,
+        "delete": true,
+        "write": true,
+        "manage": true
+      },
+      "trackedEntityAttribute": {
+        "id": "wJkzp4d5iMn"
+      },
+      "sharing": {
+        "userGroups": {},
+        "external": false,
+        "users": {}
+      },
+      "trackedEntityType": {
+        "id": "MCPQUTHX1Ze"
+      },
+      "favorites": [],
+      "translations": [],
+      "userGroupAccesses": [],
+      "attributeValues": [],
+      "userAccesses": []
+    }
+  ],
+  "translations": [],
+  "userGroupAccesses": [
+    {
+      "access": "r-r-----",
+      "userGroupUid": "GXyPvmW7lzw",
+      "displayName": "AFI access",
+      "id": "GXyPvmW7lzw"
+    },
+    {
+      "access": "rw------",
+      "userGroupUid": "GnDNJsUmcKm",
+      "displayName": "AFI admin",
+      "id": "GnDNJsUmcKm"
+    },
+    {
+      "access": "r-rw----",
+      "userGroupUid": "Wv2rbTtpVZV",
+      "displayName": "AFI data capture",
+      "id": "Wv2rbTtpVZV"
+    }
+  ],
+  "attributeValues": [],
+  "userAccesses": []
+}
