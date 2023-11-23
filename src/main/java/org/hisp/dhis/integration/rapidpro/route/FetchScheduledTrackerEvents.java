@@ -66,7 +66,7 @@ public class FetchScheduledTrackerEvents extends AbstractRouteBuilder
         from( "servlet:tasks/syncEvents?muteException=true" )
             .precondition( "{{sync.dhis2.events.to.rapidpro.flows}}" )
             .removeHeaders( "*" )
-            .to( "direct:eventFetchAndProcess" )
+            .to( "direct:fetchAndProcessEvents" )
             .setHeader( Exchange.CONTENT_TYPE, constant( "application/json" ) )
             .setBody(
                 constant( Map.of( "status", "success", "data", "Fetched and enqueued due program stage events" ) ) )
@@ -74,9 +74,9 @@ public class FetchScheduledTrackerEvents extends AbstractRouteBuilder
 
         from( "quartz://fetchDueEvents?cron={{sync.events.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
             .precondition( "{{sync.dhis2.events.to.rapidpro.flows}}" )
-            .to( "direct:eventFetchAndProcess" );
+            .to( "direct:fetchAndProcessEvents" );
 
-        from( "direct:eventFetchAndProcess" )
+        from( "direct:fetchAndProcessEvents" )
             .routeId( "Fetch And Process Tracker Events " )
             .to( "direct:fetchDueEvents" )
             .choice().when( simple( "${exchangeProperty.dueEventsCount} > 0" ) )

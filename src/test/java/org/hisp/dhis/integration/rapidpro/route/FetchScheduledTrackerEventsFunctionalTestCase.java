@@ -152,7 +152,7 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
     }
 
     @Test
-    public void testDueEventsCountsUnderLoad()
+    public void testDueEventsCountUnderLoad()
         throws
         Exception
     {
@@ -173,12 +173,12 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
     }
 
     @Test
-    public void testAttributeFetchTrackedEntityId()
+    public void testFetchTrackedEntityId()
         throws
         Exception
     {
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "1234",
-            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+            "ID-1234", "John", List.of( "ZP5HZ87wzc0" ) );
         AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
@@ -197,12 +197,12 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
     }
 
     @Test
-    public void testReturnsCorrectAttributesEndpointWhenProgramAttributes()
+    public void testAttributesEndpointWhenProgramAttributes()
         throws
         Exception
     {
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "1234",
-            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+            "ID-12345", "John", List.of( "ZP5HZ87wzc0" ) );
         AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
@@ -220,12 +220,12 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
     }
 
     @Test
-    public void testReturnsCorrectAttributesEndpointWhenTypeAttributes()
+    public void testAttributesEndpointWhenTypeAttributes()
         throws
         Exception
     {
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "1234",
-            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+            "ID-123456", "John", List.of( "ZP5HZ87wzc0" ) );
         String trackedEntityId = (String) DHIS2_CLIENT.get( "tracker/enrollments/{}", enrollmentId ).transfer()
             .returnAs(
                 Map.class ).get( "trackedEntity" );
@@ -254,12 +254,12 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
     }
 
     @Test
-    public void testAttributeFetchGivenNameAndContactUrnAsTrackedEntityProgramAttributes()
+    public void testFetchAttributesWhenTrackedEntityProgramAttributes()
         throws
         Exception
     {
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "12345678",
-            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+            "ID-1234567", "John", List.of( "ZP5HZ87wzc0" ) );
         AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
@@ -278,12 +278,12 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
     }
 
     @Test
-    public void testAttributeFetchGivenNameAndContactUrnAsTrackedEntityTypeAttributes()
+    public void testFetchAttributesWhenTrackedEntityTypeAttributes()
         throws
         Exception
     {
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "12345678",
-            "ID-123", "John", List.of( "ZP5HZ87wzc0" ) );
+            "ID-12", "John", List.of( "ZP5HZ87wzc0" ) );
         String trackedEntityId = (String) DHIS2_CLIENT.get( "tracker/enrollments/{}", enrollmentId ).transfer()
             .returnAs(
                 Map.class ).get( "trackedEntity" );

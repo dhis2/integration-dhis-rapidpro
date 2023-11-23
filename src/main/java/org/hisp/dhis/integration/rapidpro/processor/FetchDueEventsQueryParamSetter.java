@@ -47,8 +47,6 @@ public class FetchDueEventsQueryParamSetter implements Processor
         queryParams.put( "status", "SCHEDULE" );
         queryParams.put( "programStage", programStageId );
         queryParams.put( "skipPaging", "true" );
-
-        // FIXME: should ideally use "scheduledBefore" and not "occurredBefore", but there seems to be an issue with "scheduledBefore" on DHIS2 prior to 2.38.4
         queryParams.put( "occurredBefore", todayString );
         queryParams.put( "scheduledBefore", todayString );
         exchange.getMessage().setHeader( "CamelDhis2.queryParams", queryParams );
