@@ -32,8 +32,9 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.AttributesAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.ProgramStageEventsAggrStrategy;
-import org.hisp.dhis.integration.rapidpro.aggregationStrategy.TrackedEntityIdAndSetAttributesEndpointAggrStrategy;
+import org.hisp.dhis.integration.rapidpro.aggregationStrategy.TrackedEntityIdAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.processor.FetchDueEventsQueryParamSetter;
+import org.hisp.dhis.integration.rapidpro.processor.SetAttributesEndpointProcessor;
 import org.hisp.dhis.integration.rapidpro.processor.SetProgramStagesHeaderProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,7 +42,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class FetchScheduledTrackerEvents extends AbstractRouteBuilder
+public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
     SetProgramStagesHeaderProcessor setProgramStagesHeaderProcessor;
@@ -53,10 +54,13 @@ public class FetchScheduledTrackerEvents extends AbstractRouteBuilder
     FetchDueEventsQueryParamSetter fetchDueEventsQueryParamSetter;
 
     @Autowired
-    TrackedEntityIdAndSetAttributesEndpointAggrStrategy trackedEntityIdAndSetAttributesEndpointAggrStrategy;
+    TrackedEntityIdAggrStrategy trackedEntityIdAggrStrategy;
 
     @Autowired
     AttributesAggrStrategy attributesAggrStrategy;
+
+    @Autowired
+    SetAttributesEndpointProcessor setAttributesEndpointProcessor;
 
     @Override
     protected void doConfigure()
@@ -68,8 +72,7 @@ public class FetchScheduledTrackerEvents extends AbstractRouteBuilder
             .removeHeaders( "*" )
             .to( "direct:fetchAndProcessEvents" )
             .setHeader( Exchange.CONTENT_TYPE, constant( "application/json" ) )
-            .setBody(
-                constant( Map.of( "status", "success", "data", "Fetched and enqueued due program stage events" ) ) )
+            .setBody( constant( Map.of( "status", "success", "data", "Fetched and enqueued due program stage events" ) ) )
             .marshal().json();
 
         from( "quartz://fetchDueEvents?cron={{sync.events.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
@@ -77,36 +80,42 @@ public class FetchScheduledTrackerEvents extends AbstractRouteBuilder
             .to( "direct:fetchAndProcessEvents" );
 
         from( "direct:fetchAndProcessEvents" )
-            .routeId( "Fetch And Process Tracker Events " )
+            .routeId( "Fetch And Process Tracker Events" )
             .to( "direct:fetchDueEvents" )
             .choice().when( simple( "${exchangeProperty.dueEventsCount} > 0" ) )
-            .split( simple( "${exchangeProperty.dueEvents}" ) )
-            .marshal().json().transform().body( String.class )
-            .setHeader( "eventPayload", simple( "${body}" ) )
-            .unmarshal().json()
-            .to( "direct:fetchAttributes" );
+                .split( simple( "${exchangeProperty.dueEvents}" ) )
+                    .marshal().json().transform().body( String.class )
+                    .setHeader( "eventPayload", simple( "${body}" ) )
+                    .unmarshal().json()
+                    .to( "direct:fetchAttributes" )
+                .end()
+            .end();
+
 
         from( "direct:fetchDueEvents" )
             .routeId( "Fetch Due Events" )
             .process( setProgramStagesHeaderProcessor )
             .split( simple( "${header.programStages}" ) ).aggregationStrategy( programStageEventsAggrStrategy )
-            .setHeader( "programStage", simple( "${body}" ) )
-            .process( fetchDueEventsQueryParamSetter )
-            .toD(
-                "dhis2://get/resource?path=tracker/events&fields=enrollment,programStage,orgUnit,scheduledAt,occurredAt,event,status&client=#dhis2Client" )
+                .setHeader( "programStage", simple( "${body}" ) )
+                .process( fetchDueEventsQueryParamSetter )
+                .toD( "dhis2://get/resource?path=tracker/events&fields=enrollment,programStage,orgUnit,scheduledAt,occurredAt,event,status&client=#dhis2Client" )
             .end()
             .removeHeader( "CamelDhis2.queryParams" )
             .setProperty( "dueEventsCount", jsonpath( "$.instances.length()" ) )
             .setProperty( "dueEvents", jsonpath( "$.instances" ) )
-            .log( LoggingLevel.INFO, LOGGER, "Fetched ${exchangeProperty.dueEventsCount} due events from DHIS2" )
-            .end();
+            .log( LoggingLevel.INFO, LOGGER, "Fetched ${exchangeProperty.dueEventsCount} due events from DHIS2" );
 
         from( "direct:fetchAttributes" )
             .routeId( "Fetch Attributes" )
-            .enrich().simple(
-                "dhis2://get/resource?path=tracker/enrollments/${body[enrollment]}&fields=trackedEntity,attributes[code]&client=#dhis2Client" )
-            .aggregationStrategy( trackedEntityIdAndSetAttributesEndpointAggrStrategy )
-            .enrich().simple( "${exchangeProperty.attributesEndpoint}" )
-            .aggregationStrategy( attributesAggrStrategy );
+            .enrich()
+                .simple( "dhis2://get/resource?path=tracker/enrollments/${body[enrollment]}&fields=trackedEntity,attributes[code]&client=#dhis2Client" )
+                .aggregationStrategy( trackedEntityIdAggrStrategy )
+            .process( setAttributesEndpointProcessor )
+            .enrich()
+                .simple( "${exchangeProperty.attributesEndpoint}" )
+                .aggregationStrategy( attributesAggrStrategy )
+            .choice().when( simple( "${body[contactUrn]} == null" ) )
+                .log( LoggingLevel.ERROR, LOGGER, "Error while fetching phone number attribute from DHIS2 enrollment ${body[enrollment]}. Hint: Be sure to set the 'dhis2.phone.number.attribute.code' config property." )
+                .stop();
     }
 }

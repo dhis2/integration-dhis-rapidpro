@@ -27,7 +27,6 @@
  */
 package org.hisp.dhis.integration.rapidpro.aggregationStrategy;
 
-import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
 import org.springframework.stereotype.Component;
 
@@ -35,30 +34,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.hisp.dhis.integration.rapidpro.util.JsonUtils.mapToJsonString;
-import static org.hisp.dhis.integration.rapidpro.util.JsonUtils.parseJsonStringToMap;
-
 @Component
-public class ProgramStageEventsAggrStrategy implements AggregationStrategy
+public class ProgramStageEventsAggrStrategy extends AbstractAggregationStrategy
 {
 
     @Override
-    public Exchange aggregate( Exchange oldExchange, Exchange newExchange )
+    public Exchange doAggregate( Exchange oldExchange, Exchange newExchange )
+        throws
+        Exception
     {
         if ( oldExchange == null )
         {
             return newExchange;
         }
 
-        Map<String, Object> oldBody = parseJsonStringToMap( oldExchange.getIn().getBody( String.class ) );
-        Map<String, Object> newBody = parseJsonStringToMap( newExchange.getIn().getBody( String.class ) );
+        Map<String, Object> oldBody = objectMapper.readValue( oldExchange.getIn().getBody( String.class ), Map.class );
+        Map<String, Object> newBody = objectMapper.readValue( newExchange.getIn().getBody( String.class ), Map.class );
         List<Object> oldInstances = (List<Object>) oldBody.getOrDefault( "instances", new ArrayList<>() );
         List<Object> newInstances = (List<Object>) newBody.get( "instances" );
 
         oldInstances.addAll( newInstances );
         oldBody.put( "instances", oldInstances );
 
-        oldExchange.getIn().setBody( mapToJsonString( oldBody ) );
+        oldExchange.getIn().setBody( objectMapper.writeValueAsString( oldBody ) );
 
         return oldExchange;
     }

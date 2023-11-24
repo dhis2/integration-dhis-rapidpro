@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 @Configuration
-@ConfigurationProperties( prefix = "dhis2.rapidpro" )
+@ConfigurationProperties( prefix = "dhis2.program.stage.rapidpro.flow" )
 public class ProgramStageToFlowMap
 {
     private Map<String, String> map = new HashMap<>();
@@ -86,11 +86,6 @@ public class ProgramStageToFlowMap
         return String.join( ",", this.map.values() );
     }
 
-    public void deleteFlows()
-    {
-        this.map.clear();
-    }
-
     public String getProgramStage( String flowUuid )
     {
         for ( Map.Entry<String, String> entry : map.entrySet() )
@@ -103,7 +98,7 @@ public class ProgramStageToFlowMap
         return null;
     }
 
-    public List<String> getAllProgramStageIds()
+    public List<String> getAllProgramStages()
     {
         return new ArrayList<>( map.keySet() );
     }

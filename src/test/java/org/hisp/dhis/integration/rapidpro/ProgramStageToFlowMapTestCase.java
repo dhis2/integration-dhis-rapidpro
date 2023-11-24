@@ -83,7 +83,7 @@ public class ProgramStageToFlowMapTestCase
     @Test
     public void whenGetAllProgramStageIdsCalledThenItShouldReturnAllKeys()
     {
-        List<String> programStageIds = programStageToFlowMap.getAllProgramStageIds();
+        List<String> programStageIds = programStageToFlowMap.getAllProgramStages();
 
         assertTrue( programStageIds.contains( "ZP5HZ87wzc0" ) );
         assertTrue( programStageIds.contains( "Ish2wk3eLg3" ) );
@@ -91,9 +91,9 @@ public class ProgramStageToFlowMapTestCase
     }
 
     @Test
-    public void whenDeleteFlowsCalledThenMapShouldBeEmpty()
+    public void whenClearCalledThenMapShouldBeEmpty()
     {
-        programStageToFlowMap.deleteFlows();
+        programStageToFlowMap.clear();
 
         assertTrue( programStageToFlowMap.getMap().isEmpty() );
     }

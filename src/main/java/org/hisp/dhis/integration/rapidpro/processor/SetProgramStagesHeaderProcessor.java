@@ -44,7 +44,7 @@ public class SetProgramStagesHeaderProcessor implements Processor
         throws
         Exception
     {
-        String programStages = String.join( ",", programStageToFlowMap.getAllProgramStageIds() );
+        String programStages = String.join( ",", programStageToFlowMap.getAllProgramStages() );
         exchange.getIn().setHeader( "programStages", programStages );
     }
 }

@@ -25,39 +25,32 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro.util;
+package org.hisp.dhis.integration.rapidpro.aggregationStrategy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.camel.Exchange;
+import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
-public class JsonUtils
+@Component
+public class TrackedEntityIdAggrStrategy extends AbstractAggregationStrategy
 {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    public static Map<String, Object> parseJsonStringToMap( String jsonPayload )
+    @Override
+    public Exchange doAggregate( Exchange original, Exchange resource )
+        throws
+        Exception
     {
-        try
-        {
-            return objectMapper.readValue( jsonPayload, Map.class );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Error parsing JSON string to Map", e );
-        }
-    }
+        Map<String, Object> originalBodyMap = original.getMessage().getBody( Map.class );
+        Map<String, Object> resourceBodyMap = objectMapper.readValue( resource.getMessage().getBody( String.class ),
+            Map.class );
 
-    public static String mapToJsonString( Map<String, Object> map )
-    {
-        try
-        {
-            return objectMapper.writeValueAsString( map );
-        }
-        catch ( JsonProcessingException e )
-        {
-            throw new RuntimeException( "Error converting Map to JSON string", e );
-        }
+        String trackedEntity = (String) resourceBodyMap.get( "trackedEntity" );
+        List<Map<String, Object>> attributes = (List<Map<String, Object>>) resourceBodyMap.get( "attributes" );
+        originalBodyMap.put( "trackedEntity", trackedEntity );
+        originalBodyMap.put( "attributes", attributes );
+        original.getIn().setBody( originalBodyMap );
+        return original;
+
     }
 }

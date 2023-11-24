@@ -27,29 +27,20 @@
  */
 package org.hisp.dhis.integration.rapidpro.aggregationStrategy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
-import org.hisp.dhis.integration.rapidpro.util.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 
 @Component
-public class AttributesAggrStrategy implements AggregationStrategy
+public class AttributesAggrStrategy extends AbstractAggregationStrategy
 
 {
-    protected static final Logger LOGGER = LoggerFactory.getLogger( AttributesAggrStrategy.class );
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @Override
-    public Exchange aggregate( Exchange original, Exchange resource )
+    public Exchange doAggregate( Exchange original, Exchange resource )
+        throws
+        Exception
     {
         String phoneNumberAttributeCode = original.getContext()
             .resolvePropertyPlaceholders( "{{dhis2.phone.number.attribute.code}}" );
@@ -57,19 +48,19 @@ public class AttributesAggrStrategy implements AggregationStrategy
             .resolvePropertyPlaceholders( "{{dhis2.given.name.attribute.code}}" );
         String rapidProContactScheme = original.getContext()
             .resolvePropertyPlaceholders( "{{rapidpro.contact.scheme}}" );
-        List<Map<String, Object>> attributes = (List<Map<String, Object>>) JsonUtils.parseJsonStringToMap(
-            resource.getMessage().getBody( String.class ) ).get( "attributes" );
+        List<Map<String, Object>> attributes = (List<Map<String, Object>>) objectMapper.readValue(
+            resource.getMessage().getBody( String.class ), Map.class ).get( "attributes" );
         Map<String, Object> originalBodyMap = original.getMessage().getBody( Map.class );
-        for ( Map<String, Object> attributeMap : attributes )
+        for ( Map<String, Object> attribute : attributes )
         {
-            String code = (String) attributeMap.get( "code" );
+            String code = (String) attribute.get( "code" );
             if ( phoneNumberAttributeCode.equals( code ) )
             {
-                originalBodyMap.put( "contactUrn", rapidProContactScheme + ":" + attributeMap.get( "value" ) );
+                originalBodyMap.put( "contactUrn", rapidProContactScheme + ":" + attribute.get( "value" ) );
             }
             else if ( givenNameAttributeCode.equals( code ) )
             {
-                originalBodyMap.put( "givenName", attributeMap.get( "value" ) );
+                originalBodyMap.put( "givenName", attribute.get( "value" ) );
             }
         }
         original.getIn().setBody( originalBodyMap );

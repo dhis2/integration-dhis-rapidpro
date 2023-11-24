@@ -27,12 +27,17 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.spi.CamelLogger;
+import org.apache.camel.spring.boot.SpringBootCamelContext;
+import org.hisp.dhis.api.model.v40_0.TrackedEntity;
+import org.hisp.dhis.api.model.v40_0.WebapiControllerTrackerViewAttribute;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.rapidpro.ProgramStageToFlowMap;
@@ -44,18 +49,19 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunctionalTestCase
+public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Autowired
-    protected ObjectMapper objectMapper;
+    protected ProgramStageToFlowMap programStageToFlowMap;
 
     @Autowired
-    protected ProgramStageToFlowMap programStageToFlowMap;
+    ObjectMapper objectMapper;
 
     @Override
     public void doBeforeEach()
@@ -243,6 +249,7 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
 
         Map<String, Object> body = new HashMap<>();
         body.put( "enrollment", enrollmentId );
+        body.put( "contactUrn", "1234" );
         producerTemplate.sendBody( "direct:fetchAttributes", ExchangePattern.InOut, body );
         spyEndpoint.assertIsSatisfied();
         Exchange exchange = spyEndpoint.getExchanges().get( 0 );
@@ -295,12 +302,31 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
                 .setBody( exchange -> "{\"trackedEntity\": \"" + trackedEntityId + "\", \"attributes\": [] }" );
         } );
 
+        TrackedEntity trackedEntity = new TrackedEntity()
+            .withTrackedEntity( trackedEntityId )
+            .withAttributes( List.of(
+                new WebapiControllerTrackerViewAttribute().withAttribute( "sB1IHYu2xQT" ).withCode( "GIVEN_NAME" )
+                    .withValue( "John" ),
+                new WebapiControllerTrackerViewAttribute().withAttribute( "fctSQp5nAYl" ).withCode( "PHONE_LOCAL" )
+                    .withValue( "12345678" )
+            ) )
+            .withOrgUnit( Environment.ORG_UNIT_ID );
+
         AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> {
             r.interceptSendToEndpoint(
                     "dhis2://get/resource?path=tracker/trackedEntities/" + trackedEntityId + "&fields=attributes[attribute,code,value]&client=#dhis2Client" )
                 .skipSendToOriginalEndpoint()
                 .setBody(
-                    exchange -> "{\"attributes\":[{\"attribute\":\"xdRQzKcARGt\",\"value\":\"NO\"},{\"attribute\":\"sB1IHYu2xQT\",\"code\":\"GIVEN_NAME\",\"value\":\"John\"},{\"attribute\":\"ljHL8NnSEAD\",\"value\":\"v3HIu78Y4Wf\"},{\"attribute\":\"fctSQp5nAYl\",\"code\":\"PHONE_LOCAL\",\"value\":\"12345678\"},{\"attribute\":\"ENRjVGxVL6l\",\"code\":\"FAMILY_NAME\",\"value\":\"Williams\"}]}" );
+                    exchange -> {
+                        try
+                        {
+                            return objectMapper.writeValueAsString( trackedEntity );
+                        }
+                        catch ( JsonProcessingException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                    } );
         } );
         AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
@@ -319,4 +345,30 @@ public class FetchScheduledTrackerEventsFunctionalTestCase extends AbstractFunct
         assertEquals( expectedGivenName, bodyAfterAttributeEnrichment.get( "givenName" ) );
     }
 
+    @Test
+    public void testFetchAttributesLogsErrorWhenInvalidPhoneNumberCode()
+        throws
+        Exception
+    {
+        System.setProperty( "dhis2.phone.number.attribute.code", "invalid" );
+        String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "12345678",
+            "ID-1234567", "John", List.of( "ZP5HZ87wzc0" ) );
+        CountDownLatch expectedLogMessage = new CountDownLatch( 1 );
+        ((SpringBootCamelContext) camelContext)
+            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
+                if ( camelLogger.getLevel().name().equals( "ERROR" ) && message.startsWith(
+                    "Error while fetching phone number attribute from DHIS2 enrollment" ) )
+                {
+                    expectedLogMessage.countDown();
+                }
+                return message;
+            } );
+        camelContext.start();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put( "enrollment", enrollmentId );
+        producerTemplate.sendBody( "direct:fetchAttributes", ExchangePattern.InOut, body );
+        Thread.sleep( 2000 );
+        assertEquals( 0, expectedLogMessage.getCount() );
+    }
 }
