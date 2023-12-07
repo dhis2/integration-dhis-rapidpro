@@ -56,13 +56,13 @@ public class ProgramStageToFlowMapTestCase
     }
 
     @Test
-    public void whenMapIsSetThenItShouldContainTwoKeys()
+    public void testWhenMapIsSetThenItShouldContainTwoKeys()
     {
         assertEquals( 2, programStageToFlowMap.getMap().size() );
     }
 
     @Test
-    public void whenGetFlowUuidsCalledWithProgramStageIdThenItShouldReturnCorrectUuid()
+    public void testWhenGetFlowUuidsCalledWithProgramStageIdThenItShouldReturnCorrectUuid()
     {
         String programStageId = "ZP5HZ87wzc0";
         String expectedFlowUuid = "specimen-collection-flow-uuid";
@@ -71,7 +71,7 @@ public class ProgramStageToFlowMapTestCase
     }
 
     @Test
-    public void whenGetFlowUuidsCalledWithBodyThenItShouldReturnCorrectUuid()
+    public void testWhenGetFlowUuidsCalledWithBodyThenItShouldReturnCorrectUuid()
     {
         Map<String, Object> body = new HashMap<>();
         body.put( "programStage", "Ish2wk3eLg3" );
@@ -81,7 +81,7 @@ public class ProgramStageToFlowMapTestCase
     }
 
     @Test
-    public void whenGetAllProgramStageIdsCalledThenItShouldReturnAllKeys()
+    public void testWhenGetAllProgramStageIdsCalledThenItShouldReturnAllKeys()
     {
         List<String> programStageIds = programStageToFlowMap.getAllProgramStages();
 
@@ -91,7 +91,7 @@ public class ProgramStageToFlowMapTestCase
     }
 
     @Test
-    public void whenClearCalledThenMapShouldBeEmpty()
+    public void testWhenClearCalledThenMapShouldBeEmpty()
     {
         programStageToFlowMap.clear();
 

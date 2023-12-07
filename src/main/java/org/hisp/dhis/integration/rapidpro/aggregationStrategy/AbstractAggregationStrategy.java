@@ -49,7 +49,7 @@ public abstract class AbstractAggregationStrategy implements AggregationStrategy
         {
             return doAggregate( oldExchange, newExchange );
         }
-        catch (JsonProcessingException e)
+        catch ( JsonProcessingException e )
         {
             LOGGER.error( "JSON processing error during aggregation: ", e );
             oldExchange.setException( e );

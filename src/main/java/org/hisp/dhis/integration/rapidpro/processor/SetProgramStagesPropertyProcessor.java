@@ -34,7 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SetProgramStagesHeaderProcessor implements Processor
+public class SetProgramStagesPropertyProcessor implements Processor
 {
     @Autowired
     ProgramStageToFlowMap programStageToFlowMap;
@@ -45,6 +45,6 @@ public class SetProgramStagesHeaderProcessor implements Processor
         Exception
     {
         String programStages = String.join( ",", programStageToFlowMap.getAllProgramStages() );
-        exchange.getIn().setHeader( "programStages", programStages );
+        exchange.setProperty( "programStages", programStages );
     }
 }

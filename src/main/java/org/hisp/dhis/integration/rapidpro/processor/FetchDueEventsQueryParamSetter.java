@@ -30,6 +30,7 @@ package org.hisp.dhis.integration.rapidpro.processor;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.springframework.stereotype.Component;
+import ujson.True;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -39,14 +40,16 @@ import java.util.Map;
 public class FetchDueEventsQueryParamSetter implements Processor
 {
     @Override
-    public void process( Exchange exchange ) throws Exception
+    public void process( Exchange exchange )
+        throws
+        Exception
     {
-        String programStageId = (String) exchange.getMessage().getHeader("programStage");
+        String programStageId = (String) exchange.getProperty( "programStage" );
         String todayString = LocalDate.now().toString();
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put( "status", "SCHEDULE" );
         queryParams.put( "programStage", programStageId );
-        queryParams.put( "skipPaging", "true" );
+        queryParams.put("skipPaging", "false");
         queryParams.put( "occurredBefore", todayString );
         queryParams.put( "scheduledBefore", todayString );
         exchange.getMessage().setHeader( "CamelDhis2.queryParams", queryParams );

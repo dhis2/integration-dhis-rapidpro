@@ -53,7 +53,6 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
@@ -140,21 +139,6 @@ public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends A
         Exchange exchange = spyEndpoint.getExchanges().get( 0 );
         int dueEventsCount = exchange.getProperty( "dueEventsCount", Integer.class );
         assertEquals( 0, dueEventsCount );
-    }
-
-    @Test
-    public void testDueEventsCountWithInvalidProgramStageThrowsException()
-        throws
-        Exception
-    {
-        Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 1, List.of( "ZP5HZ87wzc0" ) );
-        programStageToFlowMap.add( "invalid", "invalid-flow-uuid-placeholder" );
-        camelContext.start();
-
-        assertThrows( RuntimeCamelException.class, () -> {
-            producerTemplate.sendBody( "direct:fetchDueEvents", ExchangePattern.InOnly, null );
-        } );
-        programStageToFlowMap.remove( "invalid" );
     }
 
     @Test

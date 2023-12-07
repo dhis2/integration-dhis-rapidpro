@@ -28,6 +28,7 @@
 package org.hisp.dhis.integration.rapidpro.aggregationStrategy;
 
 import org.apache.camel.Exchange;
+import org.hisp.dhis.integration.sdk.internal.operation.page.PageIterable;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -47,16 +48,14 @@ public class ProgramStageEventsAggrStrategy extends AbstractAggregationStrategy
         {
             return newExchange;
         }
-
-        Map<String, Object> oldBody = objectMapper.readValue( oldExchange.getIn().getBody( String.class ), Map.class );
-        Map<String, Object> newBody = objectMapper.readValue( newExchange.getIn().getBody( String.class ), Map.class );
-        List<Object> oldInstances = (List<Object>) oldBody.getOrDefault( "instances", new ArrayList<>() );
-        List<Object> newInstances = (List<Object>) newBody.get( "instances" );
-
-        oldInstances.addAll( newInstances );
-        oldBody.put( "instances", oldInstances );
-
-        oldExchange.getIn().setBody( objectMapper.writeValueAsString( oldBody ) );
+        List<Object> oldEvents = oldExchange.getIn().getBody( ArrayList.class );
+        List<Object> newEvents = newExchange.getIn().getBody( ArrayList.class );
+        if ( oldEvents == null )
+        {
+            oldEvents = new ArrayList<>();
+        }
+        oldEvents.addAll( newEvents );
+        oldExchange.getIn().setBody( oldEvents );
 
         return oldExchange;
     }

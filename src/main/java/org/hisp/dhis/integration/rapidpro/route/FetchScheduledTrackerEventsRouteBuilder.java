@@ -30,37 +30,43 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.hisp.dhis.api.model.Page;
+import org.hisp.dhis.api.model.Pager;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.AttributesAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.ProgramStageEventsAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.TrackedEntityIdAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.processor.FetchDueEventsQueryParamSetter;
 import org.hisp.dhis.integration.rapidpro.processor.SetAttributesEndpointProcessor;
-import org.hisp.dhis.integration.rapidpro.processor.SetProgramStagesHeaderProcessor;
+import org.hisp.dhis.integration.rapidpro.processor.SetProgramStagesPropertyProcessor;
+import org.hisp.dhis.integration.sdk.internal.operation.page.PageIterable;
+import org.jgroups.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Component
 public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
-    SetProgramStagesHeaderProcessor setProgramStagesHeaderProcessor;
+    private SetProgramStagesPropertyProcessor setProgramStagesPropertyProcessor;
 
     @Autowired
-    ProgramStageEventsAggrStrategy programStageEventsAggrStrategy;
+    private ProgramStageEventsAggrStrategy programStageEventsAggrStrategy;
 
     @Autowired
-    FetchDueEventsQueryParamSetter fetchDueEventsQueryParamSetter;
+    private FetchDueEventsQueryParamSetter fetchDueEventsQueryParamSetter;
 
     @Autowired
-    TrackedEntityIdAggrStrategy trackedEntityIdAggrStrategy;
+    private TrackedEntityIdAggrStrategy trackedEntityIdAggrStrategy;
 
     @Autowired
-    AttributesAggrStrategy attributesAggrStrategy;
+    private AttributesAggrStrategy attributesAggrStrategy;
 
     @Autowired
-    SetAttributesEndpointProcessor setAttributesEndpointProcessor;
+    private SetAttributesEndpointProcessor setAttributesEndpointProcessor;
 
     @Override
     protected void doConfigure()
@@ -82,27 +88,23 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
         from( "direct:fetchAndProcessEvents" )
             .routeId( "Fetch And Process Tracker Events" )
             .to( "direct:fetchDueEvents" )
-            .choice().when( simple( "${exchangeProperty.dueEventsCount} > 0" ) )
-                .split( simple( "${exchangeProperty.dueEvents}" ) )
-                    .marshal().json().transform().body( String.class )
-                    .setHeader( "eventPayload", simple( "${body}" ) )
-                    .unmarshal().json()
-                    .to( "direct:fetchAttributes" )
-                .end()
-            .end();
+            .split( simple( "${exchangeProperty.dueEvents}" ) )
+                .marshal().json().transform().body( String.class )
+                .setProperty( "eventPayload", simple( "${body}" ) )
+                .unmarshal().json()
+                .to( "direct:fetchAttributes" );
 
 
         from( "direct:fetchDueEvents" )
             .routeId( "Fetch Due Events" )
-            .process( setProgramStagesHeaderProcessor )
-            .split( simple( "${header.programStages}" ) ).aggregationStrategy( programStageEventsAggrStrategy )
-                .setHeader( "programStage", simple( "${body}" ) )
+            .process( setProgramStagesPropertyProcessor )
+            .split( simple( "${exchangeProperty.programStages}" ) ).aggregationStrategy( programStageEventsAggrStrategy )
+                .setProperty( "programStage", simple( "${body}" ) )
                 .process( fetchDueEventsQueryParamSetter )
-                .toD( "dhis2://get/resource?path=tracker/events&fields=enrollment,programStage,orgUnit,scheduledAt,occurredAt,event,status&client=#dhis2Client" )
+                .toD( "dhis2://get/collection?path=tracker/events&paging=true&arrayName=instances&fields=enrollment,programStage,orgUnit,scheduledAt,occurredAt,event,status&client=#dhis2Client" )
             .end()
-            .removeHeader( "CamelDhis2.queryParams" )
-            .setProperty( "dueEventsCount", jsonpath( "$.instances.length()" ) )
-            .setProperty( "dueEvents", jsonpath( "$.instances" ) )
+            .setProperty( "dueEvents", simple("${body}") )
+            .setProperty( "dueEventsCount", simple("${body.size}"))
             .log( LoggingLevel.INFO, LOGGER, "Fetched ${exchangeProperty.dueEventsCount} due events from DHIS2" );
 
         from( "direct:fetchAttributes" )

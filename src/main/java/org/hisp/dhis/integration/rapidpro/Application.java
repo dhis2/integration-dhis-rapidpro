@@ -234,7 +234,7 @@ public class Application extends SpringBootServletInitializer
         }
         if ( syncDhisEvents )
         {
-            onlineBanner.append( " Sync DHI2 Tracker events task: " ).append( baseUrl )
+            onlineBanner.append( " Sync DHIS2 tracker events task: " ).append( baseUrl )
                 .append( "/services/tasks/syncEvents\n" );
         }
         onlineBanner.append( " Remind contacts task: " ).append( baseUrl ).append( "/services/tasks/reminders\n" );
