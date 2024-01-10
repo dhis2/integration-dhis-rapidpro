@@ -156,9 +156,7 @@ public final class Environment
 
         System.setProperty( "dhis2.api.url", dhis2ApiUrl );
 
-        DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl,
-                new BasicCredentialsSecurityContext( "admin", "district" ), 5, 300000L, 0L, 20000L, 20000L, 10000L )
-            .build();
+        DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl, "admin", "district" ).build();
 
         ORG_UNIT_ID = createOrgUnit();
         createOrgUnitLevel();
