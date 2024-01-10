@@ -156,7 +156,14 @@ public final class Environment
 
         System.setProperty( "dhis2.api.url", dhis2ApiUrl );
 
-        DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl, "admin", "district" ).build();
+        DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl, "admin", "district" )
+            .withMaxIdleConnections( 5 )
+            .withKeepAliveDuration( 300000L, TimeUnit.MILLISECONDS )
+            .withCallTimeout( 0L, TimeUnit.MILLISECONDS )
+            .withReadTimeout( 20000L, TimeUnit.MILLISECONDS )
+            .withWriteTimeout( 20000L, TimeUnit.MILLISECONDS )
+            .withConnectTimeout( 10000L, TimeUnit.MILLISECONDS )
+            .build();
 
         ORG_UNIT_ID = createOrgUnit();
         createOrgUnitLevel();
