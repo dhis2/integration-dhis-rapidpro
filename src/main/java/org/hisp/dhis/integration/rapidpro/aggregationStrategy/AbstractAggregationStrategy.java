@@ -25,31 +25,45 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro;
+package org.hisp.dhis.integration.rapidpro.aggregationStrategy;
 
-import com.jayway.jsonpath.JsonPath;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Map;
-
-@Component
-public class ContactOrgUnitIdAggrStrategy implements AggregationStrategy
+public abstract class AbstractAggregationStrategy implements AggregationStrategy
 {
-    protected static final Logger LOGGER = LoggerFactory.getLogger( ContactOrgUnitIdAggrStrategy.class );
+    protected static final Logger LOGGER = LoggerFactory.getLogger( AbstractAggregationStrategy.class );
+
+    @Autowired
+    protected ObjectMapper objectMapper;
 
     @Override
     public Exchange aggregate( Exchange oldExchange, Exchange newExchange )
     {
-        String contact = newExchange.getMessage().getBody( String.class );
-        String contactUuid = (String) ((Map<String, Object>) oldExchange.getMessage().getBody( Map.class )
-            .get( "contact" )).get( "uuid" );
-        LOGGER.debug( String.format( "Fetched contact %s => %s ", contactUuid, contact ) );
-        oldExchange.getMessage()
-            .setHeader( "orgUnitId", JsonPath.read( contact, "$.results[0].fields.dhis2_organisation_unit_id" ) );
-        return oldExchange;
+        try
+        {
+            return doAggregate( oldExchange, newExchange );
+        }
+        catch ( JsonProcessingException e )
+        {
+            LOGGER.error( "JSON processing error during aggregation: ", e );
+            oldExchange.setException( e );
+            return oldExchange;
+        }
+        catch ( Exception e )
+        {
+            LOGGER.error( "Error during aggregation: ", e );
+            oldExchange.setException( e );
+            return oldExchange;
+        }
     }
+
+    protected abstract Exchange doAggregate( Exchange oldExchange, Exchange newExchange )
+        throws
+        Exception;
 }

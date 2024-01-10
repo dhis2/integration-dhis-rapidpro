@@ -57,6 +57,7 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
+import static org.hisp.dhis.integration.rapidpro.Environment.RAPIDPRO_API_REQUEST_SPEC;
 
 @SpringBootTest( webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT )
 @CamelSpringBootTest
@@ -152,9 +153,16 @@ public class AbstractFunctionalTestCase
     @AfterEach
     public void afterEach()
         throws
-        IOException
+        Exception
     {
         FileUtils.deleteDirectory( new File( "target/routes" ) );
+        doAfterEach();
+    }
+
+    public void doAfterEach()
+        throws
+        Exception
+    {
     }
 
     protected List<Map<String, Object>> fetchRapidProContacts()
@@ -172,5 +180,14 @@ public class AbstractFunctionalTestCase
 
         return given( RAPIDPRO_API_REQUEST_SPEC ).get( "/contacts.json?group=DHIS2" )
             .then().extract().path( "results[0].uuid" );
+    }
+
+    protected String getFlowUuid( String flowName )
+    {
+        return given( RAPIDPRO_API_REQUEST_SPEC )
+            .get( "flows.json" )
+            .then()
+            .extract()
+            .path( "results.find { it.name == '" + flowName + "' }.uuid" );
     }
 }

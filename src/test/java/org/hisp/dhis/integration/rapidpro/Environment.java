@@ -92,6 +92,8 @@ public final class Environment
 
     private static final Network DHIS2_NETWORK = Network.builder().build();
 
+    private static final Faker faker = new Faker();
+
     public static String ORG_UNIT_ID;
 
     public static Dhis2Client DHIS2_CLIENT;
@@ -154,8 +156,13 @@ public final class Environment
 
         System.setProperty( "dhis2.api.url", dhis2ApiUrl );
 
-        DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl,
-                new BasicCredentialsSecurityContext( "admin", "district" ), 5, 300000L, 0L, 20000L, 20000L, 10000L )
+        DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl, "admin", "district" )
+            .withMaxIdleConnections( 5 )
+            .withKeepAliveDuration( 300000L, TimeUnit.MILLISECONDS )
+            .withCallTimeout( 0L, TimeUnit.MILLISECONDS )
+            .withReadTimeout( 20000L, TimeUnit.MILLISECONDS )
+            .withWriteTimeout( 20000L, TimeUnit.MILLISECONDS )
+            .withConnectTimeout( 10000L, TimeUnit.MILLISECONDS )
             .build();
 
         ORG_UNIT_ID = createOrgUnit();
@@ -173,7 +180,6 @@ public final class Environment
         addOrgUnitToDataSet( ORG_UNIT_ID );
         addOrgUnitToTrackerProgram( ORG_UNIT_ID );
         createDhis2Users( ORG_UNIT_ID );
-        createDhis2TrackedEntitiesWithEnrollment( ORG_UNIT_ID );
         runAnalytics();
     }
 
@@ -412,7 +418,6 @@ public final class Environment
 
     public static String createDhis2User( String orgUnitId, String phoneNumber )
     {
-        Faker faker = new Faker();
         Name name = faker.name();
 
         Dhis2Response dhis2Response = DHIS2_CLIENT.post( "users" )
@@ -435,47 +440,22 @@ public final class Environment
         IOException,
         ParseException
     {
-        createDhis2TrackedEntitiesWithEnrollment( orgUnitId, 10 );
+        createDhis2TrackedEntitiesWithEnrollment( orgUnitId, 10, List.of( "ZP5HZ87wzc0" ) );
     }
 
-    public static void createDhis2TrackedEntitiesWithEnrollment( String orgUnitId, int numOfTrackedEntities )
+    public static void createDhis2TrackedEntitiesWithEnrollment( String orgUnitId, int numOfTrackedEntities,
+        List<String> programStageIds )
         throws
         IOException,
         ParseException
     {
-        int phoneNumber = 50100;
-        int patientId = 1000000;
         for ( int i = 0; i < numOfTrackedEntities; i++ )
         {
-            String firstName = new Faker().name().firstName();
-            createDhis2TrackedEntityWithEnrollment( orgUnitId, "55" + phoneNumber, "ID-" + patientId, firstName );
-            phoneNumber++;
-            patientId++;
+            String firstName = faker.name().firstName();
+            String phoneNumber = faker.phoneNumber().cellPhone();
+            String id = faker.idNumber().valid();
+            createDhis2TrackedEntityWithEnrollment( orgUnitId, phoneNumber, "ID-" + id, firstName, programStageIds );
         }
-    }
-
-    public static String createDhis2TrackedEntityWithEnrollment( String orgUnitId, String phoneNumber,
-        String patientUID, String firstName )
-        throws
-        IOException,
-        ParseException
-    {
-        List<String> programStageIds = List.of( "ZP5HZ87wzc0" );
-        TrackedEntity trackedEntity = new TrackedEntity()
-            .withOrgUnit( orgUnitId )
-            .withTrackedEntityType( "MCPQUTHX1Ze" )
-            .withEnrollments(
-                List.of( createDhis2EnrollmentWithProgramStageEvents( orgUnitId, phoneNumber, patientUID, firstName,
-                    programStageIds ) ) );
-
-        String enrollmentId = DHIS2_CLIENT.post( "tracker" )
-            .withResource( Map.of( "trackedEntities", List.of( trackedEntity ) ) )
-            .withParameter( "async", "false" )
-            .transfer()
-            .returnAs( TrackerReportImportReport.class ).getBundleReport().get().getTypeReportMap().get()
-            .getAdditionalProperties().get( "ENROLLMENT" ).getObjectReports().get().get( 0 ).getUid().get()
-            .toString();
-        return enrollmentId;
     }
 
     public static String createDhis2TrackedEntityWithEnrollment( String orgUnitId, String phoneNumber,
@@ -507,7 +487,6 @@ public final class Environment
     {
         List<WebapiControllerTrackerViewRelationshipItemEvent> events = new ArrayList<>();
         String today = new SimpleDateFormat( "yyyy-MM-dd" ).format( new Date() );
-        Faker faker = new Faker();
         String lastName = faker.name().lastName();
         Date dateOfBirth = faker.date().past( 365 * 60, TimeUnit.DAYS );
         SimpleDateFormat dmyFormat = new SimpleDateFormat( "yyyy-MM-dd" );
@@ -556,6 +535,11 @@ public final class Environment
             .withParameter( "orgUnit", orgUnitId )
             .transfer()
             .returnAs( TrackedEntity.class, "instances" );
+
+        if ( !trackedEntitiesIterable.iterator().hasNext() )
+        {
+            return;
+        }
 
         for ( TrackedEntity trackedEntity : trackedEntitiesIterable )
         {
