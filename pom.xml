@@ -332,11 +332,6 @@
             <version>2.1.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.hisp.dhis.integration.sdk</groupId>
-            <artifactId>dhis2-java-sdk</artifactId>
-            <version>2.1.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>1.71</version>
