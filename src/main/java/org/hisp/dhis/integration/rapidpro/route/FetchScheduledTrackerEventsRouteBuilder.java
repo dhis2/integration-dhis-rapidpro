@@ -108,6 +108,7 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
                 .toD( "dhis2://get/collection?path=tracker/events&paging=true&arrayName=instances&fields=enrollment,programStage,orgUnit,scheduledAt,occurredAt,event,status&client=#dhis2Client" )
             .end()
             .setProperty( "dueEvents", simple( "${body}" ) )
+            .setProperty( "dueEventsCount", simple( "${body.size}" ) )
             .log( LoggingLevel.INFO, LOGGER, "Fetched ${body.size} due events from DHIS2" );
 
         from( "direct:fetchAttributes" )
