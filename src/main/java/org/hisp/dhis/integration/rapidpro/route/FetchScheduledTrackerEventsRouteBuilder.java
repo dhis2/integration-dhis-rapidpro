@@ -34,6 +34,7 @@ import org.hisp.dhis.api.model.Page;
 import org.hisp.dhis.api.model.Pager;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.AttributesAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.ProgramStageEventsAggrStrategy;
+import org.hisp.dhis.integration.rapidpro.aggregationStrategy.RapidProContactEnricherAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.TrackedEntityIdAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.processor.FetchDueEventsQueryParamSetter;
 import org.hisp.dhis.integration.rapidpro.processor.SetAttributesEndpointProcessor;
@@ -55,6 +56,9 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
 
     @Autowired
     private ProgramStageEventsAggrStrategy programStageEventsAggrStrategy;
+
+    @Autowired
+    private RapidProContactEnricherAggrStrategy rapidProContactEnricherAggrStrategy;
 
     @Autowired
     private FetchDueEventsQueryParamSetter fetchDueEventsQueryParamSetter;
@@ -92,8 +96,8 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
                 .marshal().json().transform().body( String.class )
                 .setProperty( "eventPayload", simple( "${body}" ) )
                 .unmarshal().json()
-                .to( "direct:fetchAttributes" );
-
+                .to( "direct:fetchAttributes" )
+                .to("direct:createRapidProContact");
 
         from( "direct:fetchDueEvents" )
             .routeId( "Fetch Due Events" )
@@ -103,9 +107,9 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
                 .process( fetchDueEventsQueryParamSetter )
                 .toD( "dhis2://get/collection?path=tracker/events&paging=true&arrayName=instances&fields=enrollment,programStage,orgUnit,scheduledAt,occurredAt,event,status&client=#dhis2Client" )
             .end()
-            .setProperty( "dueEvents", simple("${body}") )
-            .setProperty( "dueEventsCount", simple("${body.size}"))
-            .log( LoggingLevel.INFO, LOGGER, "Fetched ${exchangeProperty.dueEventsCount} due events from DHIS2" );
+            .setProperty( "dueEvents", simple( "${body}" ) )
+            .setProperty( "dueEventsCount", simple( "${body.size}" ) )
+            .log( LoggingLevel.INFO, LOGGER, "Fetched ${body.size} due events from DHIS2" );
 
         from( "direct:fetchAttributes" )
             .routeId( "Fetch Attributes" )
@@ -119,5 +123,30 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
             .choice().when( simple( "${body[contactUrn]} == null" ) )
                 .log( LoggingLevel.ERROR, LOGGER, "Error while fetching phone number attribute from DHIS2 enrollment ${body[enrollment]}. Hint: Be sure to set the 'dhis2.phone.number.attribute.code' config property." )
                 .stop();
+
+        from( "direct:createRapidProContact" )
+            .routeId( "Create RapidPro Contact" )
+            .log( LoggingLevel.INFO, LOGGER, "Creating RapidPro contact for DHIS2 enrollment ${body[enrollment]}" )
+            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+            .enrich().simple( "{{rapidpro.api.url}}/contacts.json?urn=${body[contactUrn]}&httpMethod=GET" )
+            .aggregationStrategy( rapidProContactEnricherAggrStrategy )
+            .setProperty( "originalPayload", simple( "${body}") )
+            .choice()
+                .when( simple ("${body[results].size()} > 0" ) )
+                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact already exists for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]}. No action needed." )
+                .otherwise()
+                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact does not exist for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]}. Creating new contact...")
+                    .transform(
+                        datasonnet( "resource:classpath:trackedEntityContact.ds", Map.class, "application/x-java-object",
+                            "application/x-java-object" ) )
+                    .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
+                    .marshal().json().convertBodyTo( String.class )
+                    .toD( "{{rapidpro.api.url}}/contacts.json?httpMethod=POST&okStatusCodeRange=200-499" )
+                    .choice().when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "201" ) )
+                        .log( LoggingLevel.WARN, LOGGER, "Unexpected status code when creating RapidPro contact for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
+                    .end()
+                .end()
+            .setBody( simple( "${exchangeProperty.originalPayload}" ) )
+            .end();
     }
 }

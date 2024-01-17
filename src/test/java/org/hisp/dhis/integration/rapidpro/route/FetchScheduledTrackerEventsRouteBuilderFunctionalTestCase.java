@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -355,4 +357,76 @@ public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends A
         Thread.sleep( 2000 );
         assertEquals( 0, expectedLogMessage.getCount() );
     }
+
+    @Test
+    public void testCreateRapidProContactGivenValidUrn()
+        throws
+        IOException
+    {
+        assertRapidProPreCondition();
+        camelContext.start();
+        Map<String, Object> body = new HashMap<>();
+        body.put( "contactUrn", "whatsapp:12345678" );
+        producerTemplate.sendBody( "direct:createRapidProContact", body );
+        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
+            .body( "results.size()", equalTo( 1 ) )
+            .body( "results[0].urns[0]", equalTo( "whatsapp:12345678" ) );
+    }
+
+    @Test
+    public void testCreateRapidProContactFailsGivenInvalidUrn()
+        throws
+        Exception
+    {
+        assertRapidProPreCondition();
+        CountDownLatch expectedLogMessage = new CountDownLatch( 1 );
+        ((SpringBootCamelContext) camelContext)
+            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
+                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.startsWith(
+                    "Unexpected status code when creating RapidPro contact for " ) )
+                {
+                    expectedLogMessage.countDown();
+                }
+                return message;
+            } );
+        camelContext.start();
+        Map<String, Object> body = new HashMap<>();
+        body.put( "contactUrn", "whatsapp:invalid" );
+        producerTemplate.sendBody( "direct:createRapidProContact", body );
+        assertEquals( 0, expectedLogMessage.getCount() );
+    }
+
+    @Test
+    public void testCreateRapidProContactWhenContactAlreadyExists()
+    {
+        assertRapidProPreCondition();
+        CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
+        ((SpringBootCamelContext) camelContext)
+            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
+                if ( camelLogger.getLevel().name().equals( "DEBUG" ) && message.startsWith(
+                    "RapidPro Contact already exists for DHIS2" ) )
+                {
+                    expectedLogMessage.countDown();
+                }
+                return message;
+            } );
+        camelContext.start();
+        Map<String, Object> body = new HashMap<>();
+        body.put( "contactUrn", "whatsapp:12345678" );
+        body.put( "enrollment", "enrollment-id" );
+        producerTemplate.sendBody( "direct:createRapidProContact", body );
+        assertEquals( 2, expectedLogMessage.getCount() );
+        producerTemplate.sendBody( "direct:createRapidProContact", body );
+        assertEquals( 1, expectedLogMessage.getCount() );
+        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
+            .body( "results.size()", equalTo( 1 ) );
+    }
+
+    private void assertRapidProPreCondition()
+    {
+        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
+            .body( "results.size()", equalTo( 0 ) );
+    }
+
+
 }

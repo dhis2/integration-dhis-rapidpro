@@ -449,12 +449,13 @@ public final class Environment
         IOException,
         ParseException
     {
+        int phoneNumber = 21000000;
         for ( int i = 0; i < numOfTrackedEntities; i++ )
         {
             String firstName = faker.name().firstName();
-            String phoneNumber = faker.phoneNumber().cellPhone();
             String id = faker.idNumber().valid();
-            createDhis2TrackedEntityWithEnrollment( orgUnitId, phoneNumber, "ID-" + id, firstName, programStageIds );
+            createDhis2TrackedEntityWithEnrollment( orgUnitId, String.valueOf( phoneNumber ), "ID-" + id, firstName, programStageIds );
+            phoneNumber++;
         }
     }
 

@@ -1,0 +1,3 @@
+{
+  urns: (if std.objectHas(body, "contactUrn") && !ds.isBlank(body.contactUrn) then [body.contactUrn] else [])
+}
