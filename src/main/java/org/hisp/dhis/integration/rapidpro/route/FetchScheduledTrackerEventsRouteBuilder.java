@@ -108,8 +108,7 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
                 .toD( "dhis2://get/collection?path=tracker/events&paging=true&arrayName=instances&fields=enrollment,programStage,orgUnit,scheduledAt,occurredAt,event,status&client=#dhis2Client" )
             .end()
             .setProperty( "dueEvents", simple( "${body}" ) )
-            .setProperty( "dueEventsCount", simple( "${body.size}" ) )
-            .log( LoggingLevel.INFO, LOGGER, "Fetched ${exchangeProperty.dueEventsCount} due events from DHIS2" );
+            .log( LoggingLevel.INFO, LOGGER, "Fetched ${body.size} due events from DHIS2" );
 
         from( "direct:fetchAttributes" )
             .routeId( "Fetch Attributes" )
@@ -126,16 +125,16 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
 
         from( "direct:createRapidProContact" )
             .routeId( "Create RapidPro Contact" )
-            .log( LoggingLevel.INFO, LOGGER, "Creating RapidPro contact for enrollment ${body[enrollment]} with contact URN ${body[contactUrn]} " )
+            .log( LoggingLevel.INFO, LOGGER, "Creating RapidPro contact for DHIS2 enrollment ${body[enrollment]}" )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .enrich().simple( "{{rapidpro.api.url}}/contacts.json?urn=${body[contactUrn]}&httpMethod=GET" )
             .aggregationStrategy( rapidProContactEnricherAggrStrategy )
             .setProperty( "originalPayload", simple( "${body}") )
             .choice()
                 .when( simple ("${body[results].size()} > 0" ) )
-                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact already exists for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]} with contact URN ${exchangeProperty.originalPayload[contactUrn]}. No action needed." )
+                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact already exists for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]}. No action needed." )
                 .otherwise()
-                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact does not exist for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]} with contact URN ${exchangeProperty.originalPayload[contactUrn]}. Creating new contact...")
+                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact does not exist for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]}. Creating new contact...")
                     .transform(
                         datasonnet( "resource:classpath:trackedEntityContact.ds", Map.class, "application/x-java-object",
                             "application/x-java-object" ) )
@@ -143,7 +142,7 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
                     .marshal().json().convertBodyTo( String.class )
                     .toD( "{{rapidpro.api.url}}/contacts.json?httpMethod=POST&okStatusCodeRange=200-499" )
                     .choice().when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "201" ) )
-                        .log( LoggingLevel.WARN, LOGGER, "Unexpected status code when creating RapidPro contact for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]} with contact URN ${exchangeProperty.originalPayload[contactUrn]} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
+                        .log( LoggingLevel.WARN, LOGGER, "Unexpected status code when creating RapidPro contact for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
                     .end()
                 .end()
             .setBody( simple( "${exchangeProperty.originalPayload}" ) )
