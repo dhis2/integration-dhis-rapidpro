@@ -126,7 +126,7 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
 
         from( "direct:createRapidProContact" )
             .routeId( "Create RapidPro Contact" )
-            .log( LoggingLevel.INFO, LOGGER, "Synchronising Tracked Entity Instance with RapidPro contact..." )
+            .log( LoggingLevel.INFO, LOGGER, "Creating RapidPro contact for enrollment ${body[enrollment]} with contact URN ${body[contactUrn]} " )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .enrich().simple( "{{rapidpro.api.url}}/contacts.json?urn=${body[contactUrn]}&httpMethod=GET" )
             .aggregationStrategy( rapidProContactEnricherAggrStrategy )
@@ -148,7 +148,5 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
                 .end()
             .setBody( simple( "${exchangeProperty.originalPayload}" ) )
             .end();
-
-
     }
 }

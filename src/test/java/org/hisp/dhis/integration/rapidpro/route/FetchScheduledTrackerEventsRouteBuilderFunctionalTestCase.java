@@ -413,6 +413,7 @@ public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends A
         camelContext.start();
         Map<String, Object> body = new HashMap<>();
         body.put( "contactUrn", "whatsapp:12345678" );
+        body.put( "enrollment", "enrollment-id" );
         producerTemplate.sendBody( "direct:createRapidProContact", body );
         assertEquals( 2, expectedLogMessage.getCount() );
         producerTemplate.sendBody( "direct:createRapidProContact", body );

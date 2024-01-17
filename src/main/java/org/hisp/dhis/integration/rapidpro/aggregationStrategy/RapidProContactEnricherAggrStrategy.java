@@ -58,7 +58,7 @@ public class RapidProContactEnricherAggrStrategy extends AbstractAggregationStra
         }
         else
         {
-            LOGGER.warn( String.format( "unexpected result from RapidPro => %s", resourceBody ) );
+            LOGGER.warn( String.format( "Unexpected result from RapidPro => %s", resourceBody ) );
         }
         oldExchange.getMessage().setBody( originalBody );
         return oldExchange;
