@@ -404,7 +404,7 @@ public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends A
         ((SpringBootCamelContext) camelContext)
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
                 if ( camelLogger.getLevel().name().equals( "DEBUG" ) && message.startsWith(
-                    "RapidPro Contact already exists. No action needed." ) )
+                    "RapidPro Contact already exists for DHIS2" ) )
                 {
                     expectedLogMessage.countDown();
                 }

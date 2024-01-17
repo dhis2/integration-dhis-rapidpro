@@ -133,9 +133,9 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
             .setProperty( "originalPayload", simple( "${body}") )
             .choice()
                 .when( simple ("${body[results].size()} > 0" ) )
-                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact already exists. No action needed." )
+                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact already exists for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]} with contact URN ${exchangeProperty.originalPayload[contactUrn]}. No action needed." )
                 .otherwise()
-                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact does not exist. Creating new contact...")
+                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact does not exist for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]} with contact URN ${exchangeProperty.originalPayload[contactUrn]}. Creating new contact...")
                     .transform(
                         datasonnet( "resource:classpath:trackedEntityContact.ds", Map.class, "application/x-java-object",
                             "application/x-java-object" ) )
