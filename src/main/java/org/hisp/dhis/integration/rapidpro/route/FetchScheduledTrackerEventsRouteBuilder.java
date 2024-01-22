@@ -126,7 +126,7 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
 
         from( "direct:createRapidProContact" )
             .routeId( "Create RapidPro Contact" )
-            .log( LoggingLevel.INFO, LOGGER, "Creating RapidPro contact for DHIS2 enrollment ${body[enrollment]}" )
+            .log( LoggingLevel.INFO, LOGGER, "Processing RapidPro contact for DHIS2 enrollment ${body[enrollment]}" )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .enrich().simple( "{{rapidpro.api.url}}/contacts.json?urn=${body[contactUrn]}&httpMethod=GET" )
             .aggregationStrategy( rapidProContactEnricherAggrStrategy )
@@ -134,6 +134,7 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
             .choice()
                 .when( simple ("${body[results].size()} > 0" ) )
                     .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact already exists for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]}. No action needed." )
+                    .setProperty( "contactUuid", simple( "${body[results][0][uuid]}" ) )
                 .otherwise()
                     .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact does not exist for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]}. Creating new contact...")
                     .transform(
@@ -144,9 +145,19 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
                     .toD( "{{rapidpro.api.url}}/contacts.json?httpMethod=POST&okStatusCodeRange=200-499" )
                     .choice().when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "201" ) )
                         .log( LoggingLevel.WARN, LOGGER, "Unexpected status code when creating RapidPro contact for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
+                        .stop()
                     .end()
+                    .unmarshal().json()
+                    .setProperty( "contactUuid", simple( "${body[uuid]}" ) )
                 .end()
             .setBody( simple( "${exchangeProperty.originalPayload}" ) )
+            .process( exchange -> {
+                String contactUuid = exchange.getProperty( "contactUuid", String.class );
+                Map<String, Object> bodyMap = exchange.getIn().getBody( Map.class );
+                bodyMap.put( "contactUuid", contactUuid );
+                exchange.getIn().setBody( bodyMap );
+            } )
+            .log( LoggingLevel.DEBUG, LOGGER, "Processed RapidPro contact ${body[contactUuid]} for DHIS2 enrollment ${body[enrollment]} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
             .end();
     }
 }
