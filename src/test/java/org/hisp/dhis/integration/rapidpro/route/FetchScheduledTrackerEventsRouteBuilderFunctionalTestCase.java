@@ -234,8 +234,8 @@ public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends A
         camelContext.start();
 
         Map<String, Object> body = new HashMap<>();
-        body.put( "enrollment", enrollmentId );
         body.put( "contactUrn", "1234" );
+        body.put( "enrollment", enrollmentId );
         producerTemplate.sendBody( "direct:fetchAttributes", ExchangePattern.InOut, body );
         spyEndpoint.assertIsSatisfied();
         Exchange exchange = spyEndpoint.getExchanges().get( 0 );
@@ -367,6 +367,7 @@ public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends A
         camelContext.start();
         Map<String, Object> body = new HashMap<>();
         body.put( "contactUrn", "whatsapp:12345678" );
+        body.put( "enrollment", "enrollment-id" );
         producerTemplate.sendBody( "direct:createRapidProContact", body );
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
             .body( "results.size()", equalTo( 1 ) )
@@ -392,6 +393,7 @@ public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends A
         camelContext.start();
         Map<String, Object> body = new HashMap<>();
         body.put( "contactUrn", "whatsapp:invalid" );
+        body.put( "enrollment", "enrollment-id" );
         producerTemplate.sendBody( "direct:createRapidProContact", body );
         assertEquals( 0, expectedLogMessage.getCount() );
     }
