@@ -93,11 +93,11 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
             .routeId( "Fetch And Process Tracker Events" )
             .to( "direct:fetchDueEvents" )
             .split( simple( "${exchangeProperty.dueEvents}" ) )
-                .marshal().json().transform().body( String.class )
-                .setProperty( "eventPayload", simple( "${body}" ) )
-                .unmarshal().json()
                 .to( "direct:fetchAttributes" )
-                .to("direct:createRapidProContact");
+                .to("direct:createRapidProContact")
+                .log( LoggingLevel.DEBUG, LOGGER, "Enqueuing event [event ID = ${body[event]}, enrollment = ${body[enrollment]}, content = ${body}]" )
+                .marshal().json().convertBodyTo( String.class )
+                .to( "jms:queue:events?exchangePattern=InOnly" );
 
         from( "direct:fetchDueEvents" )
             .routeId( "Fetch Due Events" )

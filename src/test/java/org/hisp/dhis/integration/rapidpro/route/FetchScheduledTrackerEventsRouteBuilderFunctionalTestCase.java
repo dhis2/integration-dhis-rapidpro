@@ -31,7 +31,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
-import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.spi.CamelLogger;
@@ -424,11 +423,38 @@ public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends A
             .body( "results.size()", equalTo( 1 ) );
     }
 
+    @Test
+    public void testFetchAndProcessEvents()
+        throws
+        Exception
+    {
+        String phoneNumber = "12345678";
+        String givenName = "John";
+        String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, phoneNumber,
+            "ID-1", givenName, List.of( "ZP5HZ87wzc0" ) );
+        AdviceWith.adviceWith( camelContext, "Fetch And Process Tracker Events",
+            r -> r.weaveByToUri( "jms:queue:events?exchangePattern=InOnly" ).after().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
+        camelContext.start();
+        producerTemplate.sendBody( "direct:fetchAndProcessEvents", ExchangePattern.InOut, null );
+        spyEndpoint.assertIsSatisfied( 10000 );
+        Exchange exchange = spyEndpoint.getExchanges().get( 0 );
+        Map<String, Object> body = objectMapper.readValue( exchange.getMessage().getBody( String.class ), Map.class );
+        String expectedContactUrn = "whatsapp:" + phoneNumber;
+        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
+            .body( "results.size()", equalTo( 1 ) );
+        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then().assertThat()
+            .body( "results[0].uuid", equalTo( body.get( "contactUuid" ) ) );
+        assertEquals( expectedContactUrn, body.get( "contactUrn" ) );
+        assertEquals( givenName, body.get( "givenName" ) );
+        assertEquals( enrollmentId, body.get( "enrollment" ) );
+    }
+
     private void assertRapidProPreCondition()
     {
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
             .body( "results.size()", equalTo( 0 ) );
     }
-
 
 }
