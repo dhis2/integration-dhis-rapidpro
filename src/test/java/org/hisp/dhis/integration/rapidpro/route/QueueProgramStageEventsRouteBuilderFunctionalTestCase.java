@@ -50,12 +50,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
+public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Autowired
     protected ProgramStageToFlowMap programStageToFlowMap;
@@ -358,103 +356,88 @@ public class FetchScheduledTrackerEventsRouteBuilderFunctionalTestCase extends A
     }
 
     @Test
-    public void testCreateRapidProContactGivenValidUrn()
-        throws
-        IOException
-    {
-        assertRapidProPreCondition();
-        camelContext.start();
-        Map<String, Object> body = new HashMap<>();
-        body.put( "contactUrn", "whatsapp:12345678" );
-        body.put( "enrollment", "enrollment-id" );
-        producerTemplate.sendBody( "direct:createRapidProContact", body );
-        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
-            .body( "results.size()", equalTo( 1 ) )
-            .body( "results[0].urns[0]", equalTo( "whatsapp:12345678" ) );
-    }
-
-    @Test
-    public void testCreateRapidProContactFailsGivenInvalidUrn()
-        throws
-        Exception
-    {
-        assertRapidProPreCondition();
-        CountDownLatch expectedLogMessage = new CountDownLatch( 1 );
-        ((SpringBootCamelContext) camelContext)
-            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
-                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.startsWith(
-                    "Unexpected status code when creating RapidPro contact for " ) )
-                {
-                    expectedLogMessage.countDown();
-                }
-                return message;
-            } );
-        camelContext.start();
-        Map<String, Object> body = new HashMap<>();
-        body.put( "contactUrn", "whatsapp:invalid" );
-        body.put( "enrollment", "enrollment-id" );
-        producerTemplate.sendBody( "direct:createRapidProContact", body );
-        assertEquals( 0, expectedLogMessage.getCount() );
-    }
-
-    @Test
-    public void testCreateRapidProContactWhenContactAlreadyExists()
-    {
-        assertRapidProPreCondition();
-        CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
-        ((SpringBootCamelContext) camelContext)
-            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
-                if ( camelLogger.getLevel().name().equals( "DEBUG" ) && message.startsWith(
-                    "RapidPro Contact already exists for DHIS2" ) )
-                {
-                    expectedLogMessage.countDown();
-                }
-                return message;
-            } );
-        camelContext.start();
-        Map<String, Object> body = new HashMap<>();
-        body.put( "contactUrn", "whatsapp:12345678" );
-        body.put( "enrollment", "enrollment-id" );
-        producerTemplate.sendBody( "direct:createRapidProContact", body );
-        assertEquals( 2, expectedLogMessage.getCount() );
-        producerTemplate.sendBody( "direct:createRapidProContact", body );
-        assertEquals( 1, expectedLogMessage.getCount() );
-        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
-            .body( "results.size()", equalTo( 1 ) );
-    }
-
-    @Test
-    public void testFetchAndProcessEvents()
+    public void testEventTransformationReturnsExpectedValues()
         throws
         Exception
     {
         String phoneNumber = "12345678";
         String givenName = "John";
+        String programStage = "ZP5HZ87wzc0";
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, phoneNumber,
-            "ID-1", givenName, List.of( "ZP5HZ87wzc0" ) );
-        AdviceWith.adviceWith( camelContext, "Fetch And Process Tracker Events",
-            r -> r.weaveByToUri( "jms:queue:events?exchangePattern=InOnly" ).after().to( "mock:spy" ) );
+            "ID-1", givenName, List.of( programStage ) );
+        AdviceWith.adviceWith( camelContext, "Queue Program Stage Events",
+            r -> r.interceptSendToEndpoint( "jms:queue:events?exchangePattern=InOnly" ).to( "mock:spy" ).stop() );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
+
         camelContext.start();
-        producerTemplate.sendBody( "direct:fetchAndProcessEvents", ExchangePattern.InOut, null );
+        producerTemplate.sendBody( "direct:queueEvents", ExchangePattern.InOut, null );
         spyEndpoint.assertIsSatisfied( 10000 );
         Exchange exchange = spyEndpoint.getExchanges().get( 0 );
         Map<String, Object> body = objectMapper.readValue( exchange.getMessage().getBody( String.class ), Map.class );
         String expectedContactUrn = "whatsapp:" + phoneNumber;
-        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
-            .body( "results.size()", equalTo( 1 ) );
-        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then().assertThat()
-            .body( "results[0].uuid", equalTo( body.get( "contactUuid" ) ) );
         assertEquals( expectedContactUrn, body.get( "contactUrn" ) );
         assertEquals( givenName, body.get( "givenName" ) );
         assertEquals( enrollmentId, body.get( "enrollment" ) );
+        assertEquals( programStage, body.get( "programStage" ) );
     }
 
-    private void assertRapidProPreCondition()
+    @Test
+    public void testUpdateDhisProgramStageEventStatusWithValidEventId()
+        throws
+        Exception
     {
-        given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
-            .body( "results.size()", equalTo( 0 ) );
+        Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 1, List.of( "ZP5HZ87wzc0" ) );
+        Thread.sleep( 1000 );
+        Map<String, Object> payload = (Map<String, Object>) DHIS2_CLIENT.get( "tracker/events" )
+            .transfer()
+            .returnAs( Map.class );
+        List<Map<String, Object>> instances = (List<Map<String, Object>>) payload.get( "instances" );
+        Map<String, Object> event = instances.get( 0 );
+        CountDownLatch expectedLogMessage = new CountDownLatch( 1 );
+        ((SpringBootCamelContext) camelContext)
+            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
+                if ( camelLogger.getLevel().name().equals( "DEBUG" ) && message.startsWith(
+                    String.format( "Successfully updated DHIS program stage event status for event with ID => %s",
+                        event.get( "event" ) ) ) )
+                {
+                    expectedLogMessage.countDown();
+                }
+                return message;
+            } );
+
+        camelContext.start();
+        producerTemplate.sendBodyAndProperty( "direct:updateDhisProgramStageEventStatus", null, "eventPayload", event );
+        Thread.sleep( 1000 );
+        assertEquals( 0, expectedLogMessage.getCount() );
+    }
+
+    @Test
+    public void testQueueEvents()
+        throws
+        Exception
+    {
+        Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 10, List.of( "ZP5HZ87wzc0" ) );
+        CountDownLatch expectedLogMessage = new CountDownLatch( 10 );
+        ((SpringBootCamelContext) camelContext)
+            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
+                if ( camelLogger.getLevel().name().equals( "DEBUG" ) && message.startsWith(
+                    "Successfully updated DHIS program stage event status for event with ID =>" ) )
+                {
+                    expectedLogMessage.countDown();
+                }
+                return message;
+            } );
+
+        AdviceWith.adviceWith( camelContext, "Queue Program Stage Events",
+            r -> r.interceptSendToEndpoint( "jms:queue:events?exchangePattern=InOnly" ).to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 10 );
+
+        camelContext.start();
+        producerTemplate.sendBody( "direct:queueEvents", ExchangePattern.InOut, null );
+        spyEndpoint.assertIsSatisfied( 10000 );
+        assertEquals( 0, expectedLogMessage.getCount() );
     }
 
 }
