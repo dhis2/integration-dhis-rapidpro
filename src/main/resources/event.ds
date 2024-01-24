@@ -1,0 +1,7 @@
+{
+  event: body.event,
+  enrollment: body.enrollment,
+  programStage: body.programStage,
+  contactUrn: body.contactUrn,
+  givenName: body.givenName
+}

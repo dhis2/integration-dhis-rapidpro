@@ -30,35 +30,26 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.api.model.Page;
-import org.hisp.dhis.api.model.Pager;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.AttributesAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.ProgramStageEventsAggrStrategy;
-import org.hisp.dhis.integration.rapidpro.aggregationStrategy.RapidProContactEnricherAggrStrategy;
 import org.hisp.dhis.integration.rapidpro.aggregationStrategy.TrackedEntityIdAggrStrategy;
+import org.hisp.dhis.integration.rapidpro.processor.EventStatusUpdateProcessor;
 import org.hisp.dhis.integration.rapidpro.processor.FetchDueEventsQueryParamSetter;
 import org.hisp.dhis.integration.rapidpro.processor.SetAttributesEndpointProcessor;
 import org.hisp.dhis.integration.rapidpro.processor.SetProgramStagesPropertyProcessor;
-import org.hisp.dhis.integration.sdk.internal.operation.page.PageIterable;
-import org.jgroups.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @Component
-public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilder
+public class QueueProgramStageEventsRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
     private SetProgramStagesPropertyProcessor setProgramStagesPropertyProcessor;
 
     @Autowired
     private ProgramStageEventsAggrStrategy programStageEventsAggrStrategy;
-
-    @Autowired
-    private RapidProContactEnricherAggrStrategy rapidProContactEnricherAggrStrategy;
 
     @Autowired
     private FetchDueEventsQueryParamSetter fetchDueEventsQueryParamSetter;
@@ -72,6 +63,9 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
     @Autowired
     private SetAttributesEndpointProcessor setAttributesEndpointProcessor;
 
+    @Autowired
+    private EventStatusUpdateProcessor eventStatusUpdateProcessor;
+
     @Override
     protected void doConfigure()
         throws
@@ -80,24 +74,26 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
         from( "servlet:tasks/syncEvents?muteException=true" )
             .precondition( "{{sync.dhis2.events.to.rapidpro.flows}}" )
             .removeHeaders( "*" )
-            .to( "direct:fetchAndProcessEvents" )
+            .to( "direct:queueEvents" )
             .setHeader( Exchange.CONTENT_TYPE, constant( "application/json" ) )
             .setBody( constant( Map.of( "status", "success", "data", "Fetched and enqueued due program stage events" ) ) )
             .marshal().json();
 
         from( "quartz://fetchDueEvents?cron={{sync.events.schedule.expression:0 0/30 * * * ?}}&stateful=true" )
             .precondition( "{{sync.dhis2.events.to.rapidpro.flows}}" )
-            .to( "direct:fetchAndProcessEvents" );
+            .to( "direct:queueEvents" );
 
-        from( "direct:fetchAndProcessEvents" )
-            .routeId( "Fetch And Process Tracker Events" )
+        from("direct:queueEvents")
+            .routeId( "Queue Program Stage Events" )
             .to( "direct:fetchDueEvents" )
             .split( simple( "${exchangeProperty.dueEvents}" ) )
-                .marshal().json().transform().body( String.class )
                 .setProperty( "eventPayload", simple( "${body}" ) )
-                .unmarshal().json()
                 .to( "direct:fetchAttributes" )
-                .to("direct:createRapidProContact");
+                .transform( datasonnet( "resource:classpath:event.ds", String.class, "application/x-java-object", "application/json" ) )
+                .to( "jms:queue:events?exchangePattern=InOnly" )
+                .unmarshal().json()
+                .log( LoggingLevel.DEBUG, LOGGER, "Enqueued event [eventId => ${body[event]}, programStage => ${body[programStage]}]" )
+                .to( "direct:updateDhisProgramStageEventStatus" );
 
         from( "direct:fetchDueEvents" )
             .routeId( "Fetch Due Events" )
@@ -124,29 +120,16 @@ public class FetchScheduledTrackerEventsRouteBuilder extends AbstractRouteBuilde
                 .log( LoggingLevel.ERROR, LOGGER, "Error while fetching phone number attribute from DHIS2 enrollment ${body[enrollment]}. Hint: Be sure to set the 'dhis2.phone.number.attribute.code' config property." )
                 .stop();
 
-        from( "direct:createRapidProContact" )
-            .routeId( "Create RapidPro Contact" )
-            .log( LoggingLevel.INFO, LOGGER, "Creating RapidPro contact for DHIS2 enrollment ${body[enrollment]}" )
-            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .enrich().simple( "{{rapidpro.api.url}}/contacts.json?urn=${body[contactUrn]}&httpMethod=GET" )
-            .aggregationStrategy( rapidProContactEnricherAggrStrategy )
-            .setProperty( "originalPayload", simple( "${body}") )
-            .choice()
-                .when( simple ("${body[results].size()} > 0" ) )
-                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact already exists for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]}. No action needed." )
-                .otherwise()
-                    .log( LoggingLevel.DEBUG, LOGGER, "RapidPro Contact does not exist for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]}. Creating new contact...")
-                    .transform(
-                        datasonnet( "resource:classpath:trackedEntityContact.ds", Map.class, "application/x-java-object",
-                            "application/x-java-object" ) )
-                    .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-                    .marshal().json().convertBodyTo( String.class )
-                    .toD( "{{rapidpro.api.url}}/contacts.json?httpMethod=POST&okStatusCodeRange=200-499" )
-                    .choice().when( header( Exchange.HTTP_RESPONSE_CODE ).isNotEqualTo( "201" ) )
-                        .log( LoggingLevel.WARN, LOGGER, "Unexpected status code when creating RapidPro contact for DHIS2 enrollment ${exchangeProperty.originalPayload[enrollment]} => HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
-                    .end()
-                .end()
-            .setBody( simple( "${exchangeProperty.originalPayload}" ) )
+        from("direct:updateDhisProgramStageEventStatus")
+            .routeId( "Update DHIS Program Stage Event Status" )
+            .process( eventStatusUpdateProcessor )
+            .marshal().json().convertBodyTo( String.class )
+            .toD( "dhis2://post/resource?path=tracker&inBody=resource&client=#dhis2Client" )
+            .unmarshal().json()
+            .choice().when( simple( "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'" ) )
+                .log( LoggingLevel.DEBUG, LOGGER, "Successfully updated DHIS program stage event status for event with ID => ${exchangeProperty.eventPayload['event']}" )
+            .otherwise()
+                .log( LoggingLevel.ERROR, LOGGER, "Unexpected status code when updating the dhis program stage event status for event with ID => ${exchangeProperty.eventPayload['event']}. HTTP ${header.CamelHttpResponseCode}. HTTP response body => ${body}" )
             .end();
     }
 }
