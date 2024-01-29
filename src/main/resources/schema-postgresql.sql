@@ -31,3 +31,13 @@ CREATE TABLE IF NOT EXISTS SUCCESS_LOG (
     organisation_unit_id    VARCHAR,
     created_at              TIMESTAMP WITH TIME ZONE            NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS FLOW_RUN (
+    id                      BIGSERIAL                   PRIMARY KEY,
+    payload                 VARCHAR                     NOT NULL,
+    status                  VARCHAR                     NOT NULL CHECK (status = 'PROCESSED' OR status = 'RETRY'),
+    created_at              TIMESTAMP WITH TIME ZONE    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_processed_at       TIMESTAMP WITH TIME ZONE    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX ON FLOW_RUN(status);

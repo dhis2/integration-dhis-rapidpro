@@ -1,0 +1,37 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 287561242,
+      "uuid": "flow-run-uuid",
+      "flow": {
+        "uuid": "flow-uuid",
+        "name": "flow-name"
+      },
+      "contact": {
+        "uuid": "contact-uuid",
+        "name": null,
+        "urn": "whatsapp:12345678",
+        "urn_display": "12 34 56 78"
+      },
+      "start": null,
+      "responded": true,
+      "path": [
+        {
+          "node": "3ca47c45-73e6-4546-89af-5044a91deb79",
+          "time": "2024-01-28T09:33:16.543074Z"
+        },
+        {
+          "node": "a0fcf2d0-9688-4c7b-a143-4ede1a2fdf5c",
+          "time": "2024-01-28T09:33:16.543130Z"
+        }
+      ],
+      "values": {},
+      "created_on": "2024-01-28T09:33:16.543067Z",
+      "modified_on": "2024-01-28T09:33:16.543149Z",
+      "exited_on": null,
+      "exit_type": null
+    }
+  ]
+}

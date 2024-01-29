@@ -1,0 +1,8 @@
+{
+  flow: body.flowUuid,
+  urns: (if std.objectHas(body, "contactUrn") && !ds.isBlank(body.contactUrn) then [ body.contactUrn ] else []),
+  extra: {
+    "eventId": body.event,
+    "givenName": body.givenName
+  }
+}
