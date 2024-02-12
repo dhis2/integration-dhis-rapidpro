@@ -80,18 +80,18 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
                 .setHeader( "reportPeriodOffset", simple( "${body['report_period_offset']}" ) )
                 .setHeader( "orgUnitId", simple( "${body['organisation_unit_id']}" ) )
                 .setBody( simple( "${body['payload']}" ) )
-                .to( "jms:queue:dhis2?exchangePattern=InOnly" )
+                .to( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly" )
                 .setBody( simple( "${properties:processed.dlc.update.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .end();
 
-        from( "quartz://dhis2?cron={{report.delivery.schedule.expression}}" )
+        from( "quartz://dhis2AggregateReports?cron={{report.delivery.schedule.expression}}" )
             .routeId( "Schedule Report Delivery" )
             .precondition( "'{{report.delivery.schedule.expression:}}' != ''" )
-            .pollEnrich( "jms:queue:dhis2" )
+            .pollEnrich( "jms:queue:dhis2AggregateReports" )
             .to( "direct:deliverReport" );
 
-        from( "jms:queue:dhis2" )
+        from( "jms:queue:dhis2AggregateReports" )
             .routeId( "Consume Report" )
             .precondition( "'{{report.delivery.schedule.expression:}}' == ''" )
             .to( "direct:deliverReport" );

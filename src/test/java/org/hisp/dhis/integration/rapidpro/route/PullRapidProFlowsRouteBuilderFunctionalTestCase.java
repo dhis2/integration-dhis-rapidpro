@@ -29,10 +29,13 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.http.ContentType;
+import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.TransformDefinition;
+import org.apache.camel.spi.CamelLogger;
+import org.apache.camel.spring.boot.SpringBootCamelContext;
 import org.hisp.dhis.api.model.v40_0.DataValue;
 import org.hisp.dhis.api.model.v40_0.DataValueSet;
 import org.hisp.dhis.api.model.v40_0.WebMessage;
@@ -42,36 +45,50 @@ import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
+public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private String flowUuid;
+    private String aggregateReportFlowUuid;
+
+    private String programStageEventFlowUuid;
 
     @Override
     public void doBeforeEach()
     {
-        flowUuid = getFlowUuid( "Flow Under Test" );
-        System.setProperty( "rapidpro.flow.uuids", flowUuid  );
+        aggregateReportFlowUuid = getFlowUuid( "Flow Under Test" );
+        programStageEventFlowUuid = getFlowUuid( "Program Stage Event Flow Under Test" );
+        programStageToFlowMap.clear();
+    }
+
+    @Override
+    public void doAfterEach()
+        throws
+        IOException
+    {
+        Environment.deleteDhis2TrackedEntities( Environment.ORG_UNIT_ID );
     }
 
     @Test
-    public void testPullGivenNoPriorFlowRun()
+    public void testPullAggregateReportFlowGivenNoPriorFlowRun()
         throws
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
+        System.setProperty( "rapidpro.flow.uuids", aggregateReportFlowUuid );
         AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
@@ -84,18 +101,19 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
     }
 
     @Test
-    public void testPullGivenPriorFlowRun()
+    public void testPullAggregateReportFlowGivenPriorFlowRun()
         throws
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
+        System.setProperty( "rapidpro.flow.uuids", aggregateReportFlowUuid );
         AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
         syncContactsAndFetchFirstContactUuid();
 
-        runFlowAndWaitUntilCompleted( flowUuid );
+        runFlowAndWaitUntilCompleted( aggregateReportFlowUuid );
         spyEndpoint.setExpectedCount( 1 );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
 
@@ -130,38 +148,152 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
     }
 
     @Test
+    public void testPullProgramStageEventFlowGivenNoPriorFlowRun()
+        throws
+        Exception
+    {
+        System.setProperty( "sync.dhis2.events.to.rapidpro.flows", "true" );
+        programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
+        AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        camelContext.start();
+
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        Thread.sleep( 15000 );
+        assertEquals( 0, spyEndpoint.getReceivedCounter() );
+    }
+
+    @Test
+    public void testPullProgramStageEventFlowGivenPriorFlowRun()
+        throws
+        Exception
+    {
+        System.setProperty( "sync.dhis2.events.to.rapidpro.flows", "true" );
+        programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
+        AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        String eventId = createTrackedEntityAndFetchEventId( "12345678" );
+        syncTrackedEntityContact( "whatsapp:12345678" );
+        camelContext.start();
+        runFlowAndWaitUntilCompleted( programStageEventFlowUuid, eventId );
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        Thread.sleep( 15000 );
+        assertEquals( 1, spyEndpoint.getReceivedCounter() );
+    }
+
+    @Test
+    public void testPullProgramStageEventFlowWithMissingEventId()
+        throws
+        Exception
+    {
+        System.setProperty( "sync.dhis2.events.to.rapidpro.flows", "true" );
+        programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
+        AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:spy" ) );
+        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        createTrackedEntityAndFetchEventId( "12345678" );
+        syncTrackedEntityContact( "whatsapp:12345678" );
+
+        CountDownLatch expectedLogMessage = new CountDownLatch( 1 );
+        ((SpringBootCamelContext) camelContext)
+            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
+                if ( camelLogger.getLevel().name().equals( "ERROR" ) && message.startsWith(
+                    "Cannot process flow run for flow definition" ) )
+                {
+                    expectedLogMessage.countDown();
+                }
+                return message;
+            } );
+        camelContext.start();
+        given( RAPIDPRO_API_REQUEST_SPEC ).contentType( ContentType.JSON ).body(
+                Map.of( "flow", programStageEventFlowUuid, "urns", List.of( "whatsapp:12345678" ) ) )
+            .when().post( "flow_starts.json" )
+            .then();
+
+        String exitType = "";
+        Instant after = Instant.now();
+        while ( exitType == null || !exitType.equals( "completed" ) )
+        {
+            exitType = given( RAPIDPRO_API_REQUEST_SPEC )
+                .queryParam( "flow", programStageEventFlowUuid ).queryParam( "after", after.toString() ).when()
+                .get( "runs.json" ).then().statusCode( 200 ).extract().path( "results[0].exit_type" );
+            Thread.sleep( 1000 );
+        }
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        Thread.sleep( 10000 );
+        assertEquals( 0, spyEndpoint.getReceivedCounter() );
+        assertEquals( 0, expectedLogMessage.getCount() );
+    }
+
+    @Test
     public void testConsecutivePullsWithInterleavingFlowRuns()
         throws
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
-        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        System.setProperty( "sync.dhis2.events.to.rapidpro.flows", "true" );
+        System.setProperty( "rapidpro.flow.uuids", aggregateReportFlowUuid );
+        programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
+
+        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:reportSpy" ) );
+        MockEndpoint reportSpyEndpoint = camelContext.getEndpoint( "mock:reportSpy", MockEndpoint.class );
+
+        AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:eventSpy" ) );
+        MockEndpoint eventSpyEndpoint = camelContext.getEndpoint( "mock:eventSpy", MockEndpoint.class );
 
         camelContext.start();
+        String eventId = createTrackedEntityAndFetchEventId( "12345678" );
         syncContactsAndFetchFirstContactUuid();
+        syncTrackedEntityContact( "whatsapp:12345678" );
 
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
         Thread.sleep( 15000 );
-        assertEquals( 0, spyEndpoint.getReceivedCounter() );
+        assertEquals( 0, reportSpyEndpoint.getReceivedCounter() );
+        assertEquals( 0, eventSpyEndpoint.getReceivedCounter() );
 
-        spyEndpoint.setExpectedCount( 1 );
-        runFlowAndWaitUntilCompleted( flowUuid );
+        reportSpyEndpoint.setExpectedCount( 1 );
+        runFlowAndWaitUntilCompleted( aggregateReportFlowUuid );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        spyEndpoint.await( 15, TimeUnit.SECONDS );
-        assertEquals( 1, spyEndpoint.getReceivedCounter() );
+        reportSpyEndpoint.await( 15, TimeUnit.SECONDS );
+        assertEquals( 1, reportSpyEndpoint.getReceivedCounter() );
 
-        spyEndpoint.setExpectedCount( 2 );
-        runFlowAndWaitUntilCompleted( flowUuid );
+        eventSpyEndpoint.setExpectedCount( 1 );
+        runFlowAndWaitUntilCompleted( programStageEventFlowUuid, eventId );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        spyEndpoint.await( 15, TimeUnit.SECONDS );
-        assertEquals( 2, spyEndpoint.getReceivedCounter() );
+        eventSpyEndpoint.await( 15, TimeUnit.SECONDS );
+        assertEquals( 1, eventSpyEndpoint.getReceivedCounter() );
 
-        spyEndpoint.setExpectedCount( 3 );
-        runFlowAndWaitUntilCompleted( flowUuid );
+        reportSpyEndpoint.setExpectedCount( 2 );
+        runFlowAndWaitUntilCompleted( aggregateReportFlowUuid );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        spyEndpoint.await( 15, TimeUnit.SECONDS );
-        assertEquals( 3, spyEndpoint.getReceivedCounter() );
+        reportSpyEndpoint.await( 15, TimeUnit.SECONDS );
+        assertEquals( 2, reportSpyEndpoint.getReceivedCounter() );
+
+        eventSpyEndpoint.setExpectedCount( 2 );
+        runFlowAndWaitUntilCompleted( programStageEventFlowUuid, eventId );
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        eventSpyEndpoint.await( 15, TimeUnit.SECONDS );
+        assertEquals( 2, eventSpyEndpoint.getReceivedCounter() );
+
+        reportSpyEndpoint.setExpectedCount( 3 );
+        runFlowAndWaitUntilCompleted( aggregateReportFlowUuid );
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        reportSpyEndpoint.await( 15, TimeUnit.SECONDS );
+        assertEquals( 3, reportSpyEndpoint.getReceivedCounter() );
+
+        eventSpyEndpoint.setExpectedCount( 3 );
+        runFlowAndWaitUntilCompleted( programStageEventFlowUuid, eventId );
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        eventSpyEndpoint.await( 15, TimeUnit.SECONDS );
+        assertEquals( 3, eventSpyEndpoint.getReceivedCounter() );
+
+        eventSpyEndpoint.setExpectedCount( 4 );
+        reportSpyEndpoint.setExpectedCount( 4 );
+        runFlowAndWaitUntilCompleted( programStageEventFlowUuid, eventId );
+        runFlowAndWaitUntilCompleted( aggregateReportFlowUuid );
+        producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
+        eventSpyEndpoint.await( 15, TimeUnit.SECONDS );
+        assertEquals( 4, eventSpyEndpoint.getReceivedCounter() );
+        assertEquals( 4, reportSpyEndpoint.getReceivedCounter() );
     }
 
     @Test
@@ -170,16 +302,17 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
+        System.setProperty( "rapidpro.flow.uuids", aggregateReportFlowUuid );
+        AdviceWith.adviceWith( camelContext, "Queue Aggregate Report",
             r -> r.weaveByType( TransformDefinition.class ).before().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
         syncContactsAndFetchFirstContactUuid();
 
-        runFlowAndWaitUntilCompleted( flowUuid );
-        runFlowAndWaitUntilCompleted( flowUuid );
-        runFlowAndWaitUntilCompleted( flowUuid );
+        runFlowAndWaitUntilCompleted( aggregateReportFlowUuid );
+        runFlowAndWaitUntilCompleted( aggregateReportFlowUuid );
+        runFlowAndWaitUntilCompleted( aggregateReportFlowUuid );
 
         spyEndpoint.setExpectedCount( 3 );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
@@ -216,6 +349,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
+        System.setProperty( "rapidpro.flow.uuids", aggregateReportFlowUuid );
         AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
             r -> r.weaveByToUri( "${exchangeProperty.nextRunsPageUrl}" ).replace().to( "mock:rapidPro" ) );
         MockEndpoint rapidProMockEndpoint = camelContext.getEndpoint( "mock:rapidPro", MockEndpoint.class );
@@ -257,6 +391,7 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
+        System.setProperty( "rapidpro.flow.uuids", aggregateReportFlowUuid );
         AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
             r -> r.weaveByToUri( "${exchangeProperty.nextRunsPageUrl}" ).replace().to( "mock:rapidPro" ) );
         MockEndpoint rapidProMockEndpoint = camelContext.getEndpoint( "mock:rapidPro", MockEndpoint.class );
@@ -279,8 +414,9 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
             exchange.getMessage().setBody( objectMapper.writeValueAsString( flowRuns ) );
         } );
 
-        AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
-            r -> r.weaveByToUri( "jms:queue:dhis2?exchangePattern=InOnly" ).replace().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "Queue Aggregate Report",
+            r -> r.weaveByToUri( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly" ).replace()
+                .to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
@@ -289,34 +425,5 @@ public class PullReportsRouteBuilderFunctionalTestCase extends AbstractFunctiona
         producerTemplate.sendBody( "direct:pull", null );
         spyEndpoint.await( 30, TimeUnit.SECONDS );
         assertEquals( 500, spyEndpoint.getReceivedCounter() );
-    }
-
-    private void runFlow( String flowUuid )
-    {
-        given( RAPIDPRO_API_REQUEST_SPEC ).contentType( ContentType.JSON ).body(
-                Map.of( "flow", flowUuid, "urns", List.of( "tel:0035621000001" ) ) ).when().post( "flow_starts.json" )
-            .then();
-    }
-
-    private void runFlowAndWaitUntilCompleted( String flowUuid )
-        throws
-        InterruptedException
-    {
-        runFlow( flowUuid );
-        waitUntilFlowRunIsCompleted( flowUuid, Instant.now() );
-    }
-
-    private void waitUntilFlowRunIsCompleted( String flowUuid, Instant after )
-        throws
-        InterruptedException
-    {
-        String exitType = "";
-        while ( exitType == null || !exitType.equals( "completed" ) )
-        {
-            exitType = given( RAPIDPRO_API_REQUEST_SPEC )
-                .queryParam( "flow", flowUuid ).queryParam( "after", after.toString() ).when()
-                .get( "runs.json" ).then().statusCode( 200 ).extract().path( "results[0].exit_type" );
-            Thread.sleep( 1000 );
-        }
     }
 }

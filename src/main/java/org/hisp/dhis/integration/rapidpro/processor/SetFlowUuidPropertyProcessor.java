@@ -25,25 +25,45 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro.route;
+package org.hisp.dhis.integration.rapidpro.processor;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
+import org.apache.camel.Processor;
+import org.apache.camel.language.simple.SimpleLanguage;
+import org.hisp.dhis.integration.rapidpro.ProgramStageToFlowMap;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
+
 @Component
-public class WebHookRouteBuilder extends AbstractRouteBuilder
+public class SetFlowUuidPropertyProcessor implements Processor
 {
+
+    @Autowired
+    ProgramStageToFlowMap programStageToFlowMap;
+
     @Override
-    protected void doConfigure()
+    public void process( Exchange exchange )
+        throws
+        Exception
     {
-        from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
-            .precondition( "{{rapidpro.webhook.enabled}}" )
-            .routeId( "RapidPro Webhook" )
-            .removeHeader( Exchange.HTTP_URI )
-            .to( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly" )
-            .log( LoggingLevel.DEBUG, LOGGER, "Enqueued webhook message [data set code = ${header.dataSetCode},report period offset = ${header.reportPeriodOffset},orgUnitId = ${header.orgUnitId},content = ${body}]" )
-            .setHeader( Exchange.HTTP_RESPONSE_CODE, constant( 202 ) )
-            .setBody().simple( "${null}" );
+        String aggregateReportFlowUuids = exchange.getContext()
+            .resolvePropertyPlaceholders( "{{rapidpro.flow.uuids:}}" );
+        String programStageEventFlowUuids = programStageToFlowMap.getFlowUuids();
+        if ( aggregateReportFlowUuids.isEmpty() && !programStageEventFlowUuids.isEmpty() )
+        {
+            exchange.setProperty( "flowUuids", programStageEventFlowUuids );
+        }
+        else if ( !aggregateReportFlowUuids.isEmpty() && programStageEventFlowUuids.isEmpty() )
+        {
+            exchange.setProperty( "flowUuids", aggregateReportFlowUuids );
+        }
+        else
+        {
+            exchange.setProperty( "flowUuids",
+                String.join( ",", aggregateReportFlowUuids, programStageEventFlowUuids ) );
+        }
     }
 }

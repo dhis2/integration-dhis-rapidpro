@@ -3,7 +3,7 @@
   "site": "https://textit.com",
   "flows": [
     {
-      "name": "Specimen collection and shipment to NRL",
+      "name": "Program Stage Event Flow Under Test",
       "uuid": "94b31ca6-52d6-4ec8-ac75-915da5d1fe0d",
       "spec_version": "13.2.0",
       "language": "eng",
