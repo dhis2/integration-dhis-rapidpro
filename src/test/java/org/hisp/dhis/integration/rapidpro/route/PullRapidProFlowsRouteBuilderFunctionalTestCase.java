@@ -91,13 +91,12 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         System.setProperty( "rapidpro.flow.uuids", aggregateReportFlowUuid );
         AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
-
+        spyEndpoint.setExpectedCount( 0 );
         camelContext.start();
         syncContactsAndFetchFirstContactUuid();
 
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        Thread.sleep( 15000 );
-        assertEquals( 0, spyEndpoint.getReceivedCounter() );
+        spyEndpoint.assertIsSatisfied( 15000 );
     }
 
     @Test
@@ -156,11 +155,11 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
         AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 0 );
         camelContext.start();
 
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        Thread.sleep( 15000 );
-        assertEquals( 0, spyEndpoint.getReceivedCounter() );
+        spyEndpoint.assertIsSatisfied( 15000 );
     }
 
     @Test
@@ -172,13 +171,14 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
         AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 1 );
         String eventId = createTrackedEntityAndFetchEventId( "12345678" );
         syncTrackedEntityContact( "whatsapp:12345678" );
         camelContext.start();
+
         runFlowAndWaitUntilCompleted( programStageEventFlowUuid, eventId );
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        Thread.sleep( 15000 );
-        assertEquals( 1, spyEndpoint.getReceivedCounter() );
+        spyEndpoint.assertIsSatisfied( 15000 );
     }
 
     @Test
@@ -190,6 +190,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
         AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
+        spyEndpoint.setExpectedCount( 0 );
         createTrackedEntityAndFetchEventId( "12345678" );
         syncTrackedEntityContact( "whatsapp:12345678" );
 
@@ -219,8 +220,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
             Thread.sleep( 1000 );
         }
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        Thread.sleep( 10000 );
-        assertEquals( 0, spyEndpoint.getReceivedCounter() );
+        spyEndpoint.assertIsSatisfied( 15000 );
         assertEquals( 0, expectedLogMessage.getCount() );
     }
 
@@ -246,7 +246,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         syncTrackedEntityContact( "whatsapp:12345678" );
 
         producerTemplate.sendBody( "direct:pull", ExchangePattern.InOnly, null );
-        Thread.sleep( 15000 );
+        reportSpyEndpoint.await( 15, TimeUnit.SECONDS );
         assertEquals( 0, reportSpyEndpoint.getReceivedCounter() );
         assertEquals( 0, eventSpyEndpoint.getReceivedCounter() );
 
