@@ -83,6 +83,10 @@ public class ProgramStageToFlowMap
 
     public String getFlowUuids()
     {
+        if ( this.map.values().isEmpty() )
+        {
+            return "";
+        }
         return String.join( ",", this.map.values() );
     }
 

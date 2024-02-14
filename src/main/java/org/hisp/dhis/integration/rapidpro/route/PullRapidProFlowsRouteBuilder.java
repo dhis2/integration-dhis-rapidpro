@@ -29,9 +29,9 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.hisp.dhis.integration.rapidpro.ProgramStageToFlowMap;
 import org.hisp.dhis.integration.rapidpro.expression.LastRunCalculator;
 import org.hisp.dhis.integration.rapidpro.expression.LastRunAtColumnReader;
-import org.hisp.dhis.integration.rapidpro.processor.SetFlowUuidPropertyProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +47,7 @@ public class PullRapidProFlowsRouteBuilder extends AbstractRouteBuilder
     private LastRunAtColumnReader lastRunAtColumnReader;
 
     @Autowired
-    private SetFlowUuidPropertyProcessor setFlowUuidPropertyProcessor;
+    private ProgramStageToFlowMap programStageToFlowMap;
 
     @Override
     protected void doConfigure()
@@ -65,7 +65,11 @@ public class PullRapidProFlowsRouteBuilder extends AbstractRouteBuilder
         from( "direct:pull" )
             .routeId( "Scan RapidPro Flows" )
             .streamCaching()
-            .process( setFlowUuidPropertyProcessor )
+            .process( exchange -> {
+                exchange.setProperty( "flowUuids",
+                    String.join( ",", programStageToFlowMap.getFlowUuids(),
+                        exchange.getContext().resolvePropertyPlaceholders( "{{rapidpro.flow.uuids:}}" ) ) );
+            } )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .split( simple( "${exchangeProperty.flowUuids}" ), "," )
                 .setHeader( "flowUuid", simple( "${body}" ) )
