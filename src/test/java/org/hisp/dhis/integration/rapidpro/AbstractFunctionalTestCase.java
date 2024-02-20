@@ -149,6 +149,8 @@ public class AbstractFunctionalTestCase
             .withParameter( "categoryOptionComboIdScheme", "CODE" )
             .transfer().close();
 
+        Environment.deleteDhis2TrackedEntities( Environment.ORG_UNIT_ID );
+
         doBeforeEach();
     }
 
