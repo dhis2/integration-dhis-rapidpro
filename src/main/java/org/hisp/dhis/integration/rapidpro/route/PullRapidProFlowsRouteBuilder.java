@@ -117,7 +117,7 @@ public class PullRapidProFlowsRouteBuilder extends AbstractRouteBuilder
         from( "direct:queueProgramStageEvent" )
             .routeId( "Queue Program Stage Event" )
             .setHeader( "eventId", simple( "${body[values][event_id][value]}" ) )
-            .transform( datasonnet( "resource:classpath:eventFlowRun.ds", String.class, "application/x-java-object",
+            .transform( datasonnet( "resource:classpath:webhook.ds", String.class, "application/x-java-object",
                 "application/json" ) )
             .to( "jms:queue:dhis2ProgramStageEvents?exchangePattern=InOnly" )
             .log( LoggingLevel.DEBUG, LOGGER, "Enqueued program stage event flow run [event Id = ${header.eventId}]" );
