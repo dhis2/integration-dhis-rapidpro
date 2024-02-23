@@ -33,6 +33,7 @@ import org.hisp.dhis.integration.rapidpro.ProgramStageToFlowMap;
 import org.hisp.dhis.integration.rapidpro.expression.LastRunCalculator;
 import org.hisp.dhis.integration.rapidpro.expression.LastRunAtColumnReader;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -48,6 +49,9 @@ public class PullRapidProFlowsRouteBuilder extends AbstractRouteBuilder
 
     @Autowired
     private ProgramStageToFlowMap programStageToFlowMap;
+
+    @Value( "${rapidpro.flow.uuids:}" )
+    private String aggregateReportFlowUuids;
 
     @Override
     protected void doConfigure()
@@ -66,9 +70,11 @@ public class PullRapidProFlowsRouteBuilder extends AbstractRouteBuilder
             .routeId( "Scan RapidPro Flows" )
             .streamCaching()
             .process( exchange -> {
-                exchange.setProperty( "flowUuids",
-                    String.join( ",", programStageToFlowMap.getFlowUuids(),
-                        exchange.getContext().resolvePropertyPlaceholders( "{{rapidpro.flow.uuids:}}" ) ) );
+                String programStageFlowUuids = programStageToFlowMap.getFlowUuids();
+                String flowUuids = (programStageFlowUuids.isEmpty() && aggregateReportFlowUuids.isEmpty()) ?
+                    "" :
+                    String.join( ",", programStageFlowUuids, aggregateReportFlowUuids );
+                exchange.setProperty( "flowUuids", flowUuids );
             } )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
             .split( simple( "${exchangeProperty.flowUuids}" ), "," )

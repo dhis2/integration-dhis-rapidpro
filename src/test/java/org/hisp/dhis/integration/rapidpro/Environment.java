@@ -52,7 +52,6 @@ import org.hisp.dhis.api.model.v40_0.WebapiControllerTrackerViewRelationshipItem
 import org.hisp.dhis.integration.sdk.Dhis2ClientBuilder;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.hisp.dhis.integration.sdk.api.Dhis2Response;
-import org.hisp.dhis.integration.sdk.internal.security.BasicCredentialsSecurityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
@@ -160,9 +159,9 @@ public final class Environment
             .withMaxIdleConnections( 5 )
             .withKeepAliveDuration( 500000L, TimeUnit.MILLISECONDS )
             .withCallTimeout( 0L, TimeUnit.MILLISECONDS )
-            .withReadTimeout( 30000L, TimeUnit.MILLISECONDS )
-            .withWriteTimeout( 30000L, TimeUnit.MILLISECONDS )
-            .withConnectTimeout( 20000L, TimeUnit.MILLISECONDS )
+            .withReadTimeout( 20000L, TimeUnit.MILLISECONDS )
+            .withWriteTimeout( 20000L, TimeUnit.MILLISECONDS )
+            .withConnectTimeout( 10000L, TimeUnit.MILLISECONDS )
             .build();
 
         ORG_UNIT_ID = createOrgUnit();
