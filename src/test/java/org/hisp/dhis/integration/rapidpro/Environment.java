@@ -157,6 +157,8 @@ public final class Environment
 
         DHIS2_CLIENT = Dhis2ClientBuilder.newClient( dhis2ApiUrl, "admin", "district" )
             .withKeepAliveDuration( 500000L, TimeUnit.MILLISECONDS )
+            .withReadTimeout( 20000L, TimeUnit.MILLISECONDS )
+            .withWriteTimeout( 20000L,TimeUnit.MILLISECONDS )
             .build();
 
         ORG_UNIT_ID = createOrgUnit();
