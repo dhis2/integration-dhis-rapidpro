@@ -18,7 +18,7 @@ RUN echo "Downloading RapidPro ${RAPIDPRO_VERSION} from https://github.com/$RAPI
     tar -xf rapidpro.tar.gz --strip-components=1 && \
     rm rapidpro.tar.gz
 
-RUN pip install -U pip && pip install -U poetry
+RUN pip install -U pip && pip install -U poetry==1.7.1
 
 # Build Python virtualenv
 RUN python3 -m venv /venv
