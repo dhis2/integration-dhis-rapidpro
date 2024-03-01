@@ -27,6 +27,7 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
+import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
@@ -35,6 +36,8 @@ import org.apache.camel.test.spring.junit5.UseAdviceWith;
 import org.apache.commons.io.FileUtils;
 import org.hisp.dhis.api.model.v40_0.DataValue;
 import org.hisp.dhis.api.model.v40_0.DataValueSet;
+import org.hisp.dhis.api.model.v40_0.Event;
+import org.hisp.dhis.api.model.v40_0.TrackedEntity;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,6 +51,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -81,6 +86,9 @@ public class AbstractFunctionalTestCase
     protected int serverPort;
 
     protected String dhis2RapidProHttpEndpointUri;
+
+    @Autowired
+    protected ProgramStageToFlowMap programStageToFlowMap;
 
     @BeforeAll
     public static void beforeAll()
@@ -141,6 +149,8 @@ public class AbstractFunctionalTestCase
             .withParameter( "categoryOptionComboIdScheme", "CODE" )
             .transfer().close();
 
+        Environment.deleteDhis2TrackedEntities( Environment.ORG_UNIT_ID );
+
         doBeforeEach();
     }
 
@@ -182,6 +192,33 @@ public class AbstractFunctionalTestCase
             .then().extract().path( "results[0].uuid" );
     }
 
+    protected String createTrackedEntityAndFetchEventId( String phoneNumber )
+        throws
+        IOException,
+        ParseException,
+        InterruptedException
+    {
+        Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, phoneNumber, "ID-1", "John",
+            List.of( "ZP5HZ87wzc0" ) );
+        Iterable<Map> events = DHIS2_CLIENT.get( "tracker/events" )
+            .withoutPaging()
+            .transfer()
+            .returnAs( Map.class, "instances" );
+        String eventId = "";
+        for ( Map<String, String> event : events )
+        {
+            eventId = event.get( "event" );
+        }
+        return eventId;
+    }
+
+    protected String syncTrackedEntityContact( String contactUrn )
+    {
+        return given( RAPIDPRO_API_REQUEST_SPEC ).contentType( ContentType.JSON ).body(
+                Map.of( "urns", List.of( contactUrn ) ) ).when().post( "contacts.json" )
+            .then().statusCode( 201 ).extract().path( "uuid" );
+    }
+
     protected String getFlowUuid( String flowName )
     {
         return given( RAPIDPRO_API_REQUEST_SPEC )
@@ -189,5 +226,50 @@ public class AbstractFunctionalTestCase
             .then()
             .extract()
             .path( "results.find { it.name == '" + flowName + "' }.uuid" );
+    }
+
+    protected void runFlow( String flowUuid )
+    {
+        given( RAPIDPRO_API_REQUEST_SPEC ).contentType( ContentType.JSON ).body(
+                Map.of( "flow", flowUuid, "urns", List.of( "tel:0035621000001" ) ) ).when().post( "flow_starts.json" )
+            .then();
+    }
+
+    protected void runFlow( String flowUuid, String eventId )
+    {
+        given( RAPIDPRO_API_REQUEST_SPEC ).contentType( ContentType.JSON ).body(
+                Map.of( "flow", flowUuid, "urns", List.of( "whatsapp:12345678" ), "extra", Map.of( "eventId", eventId ) ) )
+            .when().post( "flow_starts.json" )
+            .then();
+    }
+
+    protected void runFlowAndWaitUntilCompleted( String flowUuid )
+        throws
+        InterruptedException
+    {
+        runFlow( flowUuid );
+        waitUntilFlowRunIsCompleted( flowUuid, Instant.now() );
+    }
+
+    protected void runFlowAndWaitUntilCompleted( String flowUuid, String eventId )
+        throws
+        InterruptedException
+    {
+        runFlow( flowUuid, eventId );
+        waitUntilFlowRunIsCompleted( flowUuid, Instant.now() );
+    }
+
+    protected void waitUntilFlowRunIsCompleted( String flowUuid, Instant after )
+        throws
+        InterruptedException
+    {
+        String exitType = "";
+        while ( exitType == null || !exitType.equals( "completed" ) )
+        {
+            exitType = given( RAPIDPRO_API_REQUEST_SPEC )
+                .queryParam( "flow", flowUuid ).queryParam( "after", after.toString() ).when()
+                .get( "runs.json" ).then().statusCode( 200 ).extract().path( "results[0].exit_type" );
+            Thread.sleep( 1000 );
+        }
     }
 }

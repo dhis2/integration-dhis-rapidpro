@@ -41,7 +41,7 @@ public class WebHookRouteBuilder extends AbstractRouteBuilder
             .precondition( "{{rapidpro.webhook.enabled}}" )
             .routeId( "RapidPro Webhook" )
             .removeHeader( Exchange.HTTP_URI )
-            .to( "jms:queue:dhis2?exchangePattern=InOnly" )
+            .to( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly" )
             .log( LoggingLevel.DEBUG, LOGGER, "Enqueued webhook message [data set code = ${header.dataSetCode},report period offset = ${header.reportPeriodOffset},orgUnitId = ${header.orgUnitId},content = ${body}]" )
             .setHeader( Exchange.HTTP_RESPONSE_CODE, constant( 202 ) )
             .setBody().simple( "${null}" );

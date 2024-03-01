@@ -83,7 +83,7 @@ public class ProgramStageToFlowMap
 
     public String getFlowUuids()
     {
-        return String.join( ",", this.map.values() );
+        return this.map.values().isEmpty() ? "" : String.join( ",", this.map.values() );
     }
 
     public String getProgramStage( String flowUuid )

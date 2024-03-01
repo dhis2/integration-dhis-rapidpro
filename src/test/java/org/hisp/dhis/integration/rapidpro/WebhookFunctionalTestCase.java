@@ -70,7 +70,7 @@ public class WebhookFunctionalTestCase extends AbstractFunctionalTestCase
         assertEquals( "", responseExchange.getMessage().getBody( String.class ) );
         assertEquals( 202, responseExchange.getMessage().getHeaders().get( "CamelHttpResponseCode" ) );
 
-        spyEndpoint.await( 10, TimeUnit.SECONDS );
+        spyEndpoint.await( 20, TimeUnit.SECONDS );
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
     }
 

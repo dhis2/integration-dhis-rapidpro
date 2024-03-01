@@ -81,7 +81,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports",
             ExchangePattern.InOnly, String.format( webhookMessage, contactUuid ),
             Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
@@ -140,7 +140,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports",
             ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
             Map.of( "dataSetCode", "MAL_YEARLY", "orgUnitId", "acme" ) );
 
@@ -172,7 +172,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports",
             ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
             Map.of( "orgUnitId", Environment.ORG_UNIT_ID ) );
 
@@ -200,7 +200,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2?exchangePattern=InOnly",
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly",
             String.format( webhookMessage, contactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
         spyEndpoint.await( 30, TimeUnit.SECONDS );
@@ -223,7 +223,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
 
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2", ExchangePattern.InOut,
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports", ExchangePattern.InOut,
             String.format( webhookMessage, UUID.randomUUID() ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
         List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM DEAD_LETTER_CHANNEL" );
@@ -256,7 +256,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             Charset.defaultCharset() );
 
         String wrongContactUuid = UUID.randomUUID().toString();
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2", ExchangePattern.InOut,
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports", ExchangePattern.InOut,
             String.format( webhookMessage, wrongContactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
 
@@ -311,7 +311,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2",
+        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports",
             ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
             Map.of( "dataSetCode", "MAL_YEARLY" ) );
 

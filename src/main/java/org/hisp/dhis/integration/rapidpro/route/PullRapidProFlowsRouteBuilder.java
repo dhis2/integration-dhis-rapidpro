@@ -29,21 +29,29 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.hisp.dhis.integration.rapidpro.ProgramStageToFlowMap;
 import org.hisp.dhis.integration.rapidpro.expression.LastRunCalculator;
 import org.hisp.dhis.integration.rapidpro.expression.LastRunAtColumnReader;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
 @Component
-public class PullReportsRouteBuilder extends AbstractRouteBuilder
+public class PullRapidProFlowsRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
     private LastRunCalculator lastRunCalculator;
 
     @Autowired
     private LastRunAtColumnReader lastRunAtColumnReader;
+
+    @Autowired
+    private ProgramStageToFlowMap programStageToFlowMap;
+
+    @Value( "${rapidpro.flow.uuids:}" )
+    private String aggregateReportFlowUuids;
 
     @Override
     protected void doConfigure()
@@ -61,8 +69,15 @@ public class PullReportsRouteBuilder extends AbstractRouteBuilder
         from( "direct:pull" )
             .routeId( "Scan RapidPro Flows" )
             .streamCaching()
+            .process( exchange -> {
+                String programStageFlowUuids = programStageToFlowMap.getFlowUuids();
+                String flowUuids = (programStageFlowUuids.isEmpty() && aggregateReportFlowUuids.isEmpty()) ?
+                    "" :
+                    String.join( ",", programStageFlowUuids, aggregateReportFlowUuids );
+                exchange.setProperty( "flowUuids", flowUuids );
+            } )
             .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .split( simple( "{{rapidpro.flow.uuids:}}" ), "," )
+            .split( simple( "${exchangeProperty.flowUuids}" ), "," )
                 .setHeader( "flowUuid", simple( "${body}" ) )
                 .setBody( simple( "${properties:last.run.select.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
@@ -77,20 +92,40 @@ public class PullReportsRouteBuilder extends AbstractRouteBuilder
                     .setHeader( "newLastRunAt", lastRunCalculator )
                     .split( simple( "${body[results]}" ) )
                         .filter( simple( "${body[exited_on]} != null && ${body[exit_type]} == 'completed'" ) )
-                        .choice().when( simple( "${body[values][data_set_code]} == null" ) )
-                            .log( LoggingLevel.ERROR, LOGGER, "Cannot process run for flow definition ${header.flowUuid} because the data set code is missing. Hint: save the data set code to a flow result named `data_set_code` in RapidPro" )
-                        .otherwise()
-                            .setHeader( "dataSetCode", simple( "${body[values][data_set_code][value]}" ) )
-                            .setHeader( "orgUnitId" ).ognl( "request.body['values']['org_unit_id'] == null ? null : request.body['values']['org_unit_id']['value']" )
-                            .setHeader( "reportPeriodOffset" ).ognl( "request.body['values']['report_period_offset'] == null ? null : request.body['values']['report_period_offset']['value']" )
-                            .transform( datasonnet( "resource:classpath:webhook.ds", String.class, "application/x-java-object", "application/json" ) )
-                            .to( "jms:queue:dhis2?exchangePattern=InOnly" )
-                            .log( LoggingLevel.DEBUG, LOGGER, "Enqueued flow run [data set code = ${header.dataSetCode},report period offset = ${header.reportPeriodOffset},content = ${body}]" )
-                        .end()
+                            .choice()
+                                .when().simple("${body[values][data_set_code]} != null && ${body[values][event_id]} == null" )
+                                    .to("direct:queueAggregateReport")
+                                .when().simple( "${body[values][data_set_code]} == null && ${body[values][event_id]} != null")
+                                    .to("direct:queueProgramStageEvent")
+                                .otherwise()
+                                    .log( LoggingLevel.ERROR, LOGGER,
+                                        "Cannot process flow run for flow definition ${header.flowUuid} because one of the required flow results is missing. Hint: for aggregate data reports, save the data set code to a flow result named 'data_set_code' in RapidPro. For program stage events, save the value '@trigger.params.eventId' to a flow result named 'event_id'  in RapidPro." )
+                                .end()
                     .end()
                 .end()
                 .setBody( simple( "${properties:last.run.upsert.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .end();
+
+        from( "direct:queueAggregateReport" )
+            .routeId("Queue Aggregate Report")
+            .setHeader( "dataSetCode", simple( "${body[values][data_set_code][value]}" ) )
+            .setHeader( "orgUnitId" ).ognl(
+                "request.body['values']['org_unit_id'] == null ? null : request.body['values']['org_unit_id']['value']" )
+            .setHeader( "reportPeriodOffset" ).ognl(
+                "request.body['values']['report_period_offset'] == null ? null : request.body['values']['report_period_offset']['value']" )
+            .transform( datasonnet( "resource:classpath:webhook.ds", String.class, "application/x-java-object",
+                "application/json" ) )
+            .to( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly" )
+            .log( LoggingLevel.DEBUG, LOGGER,
+                "Enqueued aggregate report flow run [data set code = ${header.dataSetCode}, report period offset = ${header.reportPeriodOffset}, content = ${body}]" );
+
+        from( "direct:queueProgramStageEvent" )
+            .routeId( "Queue Program Stage Event" )
+            .setHeader( "eventId", simple( "${body[values][event_id][value]}" ) )
+            .transform( datasonnet( "resource:classpath:webhook.ds", String.class, "application/x-java-object",
+                "application/json" ) )
+            .to( "jms:queue:dhis2ProgramStageEvents?exchangePattern=InOnly" )
+            .log( LoggingLevel.DEBUG, LOGGER, "Enqueued program stage event flow run [event Id = ${header.eventId}]" );
     }
 }
