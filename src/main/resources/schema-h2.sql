@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS DEAD_LETTER_CHANNEL (
+CREATE TABLE IF NOT EXISTS REPORT_DEAD_LETTER_CHANNEL (
     id                      INTEGER                             PRIMARY KEY AUTO_INCREMENT,
     payload                 VARCHAR                             NOT NULL,
     data_set_code           VARCHAR,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS DEAD_LETTER_CHANNEL (
     last_processed_at       TIMESTAMP WITH TIME ZONE            NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX ON DEAD_LETTER_CHANNEL(status);
+CREATE INDEX ON REPORT_DEAD_LETTER_CHANNEL(status);
 
 CREATE TABLE IF NOT EXISTS POLLER (
     flow_uuid    VARCHAR                   PRIMARY KEY,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS TOKEN (
     value_  VARCHAR PRIMARY KEY
 );
 
-CREATE TABLE IF NOT EXISTS SUCCESS_LOG (
+CREATE TABLE IF NOT EXISTS REPORT_SUCCESS_LOG (
     id                      INTEGER                             PRIMARY KEY AUTO_INCREMENT,
     dhis_request            VARCHAR                             NOT NULL,
     dhis_response           VARCHAR                             NOT NULL,

@@ -468,7 +468,7 @@ You should see a console notification saying `Route stopped successfully` and th
 
 ## Recovering Reports
 
-A report that fails to be delivered to DHIS2, perhaps because of an invalid webhook payload or an HTTP timeout error, has its associated RapidPro webhook JSON payload pushed to a relational dead letter channel for manual inspection. The dead letter channel table schema is as follows:
+A report that fails to be delivered to DHIS2, perhaps because of an invalid webhook payload or an HTTP timeout error, has its associated RapidPro webhook JSON payload pushed to a relational dead letter channel for manual inspection. The aggregate report dead letter channel table schema is as follows:
 
 | Column name          | Column type              | Description                                                                                                                                                                                                                                                                                                                          | Column value example                                                                                                                                                                                                                                                                                                                                 |
 |----------------------|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -485,10 +485,10 @@ A report that fails to be delivered to DHIS2, perhaps because of an invalid webh
 You can re-process a failed report by setting its corresponding row status column to `RETRY` using an [ANSI SQL UPDATE](https://www.w3schools.com/sql/sql_update.asp) command issued from an SQL client connected to the data store. For instance:
 
 ```sql
-UPDATE DEAD_LETTER_CHANNEL SET status = 'RETRY' WHERE status = 'ERROR' 
+UPDATE REPORT_DEAD_LETTER_CHANNEL SET status = 'RETRY' WHERE status = 'ERROR' 
 ```
 
-[H2](https://www.h2database.com) is the default relational data store that manages the dead letter channel. H2 has an in-built web console which allows you to issue SQL commands in order to view, edit, and retry failed reports:
+[H2](https://www.h2database.com) is the default relational data store that manages the dead letter channel for aggregate reports. H2 has an in-built web console which allows you to issue SQL commands in order to view, edit, and retry failed reports:
 
 ![H2 Web Console](static/images/h2-web-console.png)
 
@@ -500,9 +500,9 @@ For security reasons, the console only permits local access but this behaviour c
 
 The H2 DBMS is embedded with DHIS-to-RapidPro but the DBMS can be easily substituted with a more scalable JDBC-compliant DBMS such as PostgreSQL. You would need to change `spring.datasource.url` to a JDBC URL that references the new data store. Note: for a non-H2 data store, the data store vendor's JDBC driver needs to be added to the DHIS-to-RapidPro's Java classpath.
 
-### Success Log
+### Report Success Log
 
-Apart from the `DEAD_LETTER_CHANNEL` table, DHIS-to-RapidPro saves reports that were successfully delivered to DHIS2 in another table named `SUCCESS_LOG`. This table allows you to audit the transmitted reports. Its schema is as follows: 
+Apart from the `REPORT_DEAD_LETTER_CHANNEL` table, DHIS-to-RapidPro saves reports that were successfully delivered to DHIS2 in another table named `REPORT_SUCCESS_LOG`. This table allows you to audit the transmitted reports. Its schema is as follows: 
 
 | Column name          | Column type              | Description                                                            | Column value example                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 |----------------------|--------------------------|------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -517,9 +517,9 @@ Apart from the `DEAD_LETTER_CHANNEL` table, DHIS-to-RapidPro saves reports that 
 
 In addition to auditing, you can modify and re-transmit reports to DHIS2 thanks to this table. The sequence of steps for re-transmitting reports is:
 
-1. Copying the `RAPIDPRO_PAYLOAD` column values from the relevant rows in `SUCCESS_LOG` (i.e., `SELECT rapidpro_payload FROM SUCCESS_LOG WHERE ...`)
+1. Copying the `RAPIDPRO_PAYLOAD` column values from the relevant rows in `REPORT_SUCCESS_LOG` (i.e., `SELECT rapidpro_payload FROM REPORT_SUCCESS_LOG WHERE ...`)
 2. Updating the retrieved `RAPIDPRO_PAYLOAD` column values accordingly, and
-3. Inserting rows into `DEAD_LETTER_CHANNEL` where `PAYLOAD` is equal to the updated `RAPIDPRO_PAYLOAD` column values and `STATUS` is equal to `RETRY`
+3. Inserting rows into `REPORT_DEAD_LETTER_CHANNEL` where `PAYLOAD` is equal to the updated `RAPIDPRO_PAYLOAD` column values and `STATUS` is equal to `RETRY`
 
 ## Extending DHIS-to-RapidPro
 
@@ -587,7 +587,7 @@ The first step to determine the root cause of unexpected behaviour is to search 
 
 ```sql
 -- SQL is compatible with H2
-SELECT * FROM DEAD_LETTER_CHANNEL 
+SELECT * FROM REPORT_DEAD_LETTER_CHANNEL 
 WHERE status = 'ERROR' AND created_at > DATEADD('DAY', -1, CURRENT_TIMESTAMP())	
 ```
 
@@ -595,17 +595,17 @@ The above SQL returns the reports that failed to be saved in DHIS2 within the la
 
 ```sql
 -- SQL is compatible with H2
-UPDATE DEAD_LETTER_CHANNEL 
+UPDATE REPORT_DEAD_LETTER_CHANNEL 
 SET status = 'RETRY' 
 WHERE status = 'ERROR' AND created_at > DATEADD('DAY', -1, CURRENT_TIMESTAMP())	
 ```
 
-After issuing the above SQL, DHIS-to-RapidPro will poll for the `RETRY` rows from the data store and re-process the reports. Processed rows, whether successful or not, are updated as `PROCESSED` and have their `LAST_PROCESSED_AT` column updated to the current time. If a retry fails, DHIS-to-RapidPro will go on to insert a corresponding new `ERROR` row in the `DEAD_LETTER_CHANNEL` table.
+After issuing the above SQL, DHIS-to-RapidPro will poll for the `RETRY` rows from the data store and re-process the reports. Processed rows, whether successful or not, are updated as `PROCESSED` and have their `LAST_PROCESSED_AT` column updated to the current time. If a retry fails, DHIS-to-RapidPro will go on to insert a corresponding new `ERROR` row in the `REPORT_DEAD_LETTER_CHANNEL` table.
 
 Non-transient failures such as validation errors require human intervention which might mean that you have to update the `payload` column value so that it conforms with the expected structure or data type:
 
 ```sql
-UPDATE DEAD_LETTER_CHANNEL 
+UPDATE REPORT_DEAD_LETTER_CHANNEL 
 SET status = 'RETRY', payload = '{"contact":{"name":"John Doe","urn":"tel:+12065551213","uuid":"fb3787ab-2eda-48a0-a2bc-e2ddadec1286"},"flow":{"name":"APT","uuid":"cb0360e3-d82a-4521-aad3-15afd704ec26"},"results":{"msg":{"value":"APT.2.4.6"},"gen_ext_fund":{"value":"2"},"mal_pop_total":{"value":"10"},"mal_llin_distr_pw":{"value":"3"},"gen_domestic_fund":{"value":"5"}}}' 
 WHERE id = '1023'
 ```

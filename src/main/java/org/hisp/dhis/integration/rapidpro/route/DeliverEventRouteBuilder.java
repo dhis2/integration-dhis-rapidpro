@@ -44,8 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-@Component
-public class DeliverReportRouteBuilder extends AbstractRouteBuilder
+//@Component
+public class DeliverEventRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
     private CurrentPeriodCalculator currentPeriodCalculator;
@@ -66,77 +66,45 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
     protected void doConfigure()
     {
         ErrorHandlerFactory errorHandlerDefinition = deadLetterChannel(
-            "direct:dlq" ).maximumRedeliveries( 3 ).useExponentialBackOff().useCollisionAvoidance()
+            "direct:failedEventDelivery" ).maximumRedeliveries( 3 ).useExponentialBackOff().useCollisionAvoidance()
             .allowRedeliveryWhileStopping( false );
 
-        from( "timer://retryReports?fixedRate=true&period=5000" )
-            .routeId( "Retry Reports" )
-            .setBody( simple( "${properties:report.retry.dlc.select.{{spring.sql.init.platform}}}" ) )
+        from( "timer://retryEvents?fixedRate=true&period=5000" )
+            .routeId( "Retry Events" )
+            .setBody( simple( "${properties:retry.event.dlc.select.{{spring.sql.init.platform}}}" ) )
             .to( "jdbc:dataSource" )
             .split().body()
                 .setHeader( "id", simple( "${body['id']}" ) )
                 .log( LoggingLevel.INFO, LOGGER, "Retrying row with ID ${header.id}" )
-                .setHeader( "dataSetCode", simple( "${body['data_set_code']}" ) )
-                .setHeader( "reportPeriodOffset", simple( "${body['report_period_offset']}" ) )
-                .setHeader( "orgUnitId", simple( "${body['organisation_unit_id']}" ) )
+                .setHeader( "eventId", simple( "${body['event_id']}" ) )
                 .setBody( simple( "${body['payload']}" ) )
-                .to( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly" )
-                .setBody( simple( "${properties:report.processed.dlc.update.{{spring.sql.init.platform}}}" ) )
+                .to( "jms:queue:dhis2ProgramStageEvents?exchangePattern=InOnly" )
+                .setBody( simple( "${properties:processed.event.dlc.update.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .end();
+        
+        from( "jms:queue:dhis2ProgramStageEvents" )
+            .routeId( "Deliver Event" )
+            .to( "direct:transformEvent" )
+            .to( "direct:transmitEvent" );
 
-        from( "quartz://dhis2AggregateReports?cron={{report.delivery.schedule.expression}}" )
-            .routeId( "Schedule Report Delivery" )
-            .precondition( "'{{report.delivery.schedule.expression:}}' != ''" )
-            .pollEnrich( "jms:queue:dhis2AggregateReports" )
-            .to( "direct:deliverReport" );
-
-        from( "jms:queue:dhis2AggregateReports" )
-            .routeId( "Consume Report" )
-            .precondition( "'{{report.delivery.schedule.expression:}}' == ''" )
-            .to( "direct:deliverReport" );
-
-        from( "direct:deliverReport" )
-            .routeId( "Deliver Report" )
-            .to( "direct:transformReport" )
-            .to( "direct:transmitReport" );
-
-        from( "direct:transformReport" )
-            .routeId( "Transform Report" )
+        from( "direct:transformEvent" )
+            .routeId( "Transform Event" )
             .errorHandler( errorHandlerDefinition )
             .streamCaching()
             .setHeader( "originalPayload", simple( "${body}" ) )
             .unmarshal().json()
-            .choice().when( header( "reportPeriodOffset" ).isNull() )
-                .setHeader( "reportPeriodOffset", constant( -1 ) )
-            .end()
-            .enrich()
-            .simple( "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.code:eq:${headers['dataSetCode']}&fields=code&client=#dhis2Client" )
-            .aggregationStrategy( ( oldExchange, newExchange ) -> {
-                oldExchange.getMessage().setHeader( "dataElementCodes",
-                    jsonpath( "$.dataElements..code" ).evaluate( newExchange, List.class ) );
-                return oldExchange;
-            } )
-            .choice().when( header( "orgUnitId" ).isNull() )
-                .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-                .enrich().simple( "{{rapidpro.api.url}}/contacts.json?uuid=${body[contact][uuid]}&httpMethod=GET" )
-                    .aggregationStrategy( contactOrgUnitIdAggrStrategy )
-                .end()
-                .removeHeader( "Authorization" )
-            .end()
-            .enrich( "direct:computePeriod", ( oldExchange, newExchange ) -> {
-                oldExchange.getMessage().setHeader( "period", newExchange.getMessage().getBody() );
-                return oldExchange;
-            } )
-            .transform( datasonnet( "resource:classpath:dataValueSet.ds", Map.class, "application/x-java-object",
-                "application/x-java-object" ) )
-            .process( idSchemeQueryParamSetter )
+            // TODO:
+            //  - fetch program stage data element codes
+            //  - compare payload data element codes with program stage data element codes
+            //  - Transform to event payload (create datasonnet transformation)
+            //  - migrate tables? possible: check if exist => rename.
             .marshal().json().transform().body( String.class );
 
-        from( "direct:transmitReport" )
+        from( "direct:transmitEvent" )
             .routeId( "Transmit Report" )
             .errorHandler( errorHandlerDefinition )
-            .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
+            .log( LoggingLevel.INFO, LOGGER, "Saving event => ${body}" )
             .setHeader( "dhisRequest", simple( "${body}" ) )
             .toD( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" )
             .setBody( (Function<Exchange, Object>) exchange -> exchange.getMessage().getBody( String.class ) )
@@ -144,41 +112,32 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
             .unmarshal().json()
             .choice()
             .when( simple( "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'" ) )
-                .to( "direct:completeDataSetRegistration" )
+                .to( "direct:completeEventDelivery" )
             .otherwise()
-                .log( LoggingLevel.ERROR, LOGGER, "Import error from DHIS2 while saving data value set => ${body}" )
-                .to( "direct:dlq" )
+                .log( LoggingLevel.ERROR, LOGGER, "Import error from DHIS2 while saving event => ${body}" )
+                .to( "direct:failedEventDelivery" )
             .end();
 
-        from( "direct:dlq" )
-            .routeId( "Save Failed Report" )
+        from( "direct:failedEventDelivery" )
+            .routeId( "Save Failed Event" )
             .setHeader( "errorMessage", rootCauseExpr )
             .setHeader( "payload", header( "originalPayload" ) )
-            .setHeader( "orgUnitId" ).ognl( "request.headers.orgUnitId" )
-            .setHeader( "dataSetCode" ).ognl( "request.headers.dataSetCode" )
-            .setBody( simple( "${properties:report.error.dlc.insert.{{spring.sql.init.platform}}}" ) )
+            .setHeader( "eventId" ).ognl( "request.headers.orgUnitId" )
+            .setBody( simple( "${properties:error.event.dlc.insert.{{spring.sql.init.platform}}}" ) )
             .to( "jdbc:dataSource?useHeadersAsParameters=true" );
 
-        from( "direct:computePeriod" )
-            .routeId( "Compute Period" )
-            .toD( "dhis2://get/collection?path=dataSets&arrayName=dataSets&filter=code:eq:${headers['dataSetCode']}&fields=periodType&client=#dhis2Client" )
-            .split().body().aggregationStrategy( new GroupedBodyAggregationStrategy() )
-                .convertBodyTo( DataSet.class )
-            .end()
-            .process( currentPeriodCalculator );
-
-        from( "direct:completeDataSetRegistration" )
+        from( "direct:completeEventDelivery" )
             .setBody( completeDataSetRegistrationFunction )
             .toD( "dhis2://post/resource?path=completeDataSetRegistrations&inBody=resource&client=#dhis2Client" )
             .unmarshal().json()
             .choice()
             .when( simple( "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'" ) )
                 .setHeader( "rapidProPayload", header( "originalPayload" ) )
-                .setBody( simple( "${properties:report.success.log.insert.{{spring.sql.init.platform}}}" ) )
+                .setBody( simple( "${properties:success.log.insert.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .otherwise()
                 .log( LoggingLevel.ERROR, LOGGER, "Error from DHIS2 while completing data set registration => ${body}" )
-                .to( "direct:dlq" )
+                .to( "direct:failedEventDelivery" )
             .end();
     }
 }
