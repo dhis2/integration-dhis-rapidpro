@@ -1,3 +1,13 @@
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'DEAD_LETTER_CHANNEL') THEN
+        ALTER TABLE DEAD_LETTER_CHANNEL RENAME TO REPORT_DEAD_LETTER_CHANNEL;
+    END IF;
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'SUCCESS_LOG') THEN
+        ALTER TABLE SUCCESS_LOG RENAME TO REPORT_SUCCESS_LOG;
+    END IF;
+END
+$$;
 CREATE TABLE IF NOT EXISTS REPORT_DEAD_LETTER_CHANNEL (
     id                      BIGSERIAL                   PRIMARY KEY,
     payload                 VARCHAR                     NOT NULL,
