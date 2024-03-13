@@ -120,6 +120,8 @@ public class AbstractFunctionalTestCase
 
         jdbcTemplate.execute( "TRUNCATE TABLE REPORT_DEAD_LETTER_CHANNEL" );
         jdbcTemplate.execute( "TRUNCATE TABLE REPORT_SUCCESS_LOG" );
+        jdbcTemplate.execute( "TRUNCATE TABLE EVENT_DEAD_LETTER_CHANNEL" );
+        jdbcTemplate.execute( "TRUNCATE TABLE EVENT_SUCCESS_LOG" );
         jdbcTemplate.execute( "TRUNCATE TABLE MESSAGES" );
 
         for ( Map<String, Object> contact : fetchRapidProContacts() )

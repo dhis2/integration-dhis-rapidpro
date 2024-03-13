@@ -1,0 +1,40 @@
+{
+  "flow": {
+    "uuid": "837bad3d-bf01-4bb1-9f9f-ecb95aa3b8a2",
+    "name": "Program Stage Event Flow Under Test"
+  },
+  "contact": {
+    "uuid": "ece108cc-4b20-4389-8778-a8a11bdd8105",
+    "urn": "whatsapp:12345678",
+    "name": null
+  },
+  "results": {
+    "event_id": {
+      "value": "%s"
+    },
+    "ids_afi_specimen_collection_blood": {
+      "value": "true"
+    },
+    "ids_afi_specimen_collection_serum": {
+      "value": "true"
+    },
+    "ids_afi_specimen_collector_family_name": {
+      "value": "John"
+    },
+    "ids_afi_specimen_collector_given_name": {
+      "value": "Doe"
+    },
+    "ids_afi_specimen_date_collection": {
+      "value": "2023-10-19"
+    },
+    "ids_afi_specimen_date_transport": {
+      "value": "2023-10-19"
+    },
+    "ids_afi_specimen_time_collection": {
+      "value": "12:00"
+    },
+    "ids_afi_specimen_time_transport": {
+      "value": "12:00"
+    }
+  }
+}
