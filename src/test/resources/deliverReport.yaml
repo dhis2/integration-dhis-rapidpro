@@ -15,17 +15,17 @@
         - setProperty:
             name: msisdn
             jsonpath:
-              headerName: originalPayload
+              source: header:originalPayload
               expression: "$.contact.urn"
         - setProperty:
             name: raw_msg
             jsonpath:
-              headerName: originalPayload
+              source: header:originalPayload
               expression: "$.results.msg.value"
         - setProperty:
             name: report_type
             jsonpath:
-              headerName: originalPayload
+              source: header:originalPayload
               expression: "$.flow.name"
         - toD:
             uri: "{{report.destination.endpoint}}?skipRequestHeaders=true&httpClientConfigurer=#selfSignedHttpClientConfigurer&authenticationPreemptive=true&authMethod=Basic&authUsername=alice&authPassword=secret&httpMethod=POST&month=${exchangeProperty.month}&year=${exchangeProperty.year}&week=${exchangeProperty.week}&msisdn=${exchangeProperty.msisdn}&raw_msg=${exchangeProperty.raw_msg}&facility=${header.orgUnitId}&report_type=${exchangeProperty.report_type}&aParam=${header.aParam}"

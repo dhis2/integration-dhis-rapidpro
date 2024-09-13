@@ -30,6 +30,7 @@ package org.hisp.dhis.integration.rapidpro;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import jakarta.annotation.PostConstruct;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -42,17 +43,16 @@ import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.hisp.dhis.integration.sdk.api.Dhis2ClientException;
 import org.hisp.dhis.integration.sdk.api.Dhis2Response;
 import org.hisp.dhis.integration.sdk.api.RemoteDhis2ClientException;
+import org.hisp.hieboot.CamelHieBootApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
@@ -61,7 +61,6 @@ import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
@@ -71,9 +70,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-@SpringBootApplication
 @PropertySource( "${sql.data-location}" )
-public class Application extends SpringBootServletInitializer
+public class Application extends CamelHieBootApp
 {
     protected static final Logger LOGGER = LoggerFactory.getLogger( Application.class );
 

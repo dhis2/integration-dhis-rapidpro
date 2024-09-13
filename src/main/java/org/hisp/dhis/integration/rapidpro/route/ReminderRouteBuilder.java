@@ -29,11 +29,12 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.hisp.dhis.integration.rapidpro.expression.IterableReader;
+import org.hisp.dhis.integration.rapidpro.aggregationStrategy.MapAggregationStrategy;
 import org.hisp.dhis.integration.rapidpro.processor.SetReportRateQueryParamProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -41,9 +42,6 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
 {
     @Autowired
     private SetReportRateQueryParamProcessor setReportRateQueryParamProcessor;
-
-    @Autowired
-    private IterableReader iterableReader;
 
     @Override
     protected void doConfigure()
@@ -66,21 +64,22 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
                 .to( "direct:sync" )
             .end()
             .split( simple( "{{reminder.data.set.codes:}}" ), "," )
-                .setProperty( "dataSetCode", simple( "${body}" ) )
+                .setProperty( "dataSetCode", body() )
                 .to( "direct:fetchDataSet" )
                 .choice().when( body().isNull() )
                     .log( LoggingLevel.WARN, LOGGER, "Cannot remind contacts given unknown data set code '${exchangeProperty.dataSetCode}'" )
                 .otherwise()
-                    .setProperty( "dataSet", simple(  "${body}" ) )
-                    .setProperty( "nextContactsPageUrl", simple( "{{rapidpro.api.url}}/contacts.json?group=DHIS2" ) )
-                    .loopDoWhile( exchangeProperty( "nextContactsPageUrl" ).isNotNull() )
-                        .to("direct:fetchContacts" )
-                        .setProperty( "contacts", simple( "${body}" ) )
-                        .to( "direct:fetchReportRate" )
-                        .split( simple( "${body['rows']}" ) )
-                            .filter().ognl(  "@java.lang.Double@parseDouble(request.body[4]) < 100" )
-                            .to( "direct:sendBroadcast" )
-                        .end()
+                    .setProperty( "dataSet", body() )
+                    .setHeader( "group", constant( "DHIS2" ) )
+                    .to("kamelet:hie-rapidpro-get-contacts-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}")
+                    .split(body(), new MapAggregationStrategy() )
+                        .setBody().groovy( "[(body.fields.dhis2_organisation_unit_id) : body.uuid]" )
+                    .end()
+                    .setProperty( "orgUnitIdsAndContactIds", body() )
+                    .to( "direct:fetchReportRate" )
+                    .split( simple( "${body['rows']}" ) )
+                        .filter().ognl(  "@java.lang.Double@parseDouble(request.body[4]) < 100" )
+                        .to( "direct:sendBroadcast" )
                     .end()
                 .end()
             .end();
@@ -94,23 +93,18 @@ public class ReminderRouteBuilder extends AbstractRouteBuilder
                 .setBody( simple( "${null}" ) )
             .end();
 
-        from( "direct:fetchContacts" )
-            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .toD( "${exchangeProperty.nextContactsPageUrl}&httpMethod=GET" )
-            .unmarshal().json()
-            .setProperty( "nextContactsPageUrl", simple( "${body[next]}" ) );
-
         from( "direct:fetchReportRate" )
             .process( setReportRateQueryParamProcessor )
             .to( "dhis2://get/resource?path=analytics&client=#dhis2Client" )
             .unmarshal().json( Map.class );
 
         from( "direct:sendBroadcast" )
-            .transform( datasonnet( "resource:classpath:broadcast.ds", String.class, "application/x-java-object", "application/json" ) )
-            .removeHeaders( "*" )
-            .setHeader( Exchange.CONTENT_TYPE, constant( "application/json" ) )
-            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .toD( "{{rapidpro.api.url}}/broadcasts.json?httpMethod=POST" )
+            .setHeader( "contacts",
+                datasonnet( "resource:classpath:broadcastContacts.ds", List.class, "application/x-java-object",
+                    "application/x-java-object" ) )
+            .setHeader( "text" ).groovy(
+                "java.text.MessageFormat.format(java.util.ResourceBundle.getBundle('reminder').getString('text'), exchangeProperties.dataSet.name)" )
+            .to( "kamelet:hie-rapidpro-send-broadcast-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
             .log( LoggingLevel.INFO, LOGGER, "Overdue report reminder sent => ${body}" );
     }
 }

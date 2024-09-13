@@ -30,8 +30,6 @@ package org.hisp.dhis.integration.rapidpro.route;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
 @Component
 public class SetUpRapidProRouteBuilder extends AbstractRouteBuilder
 {
@@ -48,34 +46,38 @@ public class SetUpRapidProRouteBuilder extends AbstractRouteBuilder
     private void setUpCreateFieldsRoute()
     {
         from( "direct:createFieldsRoute" ).routeId( "Create RapidPro Fields" )
-            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .toD( "{{rapidpro.api.url}}/fields.json?key=dhis2_organisation_unit_id&httpMethod=GET" )
-            .setProperty( "fieldCount", jsonpath( "$.results.length()" ) )
-            .choice().when().simple( "${exchangeProperty.fieldCount} == 0" )
+            .setHeader( "key", constant( "dhis2_organisation_unit_id" ) )
+            .to( "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
+            .removeHeaders( "*" )
+            .choice().when().groovy( "!body.iterator().hasNext()" )
                 .log( LoggingLevel.INFO, LOGGER, "Creating DHIS2 Organisation Unit ID fields in RapidPro..." )
-                .setBody( constant( Map.of( "label", "DHIS2 Organisation Unit ID", "value_type", "text" ) ) ).marshal()
-                .json().toD( "{{rapidpro.api.url}}/fields.json?httpMethod=POST" )
+                .setHeader( "label", constant( "DHIS2 Organisation Unit ID" ) )
+                .setHeader( "type", constant( "text" ) )
+                .to( "kamelet:hie-rapidpro-create-field-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
+                .removeHeaders( "*" )
             .end()
-            .toD( "{{rapidpro.api.url}}/fields.json?key=dhis2_user_id&httpMethod=GET" )
-            .setProperty( "fieldCount", jsonpath( "$.results.length()" ) )
-            .choice().when().simple( "${exchangeProperty.fieldCount} == 0" )
+            .setHeader( "key", constant( "dhis2_user_id" ) )
+            .to( "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
+            .removeHeaders( "*" )
+            .choice().when().groovy( "!body.iterator().hasNext()" )
                 .log( LoggingLevel.INFO, LOGGER, "Creating DHIS2 User ID field in RapidPro..." )
-                .setBody( constant( Map.of( "label", "DHIS2 User ID", "value_type", "text" ) ) ).marshal().json()
-                .toD( "{{rapidpro.api.url}}/fields.json?httpMethod=POST" )
+                .setHeader( "label", constant( "DHIS2 User ID" ) )
+                .setHeader( "type", constant( "text" ) )
+                .to( "kamelet:hie-rapidpro-create-field-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
+                .removeHeaders( "*" )
             .end();
     }
 
     private void setUpCreateGroupRoute()
     {
         from( "direct:createGroupRoute" ).routeId( "Create RapidPro Group" )
-            .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-            .toD( "{{rapidpro.api.url}}/groups.json?name=DHIS2&httpMethod=GET" )
-            .setProperty( "groupCount", jsonpath( "$.results.length()" ) )
-            .choice().when()
-                .simple( "${exchangeProperty.groupCount} == 0" ).log( LoggingLevel.INFO, LOGGER, "Creating DHIS2 group in RapidPro..." )
-                .setBody( constant( Map.of( "name", "DHIS2" ) ) ).marshal()
-                .json().toD( "{{rapidpro.api.url}}/groups.json?httpMethod=POST" ).setProperty( "groupUuid", jsonpath( "$.uuid" ) )
+            .setHeader( "name", constant( "DHIS2" ) )
+            .to( "kamelet:hie-rapidpro-get-groups-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
+            .choice().when().groovy( "!body.iterator().hasNext()" )
+                .log( LoggingLevel.INFO, LOGGER, "Creating DHIS2 group in RapidPro..." )
+                .to( "kamelet:hie-rapidpro-create-group-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
+                .setProperty( "groupUuid", simple( "$.uuid" ) )
             .otherwise()
-                .setProperty( "groupUuid", jsonpath( "$.results[0].uuid" ) );
+                .setProperty( "groupUuid", simple( "$.uuid" ) );
     }
 }

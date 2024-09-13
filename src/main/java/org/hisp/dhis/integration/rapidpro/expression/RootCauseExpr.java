@@ -27,6 +27,8 @@
  */
 package org.hisp.dhis.integration.rapidpro.expression;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 
 import org.apache.camel.Exchange;
@@ -72,13 +74,22 @@ public class RootCauseExpr implements Expression
         else
         {
             Throwable rootCause = NestedExceptionUtils.getRootCause( throwable );
+            String message;
             if ( rootCause != null )
             {
-                return (T) rootCause.getMessage();
+                message = rootCause.getMessage();
             }
             else
             {
-                return (T) throwable.getMessage();
+                message = throwable.getMessage();
+            }
+            if (message != null) {
+                return (T) message;
+            } else  {
+                StringWriter stringWriter = new StringWriter();
+                PrintWriter printWriter = new PrintWriter(stringWriter);
+                throwable.printStackTrace(printWriter);
+                return (T) stringWriter.toString();
             }
         }
     }

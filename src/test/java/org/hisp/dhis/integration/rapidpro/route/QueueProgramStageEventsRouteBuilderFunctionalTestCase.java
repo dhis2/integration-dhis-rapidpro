@@ -337,7 +337,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "12345678",
             "ID-1234567", "John", List.of( "ZP5HZ87wzc0" ) );
         CountDownLatch expectedLogMessage = new CountDownLatch( 1 );
-        ((SpringBootCamelContext) camelContext)
+        camelContext.getCamelContextExtension()
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
                 if ( camelLogger.getLevel().name().equals( "ERROR" ) && message.startsWith(
                     "Error while fetching phone number attribute from DHIS2 enrollment" ) )
@@ -395,7 +395,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
         List<Map<String, Object>> instances = (List<Map<String, Object>>) payload.get( "instances" );
         Map<String, Object> event = instances.get( 0 );
         CountDownLatch expectedLogMessage = new CountDownLatch( 1 );
-        ((SpringBootCamelContext) camelContext)
+        camelContext.getCamelContextExtension()
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
                 if ( camelLogger.getLevel().name().equals( "DEBUG" ) && message.startsWith(
                     String.format( "Successfully updated DHIS program stage event status for event with ID => %s",
@@ -419,7 +419,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
     {
         Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 10, List.of( "ZP5HZ87wzc0" ) );
         CountDownLatch expectedLogMessage = new CountDownLatch( 10 );
-        ((SpringBootCamelContext) camelContext)
+        camelContext.getCamelContextExtension()
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
                 if ( camelLogger.getLevel().name().equals( "DEBUG" ) && message.startsWith(
                     "Successfully updated DHIS program stage event status for event with ID =>" ) )

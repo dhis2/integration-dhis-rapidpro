@@ -218,7 +218,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         syncTrackedEntityContact( "whatsapp:12345678" );
 
         CountDownLatch expectedLogMessage = new CountDownLatch( 1 );
-        ((SpringBootCamelContext) camelContext)
+        camelContext.getCamelContextExtension()
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
                 if ( camelLogger.getLevel().name().equals( "ERROR" ) && message.startsWith(
                     "Cannot process flow run for flow definition" ) )
@@ -377,7 +377,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         ReflectionTestUtils.setField( pullRapidProFlowsRouteBuilder, "aggregateReportFlowUuids",
             aggregateReportFlowUuid );
         AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
-            r -> r.weaveByToUri( "${exchangeProperty.nextRunsPageUrl}" ).replace().to( "mock:rapidPro" ) );
+            r -> r.weaveByToUri( "kamelet:hie-rapidpro-get-flow-runs-sink*" ).replace().to( "mock:rapidPro" ) );
         MockEndpoint rapidProMockEndpoint = camelContext.getEndpoint( "mock:rapidPro", MockEndpoint.class );
         rapidProMockEndpoint.whenAnyExchangeReceived( exchange -> {
             Map<String, Object> flowRuns = objectMapper.readValue(
@@ -389,7 +389,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
             ((Map<String, Object>) result.get( "values" )).put( "org_unit_id",
                 Map.of( "name", "org_unit_id", "value", "acme" ) );
 
-            exchange.getMessage().setBody( objectMapper.writeValueAsString( flowRuns ) );
+            exchange.getMessage().setBody( List.of( result ) );
         } );
 
         AdviceWith.adviceWith( camelContext, "Transmit Report",
@@ -409,48 +409,5 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
             fakeDhis2Endpoint.getReceivedExchanges().get( 0 ).getMessage().getBody( String.class ),
             DataValueSet.class );
         assertEquals( "acme", dataValueSet.getOrgUnit().get() );
-    }
-
-    @Test
-    public void testPullGivenNextPage()
-        throws
-        Exception
-    {
-        System.setProperty( "sync.rapidpro.contacts", "true" );
-        ReflectionTestUtils.setField( pullRapidProFlowsRouteBuilder, "aggregateReportFlowUuids",
-            aggregateReportFlowUuid );
-        AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
-            r -> r.weaveByToUri( "${exchangeProperty.nextRunsPageUrl}" ).replace().to( "mock:rapidPro" ) );
-        MockEndpoint rapidProMockEndpoint = camelContext.getEndpoint( "mock:rapidPro", MockEndpoint.class );
-        rapidProMockEndpoint.whenAnyExchangeReceived( exchange -> {
-            Map<String, Object> flowRuns = objectMapper.readValue(
-                Thread.currentThread().getContextClassLoader().getResourceAsStream(
-                    "flowRuns.json" ), Map.class );
-
-            List<Map<String, Object>> results = (List<Map<String, Object>>) flowRuns.get( "results" );
-            Map<String, Object> result = results.get( 0 );
-            for ( int i = 0; i < 249; i++ )
-            {
-                results.add( result );
-            }
-
-            if ( !exchange.getProperties().get( "nextRunsPageUrl" ).equals( "mock:rapidPro?page=2" ) )
-            {
-                flowRuns.put( "next", "mock:rapidPro?page=2" );
-            }
-            exchange.getMessage().setBody( objectMapper.writeValueAsString( flowRuns ) );
-        } );
-
-        AdviceWith.adviceWith( camelContext, "Queue Aggregate Report",
-            r -> r.weaveByToUri( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly" ).replace()
-                .to( "mock:spy" ) );
-        MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
-
-        camelContext.start();
-
-        spyEndpoint.setExpectedCount( 500 );
-        producerTemplate.sendBody( "direct:pull", null );
-        spyEndpoint.await( 30, TimeUnit.SECONDS );
-        assertEquals( 500, spyEndpoint.getReceivedCounter() );
     }
 }

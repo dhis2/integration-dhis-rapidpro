@@ -36,8 +36,6 @@ import org.apache.camel.test.spring.junit5.UseAdviceWith;
 import org.apache.commons.io.FileUtils;
 import org.hisp.dhis.api.model.v40_0.DataValue;
 import org.hisp.dhis.api.model.v40_0.DataValueSet;
-import org.hisp.dhis.api.model.v40_0.Event;
-import org.hisp.dhis.api.model.v40_0.TrackedEntity;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,9 +60,8 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
-import static org.hisp.dhis.integration.rapidpro.Environment.RAPIDPRO_API_REQUEST_SPEC;
 
-@SpringBootTest( webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT )
+@SpringBootTest( webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = Application.class )
 @CamelSpringBootTest
 @UseAdviceWith
 @ActiveProfiles( "test" )
@@ -130,7 +127,7 @@ public class AbstractFunctionalTestCase
                 .statusCode( 204 );
         }
 
-        dhis2RapidProHttpEndpointUri = String.format( "http://0.0.0.0:%s/dhis2rapidpro",
+        dhis2RapidProHttpEndpointUri = String.format( "http://localhost:%s/dhis2rapidpro",
             serverPort );
 
         DHIS2_CLIENT.post( "dataValueSets" ).withResource(
@@ -195,8 +192,7 @@ public class AbstractFunctionalTestCase
     protected String createTrackedEntityAndFetchEventId( String phoneNumber )
         throws
         IOException,
-        ParseException,
-        InterruptedException
+        ParseException
     {
         Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, phoneNumber, "ID-1", "John",
             List.of( "ZP5HZ87wzc0" ) );

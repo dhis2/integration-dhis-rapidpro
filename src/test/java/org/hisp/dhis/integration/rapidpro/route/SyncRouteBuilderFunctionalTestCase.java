@@ -30,15 +30,11 @@ package org.hisp.dhis.integration.rapidpro.route;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.CamelExecutionException;
-import org.apache.camel.Exchange;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
-import org.apache.camel.spi.CamelLogger;
-import org.apache.camel.spring.boot.SpringBootCamelContext;
 import org.hisp.dhis.api.model.v40_0.User;
 import org.hisp.dhis.api.model.v40_0.WebMessage;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
-import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -47,11 +43,11 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -95,19 +91,7 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
     public void testNewContactSynchronisationGivenInvalidPhoneNumber()
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        String invalidPhoneNoUserId = Environment.createDhis2User( Environment.ORG_UNIT_ID, "Invalid" );
-        CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
-        ((SpringBootCamelContext) camelContext)
-            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
-                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.startsWith(
-                    String.format(
-                        "Unexpected status code when creating RapidPro contact for DHIS2 user %s => HTTP 400.",
-                        invalidPhoneNoUserId ) ) )
-                {
-                    expectedLogMessage.countDown();
-                }
-                return message;
-            } );
+        Environment.createDhis2User( Environment.ORG_UNIT_ID, "Invalid" );
 
         camelContext.start();
         assertPreCondition();
@@ -117,8 +101,6 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
         given( RAPIDPRO_API_REQUEST_SPEC ).get( "contacts.json" ).then()
             .body( "results.size()", equalTo( 10 ) )
             .body( "results[0].fields.dhis2_organisation_unit_id", equalTo( Environment.ORG_UNIT_ID ) );
-
-        assertEquals( 1, expectedLogMessage.getCount() );
     }
 
     @Test
@@ -127,12 +109,11 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
         JsonProcessingException
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         camelContext.start();
 
         assertPreCondition();
         String response = producerTemplate.requestBodyAndHeader(
-            dhis2RapidProHttpEndpointUri + "/services/tasks/sync?httpClientConfigurer=#selfSignedHttpClientConfigurer",
+            dhis2RapidProHttpEndpointUri + "/services/tasks/sync",
             null,
             "Authorization",
             "Basic " + Base64.getEncoder().encodeToString( "dhis2rapidpro:dhis2rapidpro".getBytes() ), String.class );
@@ -191,25 +172,16 @@ public class SyncRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCa
         System.setProperty( "sync.rapidpro.contacts", "true" );
         assertPreCondition();
 
-        CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
-        ((SpringBootCamelContext) camelContext)
-            .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
-                if ( camelLogger.getLevel().name().equals( "WARN" ) && message.startsWith(
-                    "Unexpected status code when updating RapidPro contact " ) )
-                {
-                    expectedLogMessage.countDown();
-                }
-                return message;
-            } );
-
         camelContext.start();
         producerTemplate.sendBody( "direct:sync", null );
-        assertEquals( 2, expectedLogMessage.getCount() );
+        assertPostCondition();
 
-        updateDhis2User( "invalid" );
+        User user = updateDhis2User( "invalid" );
         producerTemplate.sendBody( "direct:sync", null );
-
-        assertEquals( 1, expectedLogMessage.getCount() );
+        given( RAPIDPRO_API_REQUEST_SPEC ).queryParam( "urn", "ext:" + user.getId().get() ).get( "contacts.json" )
+            .then()
+            .body( "results.size()", equalTo( 1 ) )
+            .body( "results[0].phoneNumber", not( equalTo( user.getPhoneNumber().get() ) ) );
     }
 
     private void assertPreCondition()

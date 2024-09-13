@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
+import com.datasonnet.jsonnet.Materializer;
+import com.datasonnet.jsonnet.Val;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ValueBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -50,9 +52,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StreamUtils;
-
-import sjsonnet.Materializer;
-import sjsonnet.Val;
 
 import com.datasonnet.document.DefaultDocument;
 import com.datasonnet.document.MediaTypes;

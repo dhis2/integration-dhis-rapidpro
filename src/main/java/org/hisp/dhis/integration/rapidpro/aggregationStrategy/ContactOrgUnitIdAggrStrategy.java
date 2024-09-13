@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.Iterator;
 import java.util.Map;
 
 @Component
@@ -44,12 +45,12 @@ public class ContactOrgUnitIdAggrStrategy implements AggregationStrategy
     @Override
     public Exchange aggregate( Exchange oldExchange, Exchange newExchange )
     {
-        String contact = newExchange.getMessage().getBody( String.class );
+        Map<String, Object> contact = (Map<String, Object>) newExchange.getMessage().getBody( Iterator.class ).next();
         String contactUuid = (String) ((Map<String, Object>) oldExchange.getMessage().getBody( Map.class )
             .get( "contact" )).get( "uuid" );
         LOGGER.debug( String.format( "Fetched contact %s => %s ", contactUuid, contact ) );
         oldExchange.getMessage()
-            .setHeader( "orgUnitId", JsonPath.read( contact, "$.results[0].fields.dhis2_organisation_unit_id" ) );
+            .setHeader( "orgUnitId", JsonPath.read( contact, "$.fields.dhis2_organisation_unit_id" ) );
         return oldExchange;
     }
 }

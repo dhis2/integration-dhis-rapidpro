@@ -30,7 +30,7 @@ package org.hisp.dhis.integration.rapidpro.security;
 import com.google.common.hash.Hashing;
 import org.apache.camel.CamelExecutionException;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
-import org.hisp.dhis.integration.rapidpro.SelfSignedHttpClientConfigurer;
+import org.hisp.hieboot.camel.security.SelfSignedHttpClientConfigurer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -57,7 +57,7 @@ public class WebhookTokenAuthFunctionalTestCase extends AbstractFunctionalTestCa
         camelContext.getRegistry().bind( "selfSignedHttpClientConfigurer", new SelfSignedHttpClientConfigurer() );
         jdbcTemplate.execute( "TRUNCATE TABLE token" );
         jdbcTemplate.execute( String.format( "INSERT INTO TOKEN (value_) VALUES ('%s')",
-            Hashing.sha256().hashString( "secret", StandardCharsets.UTF_8 ).toString() ) );
+            Hashing.sha256().hashString( "secret", StandardCharsets.UTF_8 ) ) );
         camelContext.start();
     }
 

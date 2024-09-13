@@ -36,6 +36,7 @@ import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.camel.test.spring.junit5.UseAdviceWith;
+import org.hisp.dhis.integration.rapidpro.Application;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,18 +44,19 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest
+@SpringBootTest( classes = Application.class )
 @CamelSpringBootTest
 @UseAdviceWith
 @ActiveProfiles( "test" )
 @DirtiesContext( classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD )
 @TestPropertySource( properties = { "dhis2.api.url=http://dhis2.test/api", "rapidpro.api.url=mock:rapidpro", "test.connection.startup=false",
     "rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0" } )
-public class ConfigureRapidProRouteTestCase
+public class SetUpRapidProRouteTestCase
 {
     @Autowired
     protected CamelContext camelContext;
@@ -72,41 +74,29 @@ public class ConfigureRapidProRouteTestCase
     {
         AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint(
-                    "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_organisation_unit_id" )
+                    "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
                 .skipSendToOriginalEndpoint().setBody(
                     new Expression()
                     {
                         @Override
                         public <T> T evaluate( Exchange exchange, Class<T> type )
                         {
-                            return (T) "{\"results\":[]}";
+                            return (T) List.of();
                         }
                     } ) );
 
         AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
-            r -> r.interceptSendToEndpoint( "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_user_id" )
-                .skipSendToOriginalEndpoint().setBody(
-                    new Expression()
-                    {
-                        @Override
-                        public <T> T evaluate( Exchange exchange, Class<T> type )
-                        {
-                            return (T) "{\"results\":[]}";
-                        }
-                    } ) );
+            r -> r.weaveByToUri( "kamelet:hie-rapidpro-create-field-sink*" )
+                .replace().to( "mock:hie-rapidpro-create-field-sink" ) );
 
-        MockEndpoint endpoint = camelContext.getEndpoint( "mock:rapidpro/fields.json?httpMethod=POST",
+        MockEndpoint endpoint = camelContext.getEndpoint( "mock:hie-rapidpro-create-field-sink",
             MockEndpoint.class );
 
         camelContext.start();
         producerTemplate.sendBody( "direct:createFieldsRoute", null );
         assertEquals( 2, endpoint.getReceivedCounter() );
-        assertEquals( "DHIS2 Organisation Unit ID",
-            objectMapper.readValue( endpoint.getExchanges().get( 0 ).getMessage().getBody( String.class ), Map.class )
-                .get( "label" ) );
-        assertEquals( "DHIS2 User ID",
-            objectMapper.readValue( endpoint.getExchanges().get( 1 ).getMessage().getBody( String.class ), Map.class )
-                .get( "label" ) );
+        assertEquals( "DHIS2 Organisation Unit ID", endpoint.getExchanges().get( 0 ).getMessage().getHeader( "label", String.class ) );
+        assertEquals( "DHIS2 User ID", endpoint.getExchanges().get( 1 ).getMessage().getHeader( "label", String.class ) );
     }
 
     @Test
@@ -116,38 +106,33 @@ public class ConfigureRapidProRouteTestCase
     {
         AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint(
-                    "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_organisation_unit_id" )
+                    "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
                 .skipSendToOriginalEndpoint().setBody(
                     new Expression()
                     {
                         @Override
                         public <T> T evaluate( Exchange exchange, Class<T> type )
                         {
-                            return (T) "{\"results\":[]}";
+                            if (exchange.getMessage().getHeader( "key", String.class).equals( "dhis2_organisation_unit_id" )) {
+                                return (T) List.of();
+                            } else {
+                                return (T) List.of(Map.of());
+                            }
                         }
                     } ) );
+
 
         AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
-            r -> r.interceptSendToEndpoint( "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_user_id" )
-                .skipSendToOriginalEndpoint().setBody(
-                    new Expression()
-                    {
-                        @Override
-                        public <T> T evaluate( Exchange exchange, Class<T> type )
-                        {
-                            return (T) "{\"results\":[{}]}";
-                        }
-                    } ) );
+            r -> r.weaveByToUri( "kamelet:hie-rapidpro-create-field-sink*" )
+                .replace().to( "mock:hie-rapidpro-create-field-sink" ) );
 
-        MockEndpoint endpoint = camelContext.getEndpoint( "mock:rapidpro/fields.json?httpMethod=POST",
+        MockEndpoint endpoint = camelContext.getEndpoint( "mock:hie-rapidpro-create-field-sink",
             MockEndpoint.class );
 
         camelContext.start();
         producerTemplate.sendBody( "direct:createFieldsRoute", null );
         assertEquals( 1, endpoint.getReceivedCounter() );
-        assertEquals( "DHIS2 Organisation Unit ID",
-            objectMapper.readValue( endpoint.getExchanges().get( 0 ).getMessage().getBody( String.class ), Map.class )
-                .get( "label" ) );
+        assertEquals( "DHIS2 Organisation Unit ID", endpoint.getExchanges().get( 0 ).getMessage().getHeader( "label", String.class ) );
     }
 
     @Test
@@ -157,37 +142,32 @@ public class ConfigureRapidProRouteTestCase
     {
         AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
             r -> r.interceptSendToEndpoint(
-                    "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_organisation_unit_id" )
+                    "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
                 .skipSendToOriginalEndpoint().setBody(
                     new Expression()
                     {
                         @Override
                         public <T> T evaluate( Exchange exchange, Class<T> type )
                         {
-                            return (T) "{\"results\":[{}]}";
+                            if (exchange.getMessage().getHeader( "key", String.class).equals( "dhis2_user_id" )) {
+                                return (T) List.of();
+                            } else {
+                                return (T) List.of(Map.of());
+                            }
                         }
                     } ) );
+
 
         AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
-            r -> r.interceptSendToEndpoint( "mock://rapidpro/fields.json?httpMethod=GET&key=dhis2_user_id" )
-                .skipSendToOriginalEndpoint().setBody(
-                    new Expression()
-                    {
-                        @Override
-                        public <T> T evaluate( Exchange exchange, Class<T> type )
-                        {
-                            return (T) "{\"results\":[]}";
-                        }
-                    } ) );
+            r -> r.weaveByToUri( "kamelet:hie-rapidpro-create-field-sink*" )
+                .replace().to( "mock:hie-rapidpro-create-field-sink" ) );
 
-        MockEndpoint endpoint = camelContext.getEndpoint( "mock:rapidpro/fields.json?httpMethod=POST",
+        MockEndpoint endpoint = camelContext.getEndpoint( "mock:hie-rapidpro-create-field-sink",
             MockEndpoint.class );
 
         camelContext.start();
         producerTemplate.sendBody( "direct:createFieldsRoute", null );
         assertEquals( 1, endpoint.getReceivedCounter() );
-        assertEquals( "DHIS2 User ID",
-            objectMapper.readValue( endpoint.getExchanges().get( 0 ).getMessage().getBody( String.class ), Map.class )
-                .get( "label" ) );
+        assertEquals( "DHIS2 User ID", endpoint.getExchanges().get( 0 ).getMessage().getHeader( "label", String.class ) );
     }
 }

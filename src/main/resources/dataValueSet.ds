@@ -14,7 +14,7 @@ local dataValueFn(result) = [
 ];
 
 {
-    completedDate: ds.datetime.format(ds.datetime.now(), 'yyyy-MM-dd'),
+    completedDate: ds.datetime.now().format('yyyy-MM-dd'),
     orgUnit: cml.header('orgUnitId'),
     dataSet: cml.header('dataSetCode'),
     period: cml.header('period'),

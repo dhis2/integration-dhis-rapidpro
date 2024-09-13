@@ -29,7 +29,6 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.CamelLogger;
-import org.apache.camel.spring.boot.SpringBootCamelContext;
 import org.hisp.dhis.api.model.v40_0.DataValueSet;
 import org.hisp.dhis.api.model.v40_0.DataValue;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
@@ -72,7 +71,7 @@ public class ReminderRouteBuilderFunctionalTestCase extends AbstractFunctionalTe
         System.setProperty( "reminder.data.set.codes", "Foo" );
 
         CountDownLatch expectedLogMessage = new CountDownLatch( 2 );
-        ((SpringBootCamelContext) camelContext)
+        camelContext.getCamelContextExtension()
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
                 if ( camelLogger.getLevel().name().equals( "WARN" ) && message.equals(
                     "Cannot remind contacts given unknown data set code 'Foo'" ) )

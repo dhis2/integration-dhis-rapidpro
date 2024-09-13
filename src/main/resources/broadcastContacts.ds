@@ -1,0 +1,5 @@
+local selectOrgUnitFn(orgUnits, reportRateOrgUnitId) = ds.filter(orgUnits, function(o, i) reportRateOrgUnitId == o.id)[0];
+
+local getAssignedContactsFn(contactOrgUnitId) = contactOrgUnitId == ds.util.select(selectOrgUnitFn(cml.exchangeProperty('dataSet').organisationUnits, payload[0]), ds.lower(cml.exchangeProperty('orgUnitIdScheme')));
+
+std.flatMap(function(contactOrgUnitId) cml.exchangeProperty('orgUnitIdsAndContactIds')[contactOrgUnitId], ds.filter(ds.keysOf(cml.exchangeProperty('orgUnitIdsAndContactIds')), getAssignedContactsFn))

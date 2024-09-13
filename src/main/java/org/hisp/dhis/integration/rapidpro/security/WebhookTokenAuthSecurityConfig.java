@@ -27,7 +27,6 @@
  */
 package org.hisp.dhis.integration.rapidpro.security;
 
-import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,12 +36,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.keygen.Base64StringKeyGenerator;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
 
@@ -56,18 +55,15 @@ public class WebhookTokenAuthSecurityConfig
     private JdbcTemplate jdbcTemplate;
 
     @Bean
-    protected SecurityFilterChain filterChain( HttpSecurity http )
+    protected SecurityFilterChain webhookFilterChain( HttpSecurity http )
         throws
         Exception
     {
-        return http.antMatcher( "/services/webhook" )
-            .csrf().disable()
-            .formLogin().disable()
-            .httpBasic().disable()
-            .addFilterBefore( new TokenAuthenticationFilter( getOrGenerateToken() ),
-                UsernamePasswordAuthenticationFilter.class )
-            .authorizeRequests()
-            .anyRequest().authenticated().and().build();
+        return http.
+            securityMatcher( "/webhook" )
+            .addFilterBefore( new TokenAuthenticationFilter( getOrGenerateToken() ), BasicAuthenticationFilter.class )
+            .csrf( AbstractHttpConfigurer::disable )
+            .build();
     }
 
     protected String getOrGenerateToken()

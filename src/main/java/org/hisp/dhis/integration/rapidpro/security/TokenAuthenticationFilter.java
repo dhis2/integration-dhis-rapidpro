@@ -28,6 +28,10 @@
 package org.hisp.dhis.integration.rapidpro.security;
 
 import com.google.common.hash.Hashing;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -39,10 +43,6 @@ import org.springframework.security.oauth2.server.resource.BearerTokenError;
 import org.springframework.security.oauth2.server.resource.BearerTokenErrors;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
@@ -95,7 +95,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter
 
     protected String resolveFromAuthorizationHeader( HttpServletRequest request )
     {
-        String authorization = request.getHeader( this.BEARER_TOKEN_HEADER_NAME );
+        String authorization = request.getHeader( BEARER_TOKEN_HEADER_NAME );
         if ( !StringUtils.startsWithIgnoreCase( authorization, "token" ) )
         {
             return null;

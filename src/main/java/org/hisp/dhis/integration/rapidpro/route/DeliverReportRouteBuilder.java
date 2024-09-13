@@ -104,7 +104,7 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
         from( "direct:transformReport" )
             .routeId( "Transform Report" )
             .errorHandler( errorHandlerDefinition )
-            .streamCaching()
+            .streamCache("true")
             .setHeader( "originalPayload", simple( "${body}" ) )
             .unmarshal().json()
             .choice().when( header( "reportPeriodOffset" ).isNull() )
@@ -118,11 +118,10 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
                 return oldExchange;
             } )
             .choice().when( header( "orgUnitId" ).isNull() )
-                .setHeader( "Authorization", constant( "Token {{rapidpro.api.token}}" ) )
-                .enrich().simple( "{{rapidpro.api.url}}/contacts.json?uuid=${body[contact][uuid]}&httpMethod=GET" )
+                .setHeader( "uuid", simple( "${body[contact][uuid]}" ) )
+                .enrich().simple( "kamelet:hie-rapidpro-get-contacts-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
                     .aggregationStrategy( contactOrgUnitIdAggrStrategy )
                 .end()
-                .removeHeader( "Authorization" )
             .end()
             .enrich( "direct:computePeriod", ( oldExchange, newExchange ) -> {
                 oldExchange.getMessage().setHeader( "period", newExchange.getMessage().getBody() );
@@ -152,6 +151,7 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
 
         from( "direct:dlq" )
             .routeId( "Save Failed Report" )
+            .log( LoggingLevel.ERROR, "${exception}" )
             .setHeader( "errorMessage", rootCauseExpr )
             .setHeader( "payload", header( "originalPayload" ) )
             .setHeader( "orgUnitId" ).ognl( "request.headers.orgUnitId" )

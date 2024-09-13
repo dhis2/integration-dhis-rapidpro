@@ -44,18 +44,14 @@ public class LastRunCalculator implements Expression
     {
         Timestamp newLastRunAt = (Timestamp) exchange.getMessage().getHeader( "newLastRunAt" );
         Map<String, Object> body = exchange.getMessage().getBody( Map.class );
-        List<Map<String, Object>> results = (List<Map<String, Object>>) body.get( "results" );
-        for ( Map<String, Object> result : results )
+        String exitedOn = (String) body.get( "exited_on" );
+        if ( exitedOn == null )
         {
-            String exitedOn = (String) result.get( "exited_on" );
-            if ( exitedOn == null )
+            String modifiedOn = (String) body.get( "modified_on" );
+            Instant modifiedOnAsInstant = Instant.parse( modifiedOn );
+            if ( modifiedOnAsInstant.isBefore( newLastRunAt.toInstant() ) )
             {
-                String modifiedOn = (String) result.get( "modified_on" );
-                Instant modifiedOnAsInstant = Instant.parse( modifiedOn );
-                if ( modifiedOnAsInstant.isBefore( newLastRunAt.toInstant() ) )
-                {
-                    newLastRunAt = Timestamp.from( modifiedOnAsInstant );
-                }
+                newLastRunAt = Timestamp.from( modifiedOnAsInstant );
             }
         }
 

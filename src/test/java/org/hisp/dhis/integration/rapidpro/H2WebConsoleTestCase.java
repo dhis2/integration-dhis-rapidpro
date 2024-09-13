@@ -39,9 +39,10 @@ import org.springframework.test.context.TestPropertySource;
 
 import static io.restassured.RestAssured.given;
 
-@SpringBootTest( webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT )
+@SpringBootTest( webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = Application.class )
 @ActiveProfiles( "test" )
-@TestPropertySource( properties = { "dhis2.api.url=http://dhis2.test/api", "rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0", "rapidpro.api.url=http://rapidpro.test/api/v2",
+@TestPropertySource( properties = { "dhis2.api.url=http://dhis2.test/api",
+    "rapidpro.api.token=3048a3b9a04c1948aa5a7fd06e7592ba5a17d3d0", "rapidpro.api.url=http://rapidpro.test/api/v2",
     "test.connection.startup=false", "camel.springboot.auto-startup=false" } )
 @DirtiesContext( classMode = DirtiesContext.ClassMode.AFTER_CLASS )
 public class H2WebConsoleTestCase
@@ -55,7 +56,8 @@ public class H2WebConsoleTestCase
     public void beforeEach()
     {
         h2RequestSpec = new RequestSpecBuilder().setBaseUri(
-                String.format( "http://localhost:%s/dhis2rapidpro/management/h2-console", serverPort ) ).setRelaxedHTTPSValidation()
+                String.format( "http://localhost:%s/dhis2rapidpro/management/h2-console", serverPort ) )
+            .setRelaxedHTTPSValidation()
             .build();
     }
 

@@ -31,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -39,9 +40,10 @@ public class WebhookDefaultSecurityConfig
 {
     @Bean
     protected SecurityFilterChain webhookFilterChain( HttpSecurity http )
-        throws Exception
+        throws
+        Exception
     {
-        return http.antMatcher( "/services/webhook" ).csrf()
-            .disable().build();
+        return http.securityMatcher( "/webhook" ).
+            csrf( AbstractHttpConfigurer::disable ).build();
     }
 }

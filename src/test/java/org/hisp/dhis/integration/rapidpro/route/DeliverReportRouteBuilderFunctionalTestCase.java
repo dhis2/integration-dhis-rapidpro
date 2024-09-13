@@ -144,7 +144,8 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
             Map.of( "dataSetCode", "MAL_YEARLY", "orgUnitId", "acme" ) );
 
-        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
+        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList(
+            "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
         assertEquals( "ERROR",
             objectMapper.readValue( (String) deadLetterChannel.get( 0 ).get( "error_message" ),
@@ -176,7 +177,8 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
             Map.of( "orgUnitId", Environment.ORG_UNIT_ID ) );
 
-        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
+        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList(
+            "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
         assertNull( deadLetterChannel.get( 0 ).get( "data_set_code" ) );
     }
@@ -226,13 +228,14 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports", ExchangePattern.InOut,
             String.format( webhookMessage, UUID.randomUUID() ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
 
-        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
+        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList(
+            "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
         assertEquals( "ERROR", deadLetterChannel.get( 0 ).get( "STATUS" ) );
         assertEquals( deadLetterChannel.get( 0 ).get( "CREATED_AT" ),
             deadLetterChannel.get( 0 ).get( "LAST_PROCESSED_AT" ) );
-        assertEquals( "No results for path: $['results'][0]['fields']['dhis2_organisation_unit_id']",
-            deadLetterChannel.get( 0 ).get( "ERROR_MESSAGE" ) );
+        assertTrue( ((String) deadLetterChannel.get( 0 ).get( "ERROR_MESSAGE" )).startsWith(
+            "org.apache.camel.CamelExchangeException: Error occurred during aggregation." ) );
         Map<String, Object> payload = objectMapper.readValue( (String) deadLetterChannel.get( 0 ).get( "PAYLOAD" ),
             Map.class );
         assertEquals( "John Doe", ((Map<String, Object>) payload.get( "contact" )).get( "name" ) );
@@ -263,13 +266,15 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         String payload = (String) jdbcTemplate.queryForList( "SELECT payload FROM REPORT_DEAD_LETTER_CHANNEL" ).get( 0 )
             .get( "PAYLOAD" );
         jdbcTemplate.execute(
-            String.format( "UPDATE REPORT_DEAD_LETTER_CHANNEL SET STATUS = 'RETRY', PAYLOAD = '%s' WHERE STATUS = 'ERROR'",
+            String.format(
+                "UPDATE REPORT_DEAD_LETTER_CHANNEL SET STATUS = 'RETRY', PAYLOAD = '%s' WHERE STATUS = 'ERROR'",
                 payload.replace( wrongContactUuid, contactUuid ) ) );
 
         spyEndpoint.await( 1, TimeUnit.MINUTES );
 
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
-        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList( "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
+        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList(
+            "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
         assertEquals( 1, deadLetterChannel.size() );
         assertEquals( "PROCESSED", deadLetterChannel.get( 0 ).get( "STATUS" ) );
 

@@ -31,6 +31,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.http.base.HttpOperationFailedException;
+import org.hisp.hieboot.camel.security.SelfSignedHttpClientConfigurer;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StreamUtils;
 

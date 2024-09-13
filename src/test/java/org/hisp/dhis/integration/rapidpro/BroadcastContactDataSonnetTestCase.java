@@ -35,13 +35,14 @@ import org.apache.camel.support.DefaultExchange;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BroadcastDataSonnetTestCase
+public class BroadcastContactDataSonnetTestCase
 {
     private DatasonnetExpression dsExpression;
 
@@ -50,8 +51,8 @@ public class BroadcastDataSonnetTestCase
     @BeforeEach
     public void beforeEach()
     {
-        dsExpression = new DatasonnetExpression( "resource:classpath:broadcast.ds" );
-        dsExpression.setResultType( Map.class );
+        dsExpression = new DatasonnetExpression( "resource:classpath:broadcastContacts.ds" );
+        dsExpression.setResultType( List.class );
         dsExpression.setBodyMediaType( "application/x-java-object" );
         dsExpression.setOutputMediaType( "application/x-java-object" );
 
@@ -68,19 +69,17 @@ public class BroadcastDataSonnetTestCase
         exchange.setProperty( "dataSet",
             Map.of( "name", "Malaria annual data", "id", "qNtxTrp56wV", "periodType", "Yearly", "organisationUnits",
                 List.of( Map.of( "id", "jUb8gELQApl" ) ) ) );
-        exchange.setProperty( "contacts",
-            Map.of( "results", List.of( Map.of( "fields", Map.of( "dhis2_organisation_unit_id", "jUb8gELQApl" ), "uuid",
-                    "fc2a8f28-e6fa-40d0-a667-8b45009f2db3" ),
-                Map.of( "fields", Map.of( "dhis2_organisation_unit_id", "bL4ooGhyHRQ" ), "uuid",
-                    "e7eecc70-245c-4ebc-9c10-a2b966694289" ),
-                Map.of( "fields", Map.of( "dhis2_organisation_unit_id", "jUb8gELQApl" ), "uuid",
-                    "919a5430-6983-4402-af8e-286f232ab1a1" ) ) ) );
+
+
+        Map<String, Set<String>> orgUnitIdsAndContactIds = Map.of( "jUb8gELQApl",
+            Set.of( "fc2a8f28-e6fa-40d0-a667-8b45009f2db3", "919a5430-6983-4402-af8e-286f232ab1a1" ), "bL4ooGhyHRQ", Set.of("e7eecc70-245c-4ebc-9c10-a2b966694289"));
+        exchange.setProperty( "orgUnitIdsAndContactIds", orgUnitIdsAndContactIds);
 
         exchange.getMessage().setBody( List.of( "jUb8gELQApl" ) );
+        List<String> broadcastContacts = new ValueBuilder( dsExpression ).evaluate( exchange, List.class );
 
-        Map<String, Object> broadcast = new ValueBuilder( dsExpression ).evaluate( exchange, Map.class );
-
-        assertEquals( List.of("fc2a8f28-e6fa-40d0-a667-8b45009f2db3", "919a5430-6983-4402-af8e-286f232ab1a1"), broadcast.get( "contacts" ) );
-        assertEquals( "Malaria annual data report is overdue", broadcast.get( "text" ) );
+        assertEquals( 2, broadcastContacts.size() );
+        assertTrue( broadcastContacts.contains( "fc2a8f28-e6fa-40d0-a667-8b45009f2db3" ) );
+        assertTrue( broadcastContacts.contains( "919a5430-6983-4402-af8e-286f232ab1a1" ) );
     }
 }

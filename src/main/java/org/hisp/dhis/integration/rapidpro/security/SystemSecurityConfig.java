@@ -27,34 +27,22 @@
  */
 package org.hisp.dhis.integration.rapidpro.security;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
-public class ManagementDefaultSecurityConfig
+public class SystemSecurityConfig
 {
     @Bean
-    @ConditionalOnProperty( value = "management.auth", havingValue = "basic", matchIfMissing = true )
-    protected SecurityFilterChain managementFilterChain( HttpSecurity http )
-        throws
-        Exception
-    {
-        return http.requestMatchers()
-            .antMatchers( "/management/**", "/services/tasks/**", "/login", "/logout" )
-            .and().authorizeRequests()
-            .anyRequest().authenticated()
-            .and().csrf()
-            .ignoringAntMatchers( "/management/h2-console/**", "/services/tasks/**" )
-            .and()
-            .formLogin()
-            .and()
-            .httpBasic()
-            .and()
-            .headers().frameOptions().sameOrigin().and()
-            .csrf().csrfTokenRepository( CookieCsrfTokenRepository.withHttpOnlyFalse() ).and().build();
+    protected SecurityFilterChain serviceTasksFilterChain(HttpSecurity http) throws Exception {
+        return http.securityMatcher( "/tasks/**").securityMatcher( PathRequest.toH2Console() ).authorizeHttpRequests( a -> a.anyRequest().authenticated() ).
+        formLogin( Customizer.withDefaults()).headers(headers -> headers.frameOptions( HeadersConfigurer.FrameOptionsConfig::sameOrigin)).
+        httpBasic(Customizer.withDefaults()).build();
     }
+
 }

@@ -56,9 +56,7 @@ public class SetReportRateQueryParamProcessor implements Processor
         Map<String, Object> dataSetAsMap = exchange.getProperty( "dataSet", Map.class );
         DataSet dataSet = objectMapper.convertValue( dataSetAsMap, DataSet.class );
 
-        Map<String, Object> contacts = (Map<String, Object>) exchange.getProperty( "contacts" );
-        Set<String> contactOrgUnitIds = reduceOrgUnitIds( (List<Map<String, Object>>) contacts.get( "results" ) );
-
+        Map<String, Set<String>> contactOrgUnitIds = exchange.getProperty( "orgUnitIdsAndContactIds", Map.class );
         String periodType = dataSet.getPeriodType().get().value();
         String lastElapsedPeriod = createLastElapsedPeriod( periodType );
 
@@ -68,7 +66,7 @@ public class SetReportRateQueryParamProcessor implements Processor
             StringBuilder ouDimensionStringBuilder = new StringBuilder();
             for ( RefOrganisationUnit organisationUnit : dataSet.getOrganisationUnits().get() )
             {
-                if ( contactOrgUnitIds.contains( organisationUnit.get( orgUnitIdScheme ) ) )
+                if ( contactOrgUnitIds.containsKey( organisationUnit.get( orgUnitIdScheme ) ) )
                 {
                     ouDimensionStringBuilder.append( organisationUnit.getId() ).append( ";" );
                 }
@@ -122,12 +120,5 @@ public class SetReportRateQueryParamProcessor implements Processor
         }
 
         return lastElapsedPeriod;
-    }
-
-    protected Set<String> reduceOrgUnitIds( List<Map<String, Object>> contacts )
-    {
-        return contacts.stream()
-            .map( c -> ((Map<String, String>) c.get( "fields" )).get( "dhis2_organisation_unit_id" ) ).collect(
-                Collectors.toSet() );
     }
 }

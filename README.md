@@ -49,7 +49,7 @@ DHIS-to-RapidPro provides:
 
 ## Requirements
 
-* Java 11
+* Java 17
 * RapidPro v7.4
 * DHIS >= v2.37.8
 

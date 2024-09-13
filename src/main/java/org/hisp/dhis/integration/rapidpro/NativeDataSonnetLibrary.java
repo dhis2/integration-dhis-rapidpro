@@ -27,14 +27,13 @@
  */
 package org.hisp.dhis.integration.rapidpro;
 
-import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.ResourceBundle;
 import java.util.Set;
 
+import com.datasonnet.jsonnet.Materializer;
+import com.datasonnet.jsonnet.Val;
 import org.hisp.dhis.api.model.v40_0.CategoryOptionCombo;
 import org.hisp.dhis.integration.sdk.api.Dhis2Client;
 import org.slf4j.Logger;
@@ -42,9 +41,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-
-import sjsonnet.Materializer;
-import sjsonnet.Val;
 
 import com.datasonnet.document.DefaultDocument;
 import com.datasonnet.document.MediaTypes;
@@ -75,7 +71,6 @@ public class NativeDataSonnetLibrary extends Library
         answer.put( "isCatOptCombo", isCatOptComboFn( dataFormats ) );
         answer.put( "getCatOptComboCode", getCatOptComboCodeFn( dataFormats ) );
         answer.put( "truncateCatOptComboSuffix", truncateCatOptComboSuffixFn( dataFormats ) );
-        answer.put( "formatResource", formatResourceFn( dataFormats ) );
 
         return answer;
     }
@@ -97,19 +92,6 @@ public class NativeDataSonnetLibrary extends Library
                 return Materializer.reverse( dataFormats.mandatoryRead(
                     new DefaultDocument<>( dataElementCode, MediaTypes.APPLICATION_JAVA ) ) );
 
-            } );
-    }
-
-    protected Val.Func formatResourceFn( DataFormatService dataFormats )
-    {
-        return makeSimpleFunc(
-            List.of( "key", "dataSetName" ), vals -> {
-                ResourceBundle resourceBundle = ResourceBundle.getBundle( "reminder" );
-                String resource = MessageFormat.format( resourceBundle.getString( ((Val.Str) vals.get( 0 )).value() ),
-                    ((Val.Str) vals.get( 1 )).value() );
-
-                return Materializer.reverse( dataFormats.mandatoryRead(
-                    new DefaultDocument<>( resource, MediaTypes.APPLICATION_JAVA ) ) );
             } );
     }
 
@@ -167,10 +149,9 @@ public class NativeDataSonnetLibrary extends Library
                     if ( catOptOptionComboCode == null )
                     {
                         LOGGER.warn(
-                            "Ignoring category option combination because of unknown category option combination code '"
-                                + extractCatOptComboCode(
-                                    resultName )
-                                + "'. Hint: ensure the RapidPro result name suffix starts with '__'  and that the trailing code matches the corresponding DHIS2 category option combination code" );
+                            "Ignoring category option combination because of unknown category option combination code '{}'. Hint: ensure the RapidPro result name suffix starts with '__'  and that the trailing code matches the corresponding DHIS2 category option combination code",
+                            extractCatOptComboCode(
+                                resultName ) );
                     }
                     else
                     {
