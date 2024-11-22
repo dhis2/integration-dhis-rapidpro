@@ -1,0 +1,30 @@
+local normaliseDeCodeFn(dataElementCode) = ds.replace(ds.lower(dataElementCode), ' ', '_');
+
+local normaliseDeCodesFn(dataElementCodes) = ds.map(dataElementCodes, function(v, i) normaliseDeCodeFn(v));
+
+local getResultName(result) = if std.objectHas(result.value, 'name') then result.value.name else result.key;
+
+local dataValueFn(result) = [
+  {
+    dataElement: ds.filter(body.programStageDataElementCodes, function(v, i) normaliseDeCodeFn(v) == ds.lower(native.truncateCatOptComboSuffix(getResultName(result))))[0],
+    value: result.value.value,
+    comment: 'RapidPro contact details: %s' % std.escapeStringJson(std.manifestJsonEx(payload.contact, ' ')),
+    [if native.isCatOptCombo(getResultName(result)) then 'categoryOptionCombo']: native.getCatOptComboCode(getResultName(result))
+  }
+];
+
+
+{
+  "events": [
+    {
+      "event": body.event,
+      "program": body.program,
+      "programStage": body.programStage,
+      "enrollment": body.enrollment,
+      "orgUnit": body.orgUnit,
+      "status": "COMPLETED",
+      "occurredAt": ds.datetime.format(ds.datetime.now(), 'yyyy-MM-dd'),
+      "dataValues": std.flatMap(dataValueFn, ds.filter(ds.entriesOf(payload.results), function(v, i) if ds.contains(normaliseDeCodesFn(body.programStageDataElementCodes), ds.lower(native.truncateCatOptComboSuffix(getResultName(v)))) then true else native.logWarning("Ignoring data value because of unknown DHIS2 program stage data element code '" + native.truncateCatOptComboSuffix(getResultName(v)) + "'. Hint: ensure that the RapidPro result name matches the corresponding DHIS2 program stage data element code")))
+    }
+  ]
+}
