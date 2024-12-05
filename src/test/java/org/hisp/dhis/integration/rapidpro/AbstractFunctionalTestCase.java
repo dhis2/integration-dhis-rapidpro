@@ -115,7 +115,7 @@ public class AbstractFunctionalTestCase
         System.clearProperty( "rapidpro.flow.uuids" );
         System.clearProperty( "rapidpro.webhook.enabled" );
 
-        jdbcTemplate.execute( "TRUNCATE TABLE REPORT_DEAD_LETTER_CHANNEL" );
+        jdbcTemplate.execute( "TRUNCATE TABLE MESSAGE_STORE" );
         jdbcTemplate.execute( "TRUNCATE TABLE REPORT_SUCCESS_LOG" );
         jdbcTemplate.execute( "TRUNCATE TABLE MESSAGES" );
 

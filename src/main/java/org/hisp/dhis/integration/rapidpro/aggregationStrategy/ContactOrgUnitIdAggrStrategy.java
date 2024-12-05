@@ -48,7 +48,7 @@ public class ContactOrgUnitIdAggrStrategy implements AggregationStrategy
         Map<String, Object> contact = (Map<String, Object>) newExchange.getMessage().getBody( Iterator.class ).next();
         String contactUuid = (String) ((Map<String, Object>) oldExchange.getMessage().getBody( Map.class )
             .get( "contact" )).get( "uuid" );
-        LOGGER.debug( String.format( "Fetched contact %s => %s ", contactUuid, contact ) );
+        LOGGER.debug( "Fetched contact {} => {} ", contactUuid, contact );
         oldExchange.getMessage()
             .setHeader( "orgUnitId", JsonPath.read( contact, "$.fields.dhis2_organisation_unit_id" ) );
         return oldExchange;

@@ -30,6 +30,7 @@ package org.hisp.dhis.integration.rapidpro.route;
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS_IMAGE_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -44,7 +45,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.camel.CamelExecutionException;
 import org.apache.camel.ExchangePattern;
+import org.apache.camel.ExchangeTimedOutException;
+import org.apache.camel.Message;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.hisp.dhis.api.model.v40_0.DataValue;
@@ -53,8 +57,11 @@ import org.hisp.dhis.api.model.v40_0.WebMessage;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
+import org.hisp.hieboot.camel.spi.MessageRepository;
+import org.hisp.hieboot.camel.spi.RepositoryMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.function.Executable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StreamUtils;
 
@@ -64,6 +71,9 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
 {
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private MessageRepository messageRepository;
 
     @Test
     public void testDataValueSetIsCreated()
@@ -144,13 +154,11 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
             Map.of( "dataSetCode", "MAL_YEARLY", "orgUnitId", "acme" ) );
 
-        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList(
-            "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
-        assertEquals( 1, deadLetterChannel.size() );
-        assertEquals( "ERROR",
-            objectMapper.readValue( (String) deadLetterChannel.get( 0 ).get( "error_message" ),
-                    WebMessage.class )
-                .getStatus().value() );
+        List<RepositoryMessage> repositoryMessages = messageRepository.retrieve( "failed:*" );
+        assertEquals( 1, repositoryMessages.size() );
+        assertEquals(
+            "Import error from DHIS2 while saving data value set => {code=null, devMessage=null, httpStatus=null, httpStatusCode=null, message=null, response=null, status=ERROR}",
+            repositoryMessages.get( 0 ).getContext() );
     }
 
     @Test
@@ -173,14 +181,18 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         String webhookMessage = StreamUtils.copyToString(
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports",
-            ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
-            Map.of( "orgUnitId", Environment.ORG_UNIT_ID ) );
 
-        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList(
-            "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
-        assertEquals( 1, deadLetterChannel.size() );
-        assertNull( deadLetterChannel.get( 0 ).get( "data_set_code" ) );
+        assertThrows( CamelExecutionException.class,
+            () -> producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports",
+                ExchangePattern.InOut, String.format( webhookMessage, contactUuid ),
+                Map.of( "orgUnitId", Environment.ORG_UNIT_ID ) ) );
+
+        List<RepositoryMessage> repositoryMessages = messageRepository.retrieve( "failed:*" );
+        assertEquals( 1, repositoryMessages.size() );
+        Map<String, Object> payload = objectMapper.readValue(
+            (String) repositoryMessages.get( 0 ).getMessage().getBody(),
+            Map.class );
+        assertNull( payload.get( "data_set_code" ) );
     }
 
     @Test
@@ -225,19 +237,17 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             Thread.currentThread().getContextClassLoader().getResourceAsStream( "webhook.json" ),
             Charset.defaultCharset() );
 
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports", ExchangePattern.InOut,
-            String.format( webhookMessage, UUID.randomUUID() ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
+        assertThrows( CamelExecutionException.class,
+            () -> producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports", ExchangePattern.InOut,
+                String.format( webhookMessage, UUID.randomUUID() ), Map.of( "dataSetCode", "MAL_YEARLY" ) ) );
 
-        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList(
-            "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
-        assertEquals( 1, deadLetterChannel.size() );
-        assertEquals( "ERROR", deadLetterChannel.get( 0 ).get( "STATUS" ) );
-        assertEquals( deadLetterChannel.get( 0 ).get( "CREATED_AT" ),
-            deadLetterChannel.get( 0 ).get( "LAST_PROCESSED_AT" ) );
-        assertTrue( ((String) deadLetterChannel.get( 0 ).get( "ERROR_MESSAGE" )).startsWith(
-            "org.apache.camel.CamelExchangeException: Error occurred during aggregation." ) );
-        Map<String, Object> payload = objectMapper.readValue( (String) deadLetterChannel.get( 0 ).get( "PAYLOAD" ),
+        List<RepositoryMessage> repositoryMessages = messageRepository.retrieve( "failed:*" );
+        assertEquals( 1, repositoryMessages.size() );
+        RepositoryMessage repositoryMessage = repositoryMessages.get( 0 );
+        Map<String, Object> payload = objectMapper.readValue( (String) repositoryMessage.getMessage().getBody(),
             Map.class );
+        assertTrue( repositoryMessage.getContext().startsWith(
+            "org.apache.camel.CamelExchangeException: Error occurred during aggregation." ) );
         assertEquals( "John Doe", ((Map<String, Object>) payload.get( "contact" )).get( "name" ) );
     }
 
@@ -259,48 +269,21 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
             Charset.defaultCharset() );
 
         String wrongContactUuid = UUID.randomUUID().toString();
-        producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports", ExchangePattern.InOut,
-            String.format( webhookMessage, wrongContactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) );
+        assertThrows( CamelExecutionException.class,
+            () -> producerTemplate.sendBodyAndHeaders( "jms:queue:dhis2AggregateReports", ExchangePattern.InOut,
+                String.format( webhookMessage, wrongContactUuid ), Map.of( "dataSetCode", "MAL_YEARLY" ) ) );
+
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
 
-        String payload = (String) jdbcTemplate.queryForList( "SELECT payload FROM REPORT_DEAD_LETTER_CHANNEL" ).get( 0 )
-            .get( "PAYLOAD" );
-        jdbcTemplate.execute(
-            String.format(
-                "UPDATE REPORT_DEAD_LETTER_CHANNEL SET STATUS = 'RETRY', PAYLOAD = '%s' WHERE STATUS = 'ERROR'",
-                payload.replace( wrongContactUuid, contactUuid ) ) );
+        List<RepositoryMessage> delete = messageRepository.delete( "*" );
+        delete.get( 0 ).getMessage()
+            .setBody( ((String) delete.get( 0 ).getMessage().getBody()).replace( wrongContactUuid, contactUuid ) );
+        messageRepository.store( delete.get( 0 ).getKey().replace( "failed:", "replay:" ),
+            delete.get( 0 ).getMessage() );
 
         spyEndpoint.await( 1, TimeUnit.MINUTES );
 
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
-        List<Map<String, Object>> deadLetterChannel = jdbcTemplate.queryForList(
-            "SELECT * FROM REPORT_DEAD_LETTER_CHANNEL" );
-        assertEquals( 1, deadLetterChannel.size() );
-        assertEquals( "PROCESSED", deadLetterChannel.get( 0 ).get( "STATUS" ) );
-
-        Object lastProcessedAt = deadLetterChannel.get( 0 ).get( "LAST_PROCESSED_AT" );
-        Instant lastProcessedAsInstant;
-        if ( lastProcessedAt instanceof OffsetDateTime )
-        {
-            lastProcessedAsInstant = ((OffsetDateTime) lastProcessedAt).toInstant();
-        }
-        else
-        {
-            lastProcessedAsInstant = ((Timestamp) lastProcessedAt).toInstant();
-        }
-
-        Object createdAt = deadLetterChannel.get( 0 ).get( "CREATED_AT" );
-        Instant createdAtAsInstant;
-        if ( createdAt instanceof OffsetDateTime )
-        {
-            createdAtAsInstant = ((OffsetDateTime) createdAt).toInstant();
-        }
-        else
-        {
-            createdAtAsInstant = ((Timestamp) createdAt).toInstant();
-        }
-
-        assertTrue( lastProcessedAsInstant.isAfter( createdAtAsInstant ) );
     }
 
     @Test

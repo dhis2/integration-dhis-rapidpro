@@ -27,7 +27,6 @@
  */
 package org.hisp.dhis.integration.rapidpro.route;
 
-import org.apache.camel.ErrorHandlerFactory;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedBodyAggregationStrategy;
@@ -65,26 +64,6 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
     @Override
     protected void doConfigure()
     {
-        ErrorHandlerFactory errorHandlerDefinition = deadLetterChannel(
-            "direct:dlq" ).maximumRedeliveries( 3 ).useExponentialBackOff().useCollisionAvoidance()
-            .allowRedeliveryWhileStopping( false );
-
-        from( "timer://retryReports?fixedRate=true&period=5000" )
-            .routeId( "Retry Reports" )
-            .setBody( simple( "${properties:report.retry.dlc.select.{{spring.sql.init.platform}}}" ) )
-            .to( "jdbc:dataSource" )
-            .split().body()
-                .setHeader( "id", simple( "${body['id']}" ) )
-                .log( LoggingLevel.INFO, LOGGER, "Retrying row with ID ${header.id}" )
-                .setHeader( "dataSetCode", simple( "${body['data_set_code']}" ) )
-                .setHeader( "reportPeriodOffset", simple( "${body['report_period_offset']}" ) )
-                .setHeader( "orgUnitId", simple( "${body['organisation_unit_id']}" ) )
-                .setBody( simple( "${body['payload']}" ) )
-                .to( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly" )
-                .setBody( simple( "${properties:report.processed.dlc.update.{{spring.sql.init.platform}}}" ) )
-                .to( "jdbc:dataSource?useHeadersAsParameters=true" )
-            .end();
-
         from( "quartz://dhis2AggregateReports?cron={{report.delivery.schedule.expression}}" )
             .routeId( "Schedule Report Delivery" )
             .precondition( "'{{report.delivery.schedule.expression:}}' != ''" )
@@ -94,6 +73,7 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
         from( "jms:queue:dhis2AggregateReports" )
             .routeId( "Consume Report" )
             .precondition( "'{{report.delivery.schedule.expression:}}' == ''" )
+            .kamelet( "hie-create-replay-checkpoint-action" )
             .to( "direct:deliverReport" );
 
         from( "direct:deliverReport" )
@@ -103,7 +83,6 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
 
         from( "direct:transformReport" )
             .routeId( "Transform Report" )
-            .errorHandler( errorHandlerDefinition )
             .streamCache("true")
             .setHeader( "originalPayload", simple( "${body}" ) )
             .unmarshal().json()
@@ -134,7 +113,6 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
 
         from( "direct:transmitReport" )
             .routeId( "Transmit Report" )
-            .errorHandler( errorHandlerDefinition )
             .log( LoggingLevel.INFO, LOGGER, "Saving data value set => ${body}" )
             .setHeader( "dhisRequest", simple( "${body}" ) )
             .toD( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" )
@@ -145,19 +123,10 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
             .when( simple( "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'" ) )
                 .to( "direct:completeDataSetRegistration" )
             .otherwise()
-                .log( LoggingLevel.ERROR, LOGGER, "Import error from DHIS2 while saving data value set => ${body}" )
-                .to( "direct:dlq" )
+                .setHeader( "errorMessage", simple( "Import error from DHIS2 while saving data value set => ${body}" ) )
+                .log( LoggingLevel.ERROR, LOGGER,  "${header.errorMessage}"  )
+                .kamelet( "hie-fail-replay-checkpoint-action" )
             .end();
-
-        from( "direct:dlq" )
-            .routeId( "Save Failed Report" )
-            .log( LoggingLevel.ERROR, "${exception}" )
-            .setHeader( "errorMessage", rootCauseExpr )
-            .setHeader( "payload", header( "originalPayload" ) )
-            .setHeader( "orgUnitId" ).ognl( "request.headers.orgUnitId" )
-            .setHeader( "dataSetCode" ).ognl( "request.headers.dataSetCode" )
-            .setBody( simple( "${properties:report.error.dlc.insert.{{spring.sql.init.platform}}}" ) )
-            .to( "jdbc:dataSource?useHeadersAsParameters=true" );
 
         from( "direct:computePeriod" )
             .routeId( "Compute Period" )
@@ -177,8 +146,9 @@ public class DeliverReportRouteBuilder extends AbstractRouteBuilder
                 .setBody( simple( "${properties:report.success.log.insert.{{spring.sql.init.platform}}}" ) )
                 .to( "jdbc:dataSource?useHeadersAsParameters=true" )
             .otherwise()
-                .log( LoggingLevel.ERROR, LOGGER, "Error from DHIS2 while completing data set registration => ${body}" )
-                .to( "direct:dlq" )
+                .setHeader( "errorMessage", simple( "Error from DHIS2 while completing data set registration => ${body}" ) )
+                .log( LoggingLevel.ERROR, LOGGER, "${header.errorMessage}" )
+                .kamelet( "hie-fail-replay-checkpoint-action" )
             .end();
     }
 }
