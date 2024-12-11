@@ -63,9 +63,6 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
 
     @Override
     public void doBeforeEach()
-        throws
-        IOException,
-        ParseException
     {
         System.setProperty( "dhis2.phone.number.attribute.code", "PHONE_LOCAL" );
         System.setProperty( "dhis2.given.name.attribute.code", "GIVEN_NAME" );

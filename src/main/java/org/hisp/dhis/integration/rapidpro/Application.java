@@ -52,7 +52,9 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties;
+import org.springframework.boot.context.event.ApplicationContextInitializedEvent;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
@@ -65,6 +67,7 @@ import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.List;
@@ -127,9 +130,6 @@ public class Application extends CamelHieBootApp
     private ArtemisProperties artemisProperties;
 
     @Autowired
-    private KeyStoreGenerator keyStoreGenerator;
-
-    @Autowired
     private CamelContext camelContext;
 
     @Autowired
@@ -143,7 +143,7 @@ public class Application extends CamelHieBootApp
 
     @Autowired
     private DataSource dataSource;
-    
+
     @PostConstruct
     public void postConstruct()
         throws
@@ -191,10 +191,6 @@ public class Application extends CamelHieBootApp
             testRapidProConnection();
         }
         FileUtils.forceMkdir( new File( routesReloadDirectory ) );
-        if ( serverSslEnabled )
-        {
-            keyStoreGenerator.generate();
-        }
         camelContext.getRegistry().bind( "native", nativeDataSonnetLibrary );
     }
 
@@ -203,6 +199,27 @@ public class Application extends CamelHieBootApp
         SQLException
     {
         SpringApplication springApplication = new SpringApplication( Application.class );
+        springApplication.addListeners( event -> {
+            if ( event instanceof ApplicationContextInitializedEvent )
+            {
+                ApplicationContext applicationContext = ((ApplicationContextInitializedEvent) event).getApplicationContext();
+                String property = applicationContext.getEnvironment().getProperty( "server.ssl.enabled" );
+                if ( property == null || property.equalsIgnoreCase( "true" ) )
+                {
+                    KeyStoreGenerator keyStoreGenerator = new KeyStoreGenerator();
+                    try
+                    {
+                        keyStoreGenerator.generate();
+                    }
+                    catch ( MalformedURLException e )
+                    {
+                        throw new Dhis2RapidProException();
+                    }
+                }
+
+            }
+        } );
+
         springApplication.run( args );
     }
 
