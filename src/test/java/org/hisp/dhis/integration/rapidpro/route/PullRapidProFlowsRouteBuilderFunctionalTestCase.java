@@ -29,23 +29,21 @@ package org.hisp.dhis.integration.rapidpro.route;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.http.ContentType;
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.TransformDefinition;
 import org.apache.camel.spi.CamelLogger;
-import org.apache.camel.spring.boot.SpringBootCamelContext;
 import org.hisp.dhis.api.model.v40_0.DataValue;
 import org.hisp.dhis.api.model.v40_0.DataValueSet;
 import org.hisp.dhis.api.model.v40_0.WebMessage;
 import org.hisp.dhis.integration.rapidpro.AbstractFunctionalTestCase;
 import org.hisp.dhis.integration.rapidpro.Environment;
+import org.hisp.dhis.integration.rapidpro.expression.FlowUuidsExpr;
 import org.hisp.dhis.integration.sdk.support.period.PeriodBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -69,7 +67,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
     private String programStageEventFlowUuid;
 
     @Autowired
-    private PullRapidProFlowsRouteBuilder pullRapidProFlowsRouteBuilder;
+    private FlowUuidsExpr flowUuidsExpr;
 
     @Override
     public void doBeforeEach()
@@ -93,9 +91,9 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        ReflectionTestUtils.setField( pullRapidProFlowsRouteBuilder, "aggregateReportFlowUuids",
-            "" );
-        AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows", r -> r.weaveAddLast().to( "mock:spy" ) );
+        flowUuidsExpr.setAggregateReportFlowUuids( "" );
+
+        AdviceWith.adviceWith( camelContext, "scanRapidproFlows", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
         camelContext.start();
@@ -109,9 +107,9 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        ReflectionTestUtils.setField( pullRapidProFlowsRouteBuilder, "aggregateReportFlowUuids",
-            aggregateReportFlowUuid );
-        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        flowUuidsExpr.setAggregateReportFlowUuids( aggregateReportFlowUuid );
+
+        AdviceWith.adviceWith( camelContext, "transmitReport", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 0 );
         camelContext.start();
@@ -127,9 +125,9 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        ReflectionTestUtils.setField( pullRapidProFlowsRouteBuilder, "aggregateReportFlowUuids",
-            aggregateReportFlowUuid );
-        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        flowUuidsExpr.setAggregateReportFlowUuids( aggregateReportFlowUuid );
+
+        AdviceWith.adviceWith( camelContext, "transmitReport", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
         camelContext.start();
@@ -176,7 +174,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
     {
         System.setProperty( "sync.dhis2.events.to.rapidpro.flows", "true" );
         programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
-        AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "queueProgramStageEvent", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 0 );
         camelContext.start();
@@ -192,7 +190,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
     {
         System.setProperty( "sync.dhis2.events.to.rapidpro.flows", "true" );
         programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
-        AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "queueProgramStageEvent", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
         String eventId = createTrackedEntityAndFetchEventId( "12345678" );
@@ -211,7 +209,7 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
     {
         System.setProperty( "sync.dhis2.events.to.rapidpro.flows", "true" );
         programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
-        AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "queueProgramStageEvent", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 0 );
         createTrackedEntityAndFetchEventId( "12345678" );
@@ -254,14 +252,14 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "sync.dhis2.events.to.rapidpro.flows", "true" );
-        ReflectionTestUtils.setField( pullRapidProFlowsRouteBuilder, "aggregateReportFlowUuids",
-            aggregateReportFlowUuid );
+        flowUuidsExpr.setAggregateReportFlowUuids( aggregateReportFlowUuid );
+
         programStageToFlowMap.add( "program-stage-id", programStageEventFlowUuid );
 
-        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:reportSpy" ) );
+        AdviceWith.adviceWith( camelContext, "transmitReport", r -> r.weaveAddLast().to( "mock:reportSpy" ) );
         MockEndpoint reportSpyEndpoint = camelContext.getEndpoint( "mock:reportSpy", MockEndpoint.class );
 
-        AdviceWith.adviceWith( camelContext, "Queue Program Stage Event", r -> r.weaveAddLast().to( "mock:eventSpy" ) );
+        AdviceWith.adviceWith( camelContext, "queueProgramStageEvent", r -> r.weaveAddLast().to( "mock:eventSpy" ) );
         MockEndpoint eventSpyEndpoint = camelContext.getEndpoint( "mock:eventSpy", MockEndpoint.class );
 
         camelContext.start();
@@ -326,9 +324,9 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        ReflectionTestUtils.setField( pullRapidProFlowsRouteBuilder, "aggregateReportFlowUuids",
-            aggregateReportFlowUuid );
-        AdviceWith.adviceWith( camelContext, "Queue Aggregate Report",
+        flowUuidsExpr.setAggregateReportFlowUuids( aggregateReportFlowUuid );
+
+        AdviceWith.adviceWith( camelContext, "queueAggregateReport",
             r -> r.weaveByType( TransformDefinition.class ).before().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
 
@@ -374,9 +372,8 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        ReflectionTestUtils.setField( pullRapidProFlowsRouteBuilder, "aggregateReportFlowUuids",
-            aggregateReportFlowUuid );
-        AdviceWith.adviceWith( camelContext, "Scan RapidPro Flows",
+        flowUuidsExpr.setAggregateReportFlowUuids( aggregateReportFlowUuid );
+        AdviceWith.adviceWith( camelContext, "scanRapidproFlows",
             r -> r.weaveByToUri( "kamelet:hie-rapidpro-get-flow-runs-sink*" ).replace().to( "mock:rapidPro" ) );
         MockEndpoint rapidProMockEndpoint = camelContext.getEndpoint( "mock:rapidPro", MockEndpoint.class );
         rapidProMockEndpoint.whenAnyExchangeReceived( exchange -> {
@@ -392,8 +389,8 @@ public class PullRapidProFlowsRouteBuilderFunctionalTestCase extends AbstractFun
             exchange.getMessage().setBody( List.of( result ) );
         } );
 
-        AdviceWith.adviceWith( camelContext, "Transmit Report",
-            r -> r.weaveByToUri( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" )
+        AdviceWith.adviceWith( camelContext, "transmitReport",
+            r -> r.weaveByToUri( "dhis2://post/resource?client=#dhis2Client&inBody=resource&path=dataValueSets" )
                 .replace().to( "mock:dhis2" ) );
         MockEndpoint fakeDhis2Endpoint = camelContext.getEndpoint( "mock:dhis2", MockEndpoint.class );
         fakeDhis2Endpoint.setExpectedCount( 1 );

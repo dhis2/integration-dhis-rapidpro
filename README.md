@@ -527,19 +527,18 @@ Besides being highly configurable, just about any piece of DHIS-to-RapidPro's fu
 
 Integration flows in DHIS-to-RapidPro, known as [routes](https://camel.apache.org/manual/routes.html) in Apache Camel, are named according to their purpose. You can override any route if you know its name. The following is a list of the important routes that you may want to override:
 
-| Route name             | Description                                                                            |
-|------------------------|----------------------------------------------------------------------------------------|
-| RapidPro Webhook       | Accepts and queues RapidPro webhook messages                                           |
-| Consume Report         | De-queues the report for delivery to DHIS2                                             |
-| Transform Report       | Maps and enriches the report as received by RapidPro prior to transmitting it to DHIS2 |
-| Transmit Report        | Transmits the report to DHIS2                                                          |
-| Retry Reports          | Re-queues reports marked for replay                                                    |
-| Scan RapidPro Flows    | Polls RapidPro for flow runs and queues them                                           |
-| Broadcast Reminders    | Queries DHIS2 for overdue reports and sends any reminders to RapidPro                  |
-| Set up RapidPro        | Configures RapidPro for integration with DHIS2                                         |
-| Create RapidPro Fields | Creates contact fields on RapidPro                                                     |
-| Create RapidPro Group  | Creates contact group on RapidPro                                                      |
-| Sync RapidPro Contacts | Synchronises RapidPro contacts with DHIS2 users                                        |
+| Route ID             | Description                                                                            |
+|----------------------|----------------------------------------------------------------------------------------|
+| rapidproWebhook      | Accepts and queues RapidPro webhook messages                                           |
+| consumeReport        | De-queues the report for delivery to DHIS2                                             |
+| transformReport      | Maps and enriches the report as received by RapidPro prior to transmitting it to DHIS2 |
+| transmitReport       | Transmits the report to DHIS2                                                          |
+| scanRapidproFlows    | Polls RapidPro for flow runs and queues them                                           |
+| broadcastReminders   | Queries DHIS2 for overdue reports and sends any reminders to RapidPro                  |
+| setUpRapidpro        | Configures RapidPro for integration with DHIS2                                         |
+| createRapidproFields | Creates contact fields on RapidPro                                                     |
+| createRapidproGroup  | Creates contact group on RapidPro                                                      |
+| syncRapidProContacts | Synchronises RapidPro contacts with DHIS2 users                                        |
 
 You should place the file or files containing the custom routes in a directory named `routes` within DHIS-to-RapidPro's current directory. The custom route will override the inbuilt route if the routes match by name. DHIS-to-RapidPro can reload the routes while its running therefore you have the option to extend the application at runtime.
 
@@ -549,7 +548,7 @@ What follows is an example of a custom YAML route that overrides the inbuilt `Tr
 
 ```yaml
 - route:
-    id: "Transmit Report"
+    id: "transmitReport"
     from:
       uri: "direct:transmitReport"
       steps:

@@ -1,0 +1,84 @@
+- route:
+    id: setUpRapidpro
+    from:
+      uri: direct:prepareRapidPro
+      steps:
+        - to: direct:createFieldsRoute
+        - to: direct:createGroupRoute
+
+- route:
+    id: createRapidproFields
+    from:
+      uri: direct:createFieldsRoute
+      steps:
+        - setHeader:
+            name: key
+            constant: dhis2_organisation_unit_id
+        - to: "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+        - removeHeaders:
+            pattern: '*'
+        - choice:
+            when:
+              - groovy: '!body.iterator().hasNext()'
+                steps:
+                  - log:
+                      message: Creating DHIS2 Organisation Unit ID fields in RapidPro...
+                      loggingLevel: INFO
+                  - setHeader:
+                      name: label
+                      constant: DHIS2 Organisation Unit ID
+                  - setHeader:
+                      name: type
+                      constant: text
+                  - to: "kamelet:hie-rapidpro-create-field-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+                  - removeHeaders:
+                      pattern: '*'
+        - setHeader:
+            name: key
+            constant: dhis2_user_id
+        - to:
+            uri: "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+        - removeHeaders:
+            pattern: '*'
+        - choice:
+            when:
+              - groovy: '!body.iterator().hasNext()'
+                steps:
+                - log:
+                    message: Creating DHIS2 User ID field in RapidPro...
+                    loggingLevel: INFO
+                - setHeader:
+                    name: label
+                    constant: DHIS2 User ID
+                - setHeader:
+                    name: type
+                    constant: text
+                - to: "kamelet:hie-rapidpro-create-field-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+                - removeHeaders:
+                    pattern: '*'
+
+- route:
+    id: createRapidproGroup
+    from:
+      uri: direct:createGroupRoute
+      steps:
+        - setHeader:
+            name: name
+            constant: DHIS2
+        - to: "kamelet:hie-rapidpro-get-groups-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+        - choice:
+            when:
+              - groovy: '!body.iterator().hasNext()'
+                steps:
+                  - log:
+                      message: Creating DHIS2 group in RapidPro...
+                      loggingLevel: INFO
+                  - to: "kamelet:hie-rapidpro-create-group-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+                  - setProperty:
+                      name: groupUuid
+                      simple: $.uuid
+            otherwise:
+              steps:
+                - setProperty:
+                    name: groupUuid
+                    simple: $.uuid

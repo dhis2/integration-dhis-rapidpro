@@ -81,7 +81,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "transmitReport", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
 
@@ -136,8 +136,8 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        AdviceWith.adviceWith( camelContext, "Transmit Report",
-            r -> r.weaveByToUri( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" )
+        AdviceWith.adviceWith( camelContext, "transmitReport",
+            r -> r.weaveByToUri( "dhis2://post/resource?client=#dhis2Client&inBody=resource&path=dataValueSets" )
                 .replace().to( "mock:dhis2" ) );
         MockEndpoint fakeDhis2Endpoint = camelContext.getEndpoint( "mock:dhis2", MockEndpoint.class );
         fakeDhis2Endpoint.whenAnyExchangeReceived(
@@ -167,8 +167,8 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        AdviceWith.adviceWith( camelContext, "Transmit Report",
-            r -> r.weaveByToUri( "dhis2://post/resource?path=dataValueSets&inBody=resource&client=#dhis2Client" )
+        AdviceWith.adviceWith( camelContext, "transmitReport",
+            r -> r.weaveByToUri( "dhis2://post/resource?client=#dhis2Client&inBody=resource&path=dataValueSets" )
                 .replace().to( "mock:dhis2" ) );
         MockEndpoint fakeDhis2Endpoint = camelContext.getEndpoint( "mock:dhis2", MockEndpoint.class );
         fakeDhis2Endpoint.whenAnyExchangeReceived(
@@ -203,12 +203,12 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
         System.setProperty( "report.delivery.schedule.expression", "0 0/1 * * * ?" );
-        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "transmitReport", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
 
         camelContext.start();
-        camelContext.getRouteController().stopRoute( "Schedule Report Delivery" );
+        camelContext.getRouteController().stopRoute( "scheduleReportDelivery" );
 
         String contactUuid = syncContactsAndFetchFirstContactUuid();
         String webhookMessage = StreamUtils.copyToString(
@@ -220,7 +220,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         spyEndpoint.await( 30, TimeUnit.SECONDS );
         assertEquals( 0, spyEndpoint.getReceivedCounter() );
 
-        camelContext.getRouteController().startRoute( "Schedule Report Delivery" );
+        camelContext.getRouteController().startRoute( "scheduleReportDelivery" );
 
         spyEndpoint.await();
         assertEquals( 1, spyEndpoint.getReceivedCounter() );
@@ -257,7 +257,7 @@ public class DeliverReportRouteBuilderFunctionalTestCase extends AbstractFunctio
         Exception
     {
         System.setProperty( "sync.rapidpro.contacts", "true" );
-        AdviceWith.adviceWith( camelContext, "Transmit Report", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "transmitReport", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
 

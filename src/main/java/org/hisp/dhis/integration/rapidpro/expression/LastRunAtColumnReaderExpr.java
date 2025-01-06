@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class LastRunAtColumnReader implements Expression
+public class LastRunAtColumnReaderExpr implements Expression
 {
     @Override
     public <T> T evaluate( Exchange exchange, Class<T> type )

@@ -49,9 +49,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.hisp.dhis.integration.rapidpro.Environment.DHIS2_CLIENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends AbstractFunctionalTestCase
 {
@@ -86,7 +88,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
         Exception
     {
         Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 10, List.of( "ZP5HZ87wzc0" ) );
-        AdviceWith.adviceWith( camelContext, "Fetch Due Events", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "fetchDueEvents", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.expectedMessageCount( 1 );
         camelContext.start();
@@ -108,7 +110,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
             List.of( "Ish2wk3eLg3", "ZP5HZ87wzc0" ) );
         Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 2,
             List.of( "Ish2wk3eLg3" ) );
-        AdviceWith.adviceWith( camelContext, "Fetch Due Events", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "fetchDueEvents", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.expectedMessageCount( 1 );
         camelContext.start();
@@ -125,7 +127,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
         throws
         Exception
     {
-        AdviceWith.adviceWith( camelContext, "Fetch Due Events", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "fetchDueEvents", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.expectedMessageCount( 1 );
         camelContext.start();
@@ -146,7 +148,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
         Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 50, List.of( "Ish2wk3eLg3" ) );
         Environment.createDhis2TrackedEntitiesWithEnrollment( Environment.ORG_UNIT_ID, 250,
             List.of( "Ish2wk3eLg3", "ZP5HZ87wzc0" ) );
-        AdviceWith.adviceWith( camelContext, "Fetch Due Events", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "fetchDueEvents", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.expectedMessageCount( 1 );
         camelContext.start();
@@ -165,7 +167,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
     {
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "1234",
             "ID-1234", "John", List.of( "ZP5HZ87wzc0" ) );
-        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "fetchAttributes", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
         camelContext.start();
@@ -189,7 +191,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
     {
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "1234",
             "ID-12345", "John", List.of( "ZP5HZ87wzc0" ) );
-        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "fetchAttributes", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
         camelContext.start();
@@ -216,13 +218,13 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
             .returnAs(
                 Map.class ).get( "trackedEntity" );
 
-        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> {
+        AdviceWith.adviceWith( camelContext, "fetchAttributes", r -> {
             r.interceptSendToEndpoint(
                     "dhis2://get/resource?path=tracker/enrollments/" + enrollmentId + "&fields=trackedEntity,attributes[code]&client=#dhis2Client" )
                 .skipSendToOriginalEndpoint()
                 .setBody( exchange -> "{\"trackedEntity\": \"" + trackedEntityId + "\", \"attributes\": [] }" );
         } );
-        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "fetchAttributes", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
         camelContext.start();
@@ -247,7 +249,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
     {
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, "12345678",
             "ID-1234567", "John", List.of( "ZP5HZ87wzc0" ) );
-        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "fetchAttributes", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
         camelContext.start();
@@ -275,7 +277,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
             .returnAs(
                 Map.class ).get( "trackedEntity" );
 
-        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> {
+        AdviceWith.adviceWith( camelContext, "fetchAttributes", r -> {
             r.interceptSendToEndpoint(
                     "dhis2://get/resource?path=tracker/enrollments/" + enrollmentId + "&fields=trackedEntity,attributes[code]&client=#dhis2Client" )
                 .skipSendToOriginalEndpoint()
@@ -292,7 +294,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
             ) )
             .withOrgUnit( Environment.ORG_UNIT_ID );
 
-        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> {
+        AdviceWith.adviceWith( camelContext, "fetchAttributes", r -> {
             r.interceptSendToEndpoint(
                     "dhis2://get/resource?path=tracker/trackedEntities/" + trackedEntityId + "&fields=attributes[attribute,code,value]&client=#dhis2Client" )
                 .skipSendToOriginalEndpoint()
@@ -308,7 +310,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
                         }
                     } );
         } );
-        AdviceWith.adviceWith( camelContext, "Fetch Attributes", r -> r.weaveAddLast().to( "mock:spy" ) );
+        AdviceWith.adviceWith( camelContext, "fetchAttributes", r -> r.weaveAddLast().to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
         camelContext.start();
@@ -362,7 +364,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
         String programStage = "ZP5HZ87wzc0";
         String enrollmentId = Environment.createDhis2TrackedEntityWithEnrollment( Environment.ORG_UNIT_ID, phoneNumber,
             "ID-1", givenName, List.of( programStage ) );
-        AdviceWith.adviceWith( camelContext, "Queue Program Stage Events",
+        AdviceWith.adviceWith( camelContext, "queueProgramStageEvents",
             r -> r.interceptSendToEndpoint( "jms:queue:events?exchangePattern=InOnly" ).to( "mock:spy" ).stop() );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 1 );
@@ -380,7 +382,7 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
     }
 
     @Test
-    public void testUpdateDhisProgramStageEventStatusWithValidEventId()
+    public void testUpdateDhis2ProgramStageEventStatusWithValidEventId()
         throws
         Exception
     {
@@ -394,8 +396,8 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
         CountDownLatch expectedLogMessage = new CountDownLatch( 1 );
         camelContext.getCamelContextExtension()
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
-                if ( camelLogger.getLevel().name().equals( "DEBUG" ) && message.startsWith(
-                    String.format( "Successfully updated DHIS program stage event status for event with ID => %s",
+                if ( message.startsWith(
+                    String.format( "Successfully updated DHIS2 program stage event status for event with ID => %s",
                         event.get( "event" ) ) ) )
                 {
                     expectedLogMessage.countDown();
@@ -404,9 +406,8 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
             } );
 
         camelContext.start();
-        producerTemplate.sendBodyAndProperty( "direct:updateDhisProgramStageEventStatus", null, "eventPayload", event );
-        Thread.sleep( 1000 );
-        assertEquals( 0, expectedLogMessage.getCount() );
+        producerTemplate.sendBodyAndProperty( "direct:updateDhis2ProgramStageEventStatus", null, "eventPayload", event );
+        assertTrue( expectedLogMessage.await( 5000, TimeUnit.MILLISECONDS ) );
     }
 
     @Test
@@ -418,15 +419,14 @@ public class QueueProgramStageEventsRouteBuilderFunctionalTestCase extends Abstr
         CountDownLatch expectedLogMessage = new CountDownLatch( 10 );
         camelContext.getCamelContextExtension()
             .addLogListener( ( Exchange exchange, CamelLogger camelLogger, String message ) -> {
-                if ( camelLogger.getLevel().name().equals( "DEBUG" ) && message.startsWith(
-                    "Successfully updated DHIS program stage event status for event with ID =>" ) )
+                if ( message.startsWith( "Successfully updated DHIS2 program stage event status for event with ID =>" ) )
                 {
                     expectedLogMessage.countDown();
                 }
                 return message;
             } );
 
-        AdviceWith.adviceWith( camelContext, "Queue Program Stage Events",
+        AdviceWith.adviceWith( camelContext, "queueProgramStageEvents",
             r -> r.interceptSendToEndpoint( "jms:queue:events?exchangePattern=InOnly" ).to( "mock:spy" ) );
         MockEndpoint spyEndpoint = camelContext.getEndpoint( "mock:spy", MockEndpoint.class );
         spyEndpoint.setExpectedCount( 10 );

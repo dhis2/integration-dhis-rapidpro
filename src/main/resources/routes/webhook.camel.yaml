@@ -1,0 +1,19 @@
+- route:
+    id: rapidproWebhook
+    precondition: "{{rapidpro.webhook.enabled}}"
+    from:
+      uri: servlet:webhook?httpMethodRestrict=POST&muteException=true
+      steps:
+        - removeHeader:
+            name: CamelHttpUri
+        - to: jms:queue:dhis2AggregateReports?exchangePattern=InOnly
+        - log:
+            message: "Enqueued webhook message [data set code = ${header.dataSetCode},report\
+              \ period offset = ${header.reportPeriodOffset},orgUnitId = ${header.orgUnitId},content\
+              \ = ${body}]"
+            loggingLevel: DEBUG
+        - setHeader:
+            name: CamelHttpResponseCode
+            constant: 202
+        - setBody:
+            simple: "${null}"

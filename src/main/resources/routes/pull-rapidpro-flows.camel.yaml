@@ -1,0 +1,139 @@
+- beans:
+    - name: lastRunAtColumnReaderExpr
+      type: "#class:org.hisp.dhis.integration.rapidpro.expression.LastRunAtColumnReaderExpr"
+    - name: lastRunCalculatorExpr
+      type: "#class:org.hisp.dhis.integration.rapidpro.expression.LastRunCalculatorExpr"
+    - name: flowUuidsExpr
+      type: "#class:org.hisp.dhis.integration.rapidpro.expression.FlowUuidsExpr"
+
+- route:
+    from:
+      uri: servlet:tasks/scan?muteException=true
+      steps:
+        - removeHeaders:
+            pattern: '*'
+        - to: direct:pull
+        - setHeader:
+            name: Content-Type
+            constant: application/json
+        - setBody:
+            groovy: "['status': 'success', 'data': 'Scanned RapidPro flow runs']"
+        - marshal:
+            json: {}
+
+- route:
+    from:
+      uri: "quartz://pull?cron={{scan.reports.schedule.expression:0 0/30 * * * ?}}&stateful=true"
+      steps:
+        - to: direct:pull
+
+- route:
+    id: scanRapidproFlows
+    streamCache: true
+    from:
+      uri: direct:pull
+      steps:
+        - setProperty:
+            name: flowUuids
+            ref: flowUuidsExpr
+        - split:
+            delimiter: ","
+            simple: ${exchangeProperty.flowUuids}
+            steps:
+              - setHeader:
+                  name: flowUuid
+                  simple: ${body}
+              - setBody:
+                  simple: "${properties:last.run.select.{{spring.sql.init.platform}}}"
+              - to: jdbc:dataSource?useHeadersAsParameters=true
+              - setProperty:
+                  name: lastRunAt
+                  ref: lastRunAtColumnReaderExpr
+              - setHeader:
+                  name: newLastRunAt
+                  ognl: '@java.sql.Timestamp@from(@java.time.Instant@now())'
+              - setHeader:
+                  name: reverse
+                  constant: true
+              - setHeader:
+                  name: flow
+                  header: flowUuid
+              - setHeader:
+                  name: after
+                  exchangeProperty: lastRunAt
+              - to: "kamelet:hie-rapidpro-get-flow-runs-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+              - split:
+                  simple: "${body}"
+                  steps:
+                    - log:
+                        message: "Fetched flow runs after ${header.after} for flow ${header.flow} => ${body}"
+                        loggingLevel: DEBUG
+                    - setHeader:
+                        name: newLastRunAt
+                        ref: lastRunCalculatorExpr
+                    - filter:
+                        simple: "${body[exited_on]} != null && ${body[exit_type]} == 'completed'"
+                    - choice:
+                        when:
+                          - simple: "${body[values][data_set_code]} != null && ${body[values][event_id]} == null"
+                            steps:
+                              - to: direct:queueAggregateReport
+                          - simple: "${body[values][data_set_code]} == null && ${body[values][event_id]} != null"
+                            steps:
+                              - to: direct:queueProgramStageEvent
+                        otherwise:
+                          steps:
+                            - log:
+                                message: "Cannot process flow run for flow definition ${header.flowUuid}\
+                                  \ because one of the required flow results is missing. Hint: for aggregate data\
+                                  \ reports, save the data set code to a flow result named 'data_set_code'\
+                                  \ in RapidPro. For program stage events, save the value '@trigger.params.eventId'\
+                                  \ to a flow result named 'event_id' in RapidPro."
+                                loggingLevel: ERROR
+                    - setBody:
+                        simple: "${properties:last.run.upsert.{{spring.sql.init.platform}}}"
+                    - to: jdbc:dataSource?useHeadersAsParameters=true
+
+- route:
+    id: queueAggregateReport
+    from:
+      uri: direct:queueAggregateReport
+      steps:
+        - setHeader:
+            name: dataSetCode
+            simple: "${body[values][data_set_code][value]}"
+        - setHeader:
+            name: orgUnitId
+            ognl: "request.body['values']['org_unit_id'] == null ? null : request.body['values']['org_unit_id']['value']"
+        - setHeader:
+            name: reportPeriodOffset
+            ognl: "request.body['values']['report_period_offset'] == null ? null : request.body['values']['report_period_offset']['value']"
+        - transform:
+            datasonnet:
+              outputMediaType: application/json
+              resultType: String
+              bodyMediaType: application/x-java-object
+              expression: resource:classpath:webhook.ds
+        - to: jms:queue:dhis2AggregateReports?exchangePattern=InOnly
+        - log:
+            message: "Enqueued aggregate report flow run [data set code = ${header.dataSetCode}, report period offset = ${header.reportPeriodOffset}, content = ${body}]"
+            loggingLevel: DEBUG
+
+- route:
+    id: queueProgramStageEvent
+    from:
+      uri: direct:queueProgramStageEvent
+      steps:
+        - setHeader:
+            name: eventId
+            simple: "${body[values][event_id][value]}"
+        - transform:
+            datasonnet:
+              outputMediaType: application/json
+              resultType: String
+              bodyMediaType: application/x-java-object
+              expression: resource:classpath:webhook.ds
+        - to: jms:queue:dhis2ProgramStageEvents?exchangePattern=InOnly
+        - log:
+            message: "Enqueued program stage event flow run [event Id = ${header.eventId}]"
+            loggingLevel: DEBUG
