@@ -41,7 +41,7 @@
                 steps:
                   - setHeader:
                       name: reportPeriodOffset
-                      constant: -1
+                      groovy: -1
         - enrich:
             aggregationStrategy: "#class:org.hisp.dhis.integration.rapidpro.aggregationStrategy.DataElementCodeAggrStrategy"
             simple: "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.code:eq:${headers['dataSetCode']}&fields=code&client=#dhis2Client"
