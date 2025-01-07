@@ -538,7 +538,7 @@ Integration flows in DHIS-to-RapidPro, known as [routes](https://camel.apache.or
 | setUpRapidpro        | Configures RapidPro for integration with DHIS2                                         |
 | createRapidproFields | Creates contact fields on RapidPro                                                     |
 | createRapidproGroup  | Creates contact group on RapidPro                                                      |
-| syncRapidProContacts | Synchronises RapidPro contacts with DHIS2 users                                        |
+| syncRapidproContacts | Synchronises RapidPro contacts with DHIS2 users                                        |
 
 You should place the file or files containing the custom routes in a directory named `routes` within DHIS-to-RapidPro's current directory. The custom route will override the inbuilt route if the routes match by name. DHIS-to-RapidPro can reload the routes while its running therefore you have the option to extend the application at runtime.
 
