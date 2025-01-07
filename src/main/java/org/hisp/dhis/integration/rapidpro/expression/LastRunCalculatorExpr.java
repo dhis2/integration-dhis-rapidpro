@@ -25,25 +25,35 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.hisp.dhis.integration.rapidpro.route;
+package org.hisp.dhis.integration.rapidpro.expression;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
+import org.apache.camel.Expression;
 import org.springframework.stereotype.Component;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Map;
+
 @Component
-public class WebHookRouteBuilder extends AbstractRouteBuilder
+public class LastRunCalculatorExpr implements Expression
 {
     @Override
-    protected void doConfigure()
+    public <T> T evaluate( Exchange exchange, Class<T> type )
     {
-        from( "servlet:webhook?httpMethodRestrict=POST&muteException=true" )
-            .precondition( "{{rapidpro.webhook.enabled}}" )
-            .routeId( "RapidPro Webhook" )
-            .removeHeader( Exchange.HTTP_URI )
-            .to( "jms:queue:dhis2AggregateReports?exchangePattern=InOnly" )
-            .log( LoggingLevel.DEBUG, LOGGER, "Enqueued webhook message [data set code = ${header.dataSetCode},report period offset = ${header.reportPeriodOffset},orgUnitId = ${header.orgUnitId},content = ${body}]" )
-            .setHeader( Exchange.HTTP_RESPONSE_CODE, constant( 202 ) )
-            .setBody().simple( "${null}" );
+        Timestamp newLastRunAt = (Timestamp) exchange.getMessage().getHeader( "newLastRunAt" );
+        Map<String, Object> body = exchange.getMessage().getBody( Map.class );
+        String exitedOn = (String) body.get( "exited_on" );
+        if ( exitedOn == null )
+        {
+            String modifiedOn = (String) body.get( "modified_on" );
+            Instant modifiedOnAsInstant = Instant.parse( modifiedOn );
+            if ( modifiedOnAsInstant.isBefore( newLastRunAt.toInstant() ) )
+            {
+                newLastRunAt = Timestamp.from( modifiedOnAsInstant );
+            }
+        }
+
+        return (T) newLastRunAt;
     }
 }

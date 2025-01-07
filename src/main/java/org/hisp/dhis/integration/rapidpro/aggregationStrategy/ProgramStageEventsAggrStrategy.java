@@ -41,8 +41,6 @@ public class ProgramStageEventsAggrStrategy extends AbstractAggregationStrategy
 
     @Override
     public Exchange doAggregate( Exchange oldExchange, Exchange newExchange )
-        throws
-        Exception
     {
         if ( oldExchange == null )
         {

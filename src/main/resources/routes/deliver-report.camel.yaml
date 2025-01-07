@@ -1,0 +1,167 @@
+- route:
+    id: scheduleReportDelivery
+    precondition: "'{{report.delivery.schedule.expression:}}' != ''"
+    from:
+      uri: "quartz://dhis2AggregateReports?cron={{report.delivery.schedule.expression}}"
+      steps:
+        - pollEnrich:
+            constant: jms:queue:dhis2AggregateReports
+        - to: direct:deliverReport
+
+- route:
+    precondition: "'{{report.delivery.schedule.expression:}}' == ''"
+    from:
+      uri: jms:queue:dhis2AggregateReports
+      steps:
+        - kamelet: hie-create-replay-checkpoint-action
+        - to: direct:deliverReport
+
+- route:
+    id: deliverReport
+    from:
+      uri: direct:deliverReport
+      steps:
+        - to: direct:transformReport
+        - to: direct:transmitReport
+
+- route:
+    id: transformReport
+    streamCache: true
+    from:
+      uri: direct:transformReport
+      steps:
+        - setHeader:
+            name: originalPayload
+            simple: ${body}
+        - unmarshal:
+            json: {}
+        - choice:
+            when:
+              - simple: ${headers.reportPeriodOffset} == null
+                steps:
+                  - setHeader:
+                      name: reportPeriodOffset
+                      groovy: -1
+        - enrich:
+            aggregationStrategy: "#class:org.hisp.dhis.integration.rapidpro.aggregationStrategy.DataElementCodeAggrStrategy"
+            simple: "dhis2://get/resource?path=dataElements&filter=dataSetElements.dataSet.code:eq:${headers['dataSetCode']}&fields=code&client=#dhis2Client"
+        - choice:
+            when:
+              - simple: ${headers.orgUnitId} == null
+                steps:
+                  - setHeader:
+                      name: uuid
+                      simple: ${body[contact][uuid]}
+                  - enrich:
+                      aggregationStrategy: "#class:org.hisp.dhis.integration.rapidpro.aggregationStrategy.ContactOrgUnitIdAggrStrategy"
+                      constant: "kamelet:hie-rapidpro-get-contacts-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+        - enrich:
+            aggregationStrategy: "#class:org.hisp.dhis.integration.rapidpro.aggregationStrategy.PeriodAggrStrategy"
+            constant: direct:computePeriod
+        - transform:
+            datasonnet:
+              outputMediaType: application/x-java-object
+              resultType: java.util.Map
+              bodyMediaType: application/x-java-object
+              expression: resource:classpath:dataValueSet.ds
+        - process:
+            ref: "#class:org.hisp.dhis.integration.rapidpro.processor.IdSchemeQueryParamSetter"
+        - marshal:
+            json: {}
+        - transform:
+            groovy: request.getBody(String.class)
+
+- route:
+    id: transmitReport
+    from:
+      uri: direct:transmitReport
+      steps:
+        - log:
+            message: "Saving data value set => ${body}"
+            loggingLevel: INFO
+        - setHeader:
+            name: dhisRequest
+            simple: ${body}
+        - to:
+            uri: dhis2://post/resource
+            parameters:
+              path: dataValueSets
+              inBody: resource
+              client: "#dhis2Client"
+        - setBody:
+            groovy: request.getBody(String.class)
+        - setHeader:
+            name: dhisResponse
+            simple: ${body}
+        - unmarshal:
+            json: {}
+        - choice:
+            when:
+              - simple: "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'"
+                steps:
+                  - to: direct:completeDataSetRegistration
+            otherwise:
+              steps:
+                - setHeader:
+                    name: errorMessage
+                    simple: "Import error from DHIS2 while saving data value set => ${body}"
+                - log:
+                    message: "${header.errorMessage}"
+                    loggingLevel: ERROR
+                - kamelet: hie-fail-replay-checkpoint-action
+
+- route:
+    id: computePeriod
+    from:
+      uri: direct:computePeriod
+      steps:
+        - toD:
+            uri: dhis2://get/collection
+            parameters:
+              path: dataSets
+              arrayName: dataSets
+              filter: code:eq:${headers['dataSetCode']}
+              fields: periodType
+              client: "#dhis2Client"
+        - split:
+            aggregationStrategy: "#class:org.apache.camel.processor.aggregate.GroupedBodyAggregationStrategy"
+            simple: ${body}
+            steps:
+              - convertBodyTo:
+                  type: org.hisp.dhis.api.model.v40_0.DataSet
+        - process:
+            ref: "#class:org.hisp.dhis.integration.rapidpro.processor.CurrentPeriodCalculator"
+
+- route:
+    from:
+      uri: direct:completeDataSetRegistration
+      steps:
+        - setBody:
+            groovy: "['completeDataSetRegistrations': [['completed': true, 'dataSet': headers.dataSetCode, 'organisationUnit': headers.orgUnitId, 'period': headers.period]]]"
+        - to:
+            uri: dhis2://post/resource
+            parameters:
+              path: completeDataSetRegistrations
+              inBody: resource
+              client: "#dhis2Client"
+        - unmarshal:
+            json: {}
+        - choice:
+            when:
+              - simple: "${body['status']} == 'SUCCESS' || ${body['status']} == 'OK'"
+                steps:
+                  - setHeader:
+                      name: rapidProPayload
+                      header: originalPayload
+                  - setBody:
+                      simple: "${properties:report.success.log.insert.{{spring.sql.init.platform}}}"
+                  - to: jdbc:dataSource?useHeadersAsParameters=true
+            otherwise:
+              steps:
+                - setHeader:
+                    name: errorMessage
+                    simple: "Error from DHIS2 while completing data set registration => ${body}"
+                - log:
+                    message: ${header.errorMessage}
+                    loggingLevel: ERROR
+                - kamelet: hie-fail-replay-checkpoint-action

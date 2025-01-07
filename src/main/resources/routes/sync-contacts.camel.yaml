@@ -1,0 +1,125 @@
+- beans:
+    - name: isContactPoint
+      type: "#class:org.hisp.dhis.integration.rapidpro.IsContactPoint"
+
+- route:
+    precondition: "{{sync.rapidpro.contacts}}"
+    from:
+      uri: servlet:tasks/sync?muteException=true
+      steps:
+        - removeHeaders:
+            pattern: '*'
+        - to: direct:sync
+        - setHeader:
+            name: Content-Type
+            constant: application/json
+        - setBody:
+            groovy: "['status': 'success', 'data': 'Synchronised RapidPro contacts with DHIS2 users']"
+        - marshal:
+            json: {}
+
+- route:
+    precondition: "{{sync.rapidpro.contacts}}"
+    from:
+      uri: "quartz://sync?cron={{sync.schedule.expression:0 0/30 * * * ?}}&stateful=true"
+      steps:
+        - to: direct:sync
+
+- route:
+    id: syncRapidproContacts
+    precondition: "{{sync.rapidpro.contacts}}"
+    from:
+      uri: direct:sync
+      steps:
+        - log:
+            message: Synchronising RapidPro contacts...
+            loggingLevel: INFO
+        - to: direct:prepareRapidPro
+        - setProperty:
+            name: orgUnitIdScheme
+            simple: "{{org.unit.id.scheme}}"
+        - toD:
+            uri: dhis2://get/collection
+            parameters:
+              path: users
+              arrayName: users
+              fields: id,firstName,surname,phoneNumber,telegram,whatsApp,twitter,facebookMessenger,organisationUnits[${exchangeProperty.orgUnitIdScheme.toLowerCase()}~rename(id)]
+              filter: organisationUnits.id:!null
+              client: "#dhis2Client"
+        - split:
+            simple: "${body}"
+            steps:
+              - to: direct:createOrUpdateContact
+        - log:
+            message: Completed synchronisation of RapidPro contacts with DHIS2 users
+            loggingLevel: INFO
+
+- route:
+    from:
+      uri: direct:createOrUpdateContact
+      steps:
+        - convertBodyTo:
+            type: org.hisp.dhis.api.model.v40_0.User
+        - filter:
+            ref: isContactPoint
+        - setProperty:
+            name: dhis2UserId
+            groovy: body.id.get()
+        - setHeader:
+            name: urn
+            simple: "ext:${exchangeProperty.dhis2UserId}"
+        - setHeader:
+            name: group
+            constant: DHIS2
+        - to:
+            uri: "kamelet:hie-rapidpro-get-contacts-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+            variableReceive: rapidProContact
+        - removeHeader:
+            name: urn
+        - removeHeader:
+            name: group
+        - setHeader:
+            name: groups
+            groovy: "['DHIS2']"
+        - setHeader:
+            name: contactName
+            groovy: body.firstName.get() + ' ' + body.surname.get()
+        - setHeader:
+            name: phoneNumber
+            groovy: body.phoneNumber.orElse(null)
+        - setHeader:
+            name: telegram
+            groovy: body.telegram.orElse(null)
+        - setHeader:
+            name: whatsApp
+            groovy: body.whatsApp.orElse(null)
+        - setHeader:
+            name: facebookMessenger
+            groovy: body.facebookMessenger.orElse(null)
+        - setHeader:
+            name: twitterId
+            groovy: body.twitter.orElse(null)
+        - choice:
+            when:
+              - groovy: "!variables.rapidProContact.iterator().hasNext()"
+                steps:
+                  - log:
+                      message: "Creating RapidPro contact for DHIS2 user ${exchangeProperty.dhis2UserId}"
+                      loggingLevel: DEBUG
+                  - setHeader:
+                      name: external
+                      exchangeProperty: dhis2UserId
+                  - setHeader:
+                      name: fields
+                      groovy:
+                        expression: "[dhis2_organisation_unit_id : body.organisationUnits.get()[0].id, dhis2_user_id : exchangeProperties.dhis2UserId]"
+                  - to: "kamelet:hie-rapidpro-create-or-update-contact-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}&httpOkStatusRange=200-499"
+            otherwise:
+              steps:
+                - log:
+                    message: "Updating RapidPro contact for DHIS2 user ${exchangeProperty.dhis2UserId}"
+                    loggingLevel: DEBUG
+                - setHeader:
+                    name: uuid
+                    groovy: variables.rapidProContact.iterator().next().uuid
+                - to: "kamelet:hie-rapidpro-create-or-update-contact-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}&httpOkStatusRange=200-499"

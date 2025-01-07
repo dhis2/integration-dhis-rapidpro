@@ -1,0 +1,150 @@
+- route:
+    precondition: "{{sync.dhis2.events.to.rapidpro.flows}}"
+    from:
+      uri: servlet:tasks/syncEvents?muteException=true
+      steps:
+        - removeHeaders:
+            pattern: '*'
+        - to: direct:queueEvents
+        - setHeader:
+            name: Content-Type
+            constant: application/json
+        - setBody:
+            groovy: "['status': 'success', 'data': 'Fetched and enqueued due program stage events']"
+        - marshal:
+            json: {}
+
+- route:
+    precondition: "{{sync.dhis2.events.to.rapidpro.flows}}"
+    from:
+      uri: "quartz://fetchDueEvents?cron={{sync.events.schedule.expression:0 0/30 * * * ?}}&stateful=true"
+      steps:
+        - to: direct:queueEvents
+
+- route:
+    id: queueProgramStageEvents
+    from:
+      uri: direct:queueEvents
+      steps:
+        - to:
+            uri: direct:fetchDueEvents
+        - split:
+            simple: "${exchangeProperty.dueEvents}"
+            steps:
+              - setProperty:
+                  name: eventPayload
+                  simple: "${body}"
+              - to: direct:fetchAttributes
+              - transform:
+                  datasonnet:
+                    outputMediaType: application/json
+                    resultType: String
+                    bodyMediaType: application/x-java-object
+                    expression: resource:classpath:event.ds
+              - to: jms:queue:events?exchangePattern=InOnly
+              - unmarshal:
+                  json: {}
+              - log:
+                  message: "Enqueued event [eventId => ${body[event]}, programStage => ${body[programStage]}]"
+                  loggingLevel: DEBUG
+              - to: direct:updateDhis2ProgramStageEventStatus
+
+- route:
+    id: fetchDueEvents
+    from:
+      uri: direct:fetchDueEvents
+      steps:
+        - process:
+            ref: "#class:org.hisp.dhis.integration.rapidpro.processor.SetProgramStagesPropertyProcessor"
+        - split:
+            aggregationStrategy: "#class:org.hisp.dhis.integration.rapidpro.aggregationStrategy.ProgramStageEventsAggrStrategy"
+            simple: "${exchangeProperty.programStages}"
+            steps:
+              - setProperty:
+                  name: programStage
+                  simple: "${body}"
+              - setHeader:
+                  name: CamelDhis2.queryParams
+                  groovy: |
+                    today = java.time.LocalDate.now().toString()
+                    ['status': 'SCHEDULE', 'programStage': exchangeProperties.programStage, 'skipPaging': 'false', 'occurredBefore': today, 'scheduledBefore': today]
+              - to:
+                  uri: dhis2://get/collection
+                  parameters:
+                    path: tracker/events
+                    paging: true
+                    arrayName: instances
+                    fields: enrollment,programStage,orgUnit,scheduledAt,occurredAt,event,status
+                    client: "#dhis2Client"
+        - setProperty:
+            name: dueEvents
+            simple: "${body}"
+        - setProperty:
+            name: dueEventsCount
+            simple: "${body.size}"
+        - log:
+            message: "Fetched ${headers.dueEventsCount} due events from DHIS2"
+            loggingLevel: INFO
+
+- route:
+    id: fetchAttributes
+    from:
+      uri: direct:fetchAttributes
+      steps:
+        - enrich:
+            aggregationStrategy: "#class:org.hisp.dhis.integration.rapidpro.aggregationStrategy.TrackedEntityIdAggrStrategy"
+            simple: "dhis2://get/resource?path=tracker/enrollments/${body[enrollment]}&fields=trackedEntity,attributes[code]&client=#dhis2Client"
+        - process:
+            ref: "#class:org.hisp.dhis.integration.rapidpro.processor.SetAttributesEndpointProcessor"
+        - enrich:
+            aggregationStrategy: "#class:org.hisp.dhis.integration.rapidpro.aggregationStrategy.AttributesAggrStrategy"
+            simple: "${exchangeProperty.attributesEndpoint}"
+        - choice:
+            when:
+              - simple: "${body[contactUrn]} == null"
+                steps:
+                  - log:
+                      message: "Error while fetching phone number attribute from DHIS2 enrollment ${body[enrollment]}.\ 
+                        \ Hint: Be sure to set the 'dhis2.phone.number.attribute.code' config property."
+                      loggingLevel: ERROR
+                  - stop: {}
+
+- route:
+    id: updateDhis2ProgramStageEventStatus
+    from:
+      uri: direct:updateDhis2ProgramStageEventStatus
+      steps:
+        - setBody:
+            groovy: |
+              exchangeProperties.eventPayload.status = 'ACTIVE'
+              exchangeProperties.eventPayload.occurredAt = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern('yyyy-MM-dd'))
+              ['events': [exchangeProperties.eventPayload]]
+        - marshal:
+            json: {}
+        - convertBodyTo:
+            type: java.lang.String
+        - setHeader:
+            name: CamelDhis2.queryParams
+            groovy: "['async': 'false', 'importStrategy': 'UPDATE']"
+        - to:
+            uri: dhis2://post/resource
+            parameters:
+              path: tracker
+              inBody: resource
+              client: "#dhis2Client"
+        - unmarshal:
+            json: {}
+        - choice:
+            when:
+              - simple: "${body['status']} == 'SUCCESS' || ${body['status']}  == 'OK'"
+                steps:
+                  - log:
+                      message: "Successfully updated DHIS2 program stage event status for event with ID => ${exchangeProperty.eventPayload['event']}"
+                      loggingLevel: DEBUG
+            otherwise:
+              steps:
+                - log:
+                    message: "Unexpected status code when updating the dhis program stage event status for event with ID\
+                      \ => ${exchangeProperty.eventPayload['event']}. HTTP ${header.CamelHttpResponseCode}. HTTP response\
+                      \ body => ${body}"
+                    loggingLevel: ERROR

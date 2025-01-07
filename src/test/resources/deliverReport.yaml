@@ -1,5 +1,5 @@
 - route:
-    id: "Transmit Report"
+    id: "transmitReport"
     from:
       uri: "direct:transmitReport"
       steps:

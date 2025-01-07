@@ -1,0 +1,139 @@
+- route:
+    from:
+      uri: servlet:tasks/reminders?muteException=true
+      steps:
+        - removeHeaders:
+            pattern: '*'
+        - to: direct:reminders
+        - setHeader:
+            name: Content-Type
+            constant: application/json
+        - setBody:
+            groovy: "['status':'success', 'data': 'Sent reminders of overdue reports']"
+        - marshal:
+            json: {}
+
+- route:
+    from:
+      uri: "quartz://reminders?cron={{reminder.schedule.expression:0 0 9 ? * *}}"
+      steps:
+        - to: direct:reminders
+
+- route:
+    id: broadcastReminders
+    from:
+      uri: direct:reminders
+      steps:
+        - log:
+            message: Reminding RapidPro contacts of overdue reports...
+            loggingLevel: INFO
+        - setProperty:
+            name: orgUnitIdScheme
+            simple: "{{org.unit.id.scheme}}"
+        - choice:
+            when:
+              - simple: "{{sync.rapidpro.contacts}} == true"
+                steps:
+                  - to: direct:sync
+        - split:
+            delimiter: ","
+            simple: "{{reminder.data.set.codes:}}"
+            steps:
+              - setProperty:
+                  name: dataSetCode
+                  simple: ${body}
+              - to: direct:fetchDataSet
+              - choice:
+                  when:
+                    - simple: ${body} == null
+                      steps:
+                        - log:
+                            message: Cannot remind contacts given unknown data set code '${exchangeProperty.dataSetCode}'
+                            loggingLevel: WARN
+                  otherwise:
+                    steps:
+                      - setProperty:
+                          name: dataSet
+                          simple: ${body}
+                      - setHeader:
+                          name: group
+                          constant: DHIS2
+                      - to:
+                          uri: kamelet:hie-rapidpro-get-contacts-sink
+                          parameters:
+                            rapidProApiToken: "{{rapidpro.api.token}}"
+                            rapidProApiUrl: "{{rapidpro.api.url}}"
+                      - split:
+                          simple: ${body}
+                          aggregationStrategy: "#class:org.hisp.dhis.integration.rapidpro.aggregationStrategy.MapAggregationStrategy"
+                          steps:
+                            - setBody:
+                                groovy: "[(body.fields.dhis2_organisation_unit_id) : body.uuid]"
+                      - setProperty:
+                          name: orgUnitIdsAndContactIds
+                          simple: ${body}
+                      - to: direct:fetchReportRate
+                      - split:
+                          simple: ${body['rows']}
+                          steps:
+                            - filter:
+                                ognl: "@java.lang.Double@parseDouble(request.body[4]) < 100"
+                                steps:
+                                  - to: direct:sendBroadcast
+
+- route:
+    from:
+      uri: direct:fetchDataSet
+      steps:
+        - toD:
+            uri: dhis2://get/resource
+            parameters:
+              path: dataSets
+              filter: code:eq:${body}
+              fields: id,name,periodType,organisationUnits[id,${exchangeProperty.orgUnitIdScheme.toLowerCase()}]
+              client: "#dhis2Client"
+        - setProperty:
+            name: dataSetCount
+            jsonpath: $.dataSets.length()
+        - choice:
+            when:
+              - simple: "${exchangeProperty.dataSetCount} > 0"
+                steps:
+                  - transform:
+                      jsonpath: "$.dataSets[0]"
+            otherwise:
+              steps:
+                - setBody:
+                    simple: "${null}"
+- route:
+    from:
+      uri: direct:fetchReportRate
+      steps:
+        - process:
+            ref: "#class:org.hisp.dhis.integration.rapidpro.processor.SetReportRateQueryParamProcessor"
+        - to:
+            uri: dhis2://get/resource
+            parameters:
+              path: analytics
+              client: "#dhis2Client"
+        - unmarshal:
+            json: {}
+
+- route:
+    from:
+      uri: direct:sendBroadcast
+      steps:
+        - setHeader:
+            name: contacts
+            datasonnet:
+              outputMediaType: application/x-java-object
+              resultType: java.util.List
+              bodyMediaType: application/x-java-object
+              expression: resource:classpath:broadcastContacts.ds
+        - setHeader:
+            name: text
+            groovy: "java.text.MessageFormat.format(java.util.ResourceBundle.getBundle('reminder').getString('text'), exchangeProperties.dataSet.name)"
+        - to: "kamelet:hie-rapidpro-send-broadcast-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}"
+        - log:
+            message: "Overdue report reminder sent => ${body}"
+            loggingLevel: INFO

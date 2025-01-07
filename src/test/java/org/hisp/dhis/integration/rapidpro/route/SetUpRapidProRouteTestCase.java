@@ -72,7 +72,7 @@ public class SetUpRapidProRouteTestCase
         throws
         Exception
     {
-        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
+        AdviceWith.adviceWith( camelContext, "createRapidproFields",
             r -> r.interceptSendToEndpoint(
                     "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
                 .skipSendToOriginalEndpoint().setBody(
@@ -85,7 +85,7 @@ public class SetUpRapidProRouteTestCase
                         }
                     } ) );
 
-        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
+        AdviceWith.adviceWith( camelContext, "createRapidproFields",
             r -> r.weaveByToUri( "kamelet:hie-rapidpro-create-field-sink*" )
                 .replace().to( "mock:hie-rapidpro-create-field-sink" ) );
 
@@ -104,7 +104,7 @@ public class SetUpRapidProRouteTestCase
         throws
         Exception
     {
-        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
+        AdviceWith.adviceWith( camelContext, "createRapidproFields",
             r -> r.interceptSendToEndpoint(
                     "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
                 .skipSendToOriginalEndpoint().setBody(
@@ -122,7 +122,7 @@ public class SetUpRapidProRouteTestCase
                     } ) );
 
 
-        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
+        AdviceWith.adviceWith( camelContext, "createRapidproFields",
             r -> r.weaveByToUri( "kamelet:hie-rapidpro-create-field-sink*" )
                 .replace().to( "mock:hie-rapidpro-create-field-sink" ) );
 
@@ -140,7 +140,7 @@ public class SetUpRapidProRouteTestCase
         throws
         Exception
     {
-        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
+        AdviceWith.adviceWith( camelContext, "createRapidproFields",
             r -> r.interceptSendToEndpoint(
                     "kamelet:hie-rapidpro-get-fields-sink?rapidProApiToken={{rapidpro.api.token}}&rapidProApiUrl={{rapidpro.api.url}}" )
                 .skipSendToOriginalEndpoint().setBody(
@@ -158,7 +158,7 @@ public class SetUpRapidProRouteTestCase
                     } ) );
 
 
-        AdviceWith.adviceWith( camelContext, "Create RapidPro Fields",
+        AdviceWith.adviceWith( camelContext, "createRapidproFields",
             r -> r.weaveByToUri( "kamelet:hie-rapidpro-create-field-sink*" )
                 .replace().to( "mock:hie-rapidpro-create-field-sink" ) );
 
