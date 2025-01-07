@@ -1,0 +1,11 @@
+- routeConfiguration:
+    onException:
+      - onException:
+          exception:
+            - org.apache.camel.http.base.HttpOperationFailedException
+          handled:
+            constant: false
+          steps:
+            - log:
+                message: HTTP response body => ${exchangeProperty.CamelExceptionCaught.responseBody}
+                loggingLevel: ERROR
